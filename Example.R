@@ -1,4 +1,4 @@
-
+### hello
 ### StrathCast Extended Example
 require(devtools)
 require(roxygen2)
