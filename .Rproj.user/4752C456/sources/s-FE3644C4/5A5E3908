@@ -1,0 +1,22 @@
+{
+    "collab_server" : "",
+    "contents" : "",
+    "created" : 1531935222208.000,
+    "dirty" : false,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "4044412260",
+    "id" : "5A5E3908",
+    "lastKnownWriteTime" : 1532004435,
+    "last_content_update" : 1532004435789,
+    "path" : "C:/Users/ksb11175/Strathcloud/Personal Folders/R/ProbCast/Example.R",
+    "project_path" : "Example.R",
+    "properties" : {
+        "cursorPosition" : "37,14",
+        "scrollLine" : "34"
+    },
+    "relative_order" : 2,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_source"
+}
