@@ -2,13 +2,16 @@
 ### StrathCast Extended Example
 require(devtools)
 require(roxygen2)
-setwd("C:/Users/ksb11175/Strathcloud/Personal Folders/R/")
+require(rstudioapi)
+PackagePath <- dirname(getActiveDocumentContext()$path)
+setwd(PackagePath)
 
+# Install from local repository
+install(PackagePath)
 # Update package documentation
-document(pkg = "ProbCast")
+document(pkg = ".")
 
 
-install("ProbCast")
 require(ProbCast)
 
 ### Testing Functionalisty of StrathCast #####
