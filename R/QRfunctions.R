@@ -93,7 +93,7 @@ MQR_gbm <- function(data,
   if(parallel){
     
     for(q in quantiles){ # Loop over quantiles
-      print(paste0("p",q*100))
+      print(paste0("q",q*100))
       
       # Calculate the number of cores
       no_cores <- cores
