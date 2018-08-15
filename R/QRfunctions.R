@@ -41,6 +41,9 @@ SortQuantiles <- function(data,Limits=NULL){
 #' @param gbm_params List of parameters to be passed to \code{fit.gbm()}.
 #' @param CVfolds Control for cross-validation if not supplied in \code{data}.
 #' @param perf.plot Plot GBM performance?
+#' @param parallel \code{boolean} parallelize cross-validation process?
+#' @param pckgs if parallel is TRUE then  specify packages required for each worker (e.g. c("data.table) if data stored as such)
+#' @param cores if parallel is TRUE then number of available cores
 #' @param Sort \code{boolean} Sort quantiles using \code{SortQuantiles()}?
 #' @param SortLimits \code{Limits} argument to be passed to \code{SortQuantiles()}. Constrains quantiles to upper and lower limits given by \code{list(U=upperlim,L=lowerlim)}.
 #' @details Details go here...
@@ -59,13 +62,16 @@ MQR_gbm <- function(data,
                                     bag.fraction = 0.5,
                                     keep.data = F),
                     perf.plot=F,
+                    parallel = F,
+                    cores = NULL,
+                    pckgs = NULL,
                     Sort=T,SortLimits=NULL){
-
+  
   ### Set-up Cross-validation
   TEST<-F # Flag for Training (with CV) AND Test output
   if("kfold" %in% colnames(data)){
     if(!is.null(CVfolds)){warning("Using column \"kfold\" from data. Argument \"CVfolds\" is not used.")}
-
+    
     if("Test" %in% data$kfold){
       TEST<-T
       nkfold <- length(unique(data$kfold))-1
@@ -79,42 +85,84 @@ MQR_gbm <- function(data,
     data$kfold <- sort(rep(1:CVfolds,length.out=nrow(data)))
     nkfold <- CVfolds
   }
-
+  
   ### Creae Container for output
   predqs <- data.frame(matrix(NA,ncol = length(quantiles), nrow = nrow(data)))
   colnames(predqs) <- paste0("q",100*quantiles)
-
-  ### Training Data: k-fold cross-validation/out-of-sample predictions
-  for(q in quantiles){ # Loop over quantiles
-    for(fold in unique(data$kfold)){# Loop over CV folds and test data
-
-
-      ### Fit gbm model
-      temp_gbm <- do.call(gbm,c(list(formula=formula,data=data[data$kfold!=fold & data$kfold!="Test" & !is.na(data[[formula[[2]]]]),],distribution = list(name="quantile",alpha=q)),gbm_params))
-
-      ### Save out-of-sample predictions
-      predqs[[paste0("q",100*q)]][data$kfold==fold] <- predict.gbm(temp_gbm,
-                                                                   newdata = data[data$kfold==fold,],
-                                                                   n.trees = gbm.perf(temp_gbm,plot.it = perf.plot))
-
-
-      ### Store some performance data?
-
+  
+  if(parallel){
+    
+    for(q in quantiles){ # Loop over quantiles
+      print(paste0("p",q*100))
+      
+      # Calculate the number of cores
+      no_cores <- cores
+      # Initiate cluster
+      cl <- makeCluster(no_cores)
+      registerDoSNOW(cl)
+      #set up progress bar
+      iterations <- length(unique(data$kfold))
+      pb <- txtProgressBar(max = iterations, style = 3)
+      progress <- function(n) setTxtProgressBar(pb, n)
+      opts <- list(progress = progress)
+      
+      # fit each quantiel model change parameters for CV results
+      
+      
+      
+      qpred <- foreach(fold = unique(data$kfold),.packages = c("gbm",pckgs),.options.snow = opts,.combine=c) %dopar% {
+        
+        ### Fit gbm model
+        temp_gbm <- do.call(gbm,c(list(formula=formula,data=data[data$kfold!=fold & data$kfold!="Test" & !is.na(data[[formula[[2]]]]),],distribution = list(name="quantile",alpha=q)),gbm_params))
+        
+        ### Save out-of-sample predictions
+        predict.gbm(temp_gbm,
+                    newdata = data[data$kfold==fold,],
+                    n.trees = gbm.perf(temp_gbm,plot.it = perf.plot))
+        
+        
+      }
+      
+      close(pb)
+      stopCluster(cl)
+      
+      predqs[[paste0("q",100*q)]] <- qpred
+    }
+    
+    
+  } else{
+    ### Training Data: k-fold cross-validation/out-of-sample predictions
+    for(q in quantiles){ # Loop over quantiles
+      for(fold in unique(data$kfold)){# Loop over CV folds and test data
+        
+        
+        ### Fit gbm model
+        temp_gbm <- do.call(gbm,c(list(formula=formula,data=data[data$kfold!=fold & data$kfold!="Test" & !is.na(data[[formula[[2]]]]),],distribution = list(name="quantile",alpha=q)),gbm_params))
+        
+        ### Save out-of-sample predictions
+        predqs[[paste0("q",100*q)]][data$kfold==fold] <- predict.gbm(temp_gbm,
+                                                                     newdata = data[data$kfold==fold,],
+                                                                     n.trees = gbm.perf(temp_gbm,plot.it = perf.plot))
+        
+        
+        ### Store some performance data?
+        
+      }
     }
   }
-  ### Out-of-sample on test data
-
+  
   class(predqs) <- c("MultiQR","data.frame")
+  
 
-  ### Sort quantiles and apply upper/lower limits?
   if(Sort){
     predqs <- SortQuantiles(data = predqs,Limits = SortLimits)
   }
-
-
+  
+  
+  
   return(predqs)
-
-
+  
+  
 }
 
 
@@ -587,7 +635,8 @@ PIT.MultiQR <- function(qrdata,obs,...){
 
   X<-rep(NA,nrow(qrdata))
   for(i in 1:nrow(qrdata)){
-    X[i] <- contCDF(quantiles = qrdata[i,],...)(obs[i])
+    if(is.na(obs[i])){X[i] <- NA}else{
+    X[i] <- contCDF(quantiles = qrdata[i,],...)(obs[i])}
   }
   return(X)
 }
