@@ -548,8 +548,17 @@ PPD_2_MultiQR <- function(data,models,quantiles=seq(0.05,0.95,by=0.05),params=F)
 
   for(i in 1:length(quantiles)){
     input$p <- quantiles[i]
-    multipleQuantiles[,i] <- do.call(paste0("q",distFamily),input)
-
+    try1 <- try(multipleQuantiles[,i] <- do.call(paste0("q",distFamily),input))
+    if(class(try1)=="try-error"){
+      for(j in 1:nrow(multipleQuantiles)){
+        try(multipleQuantiles[j,i] <- do.call(paste0("q",distFamily),list(mu=parameters[j,1],
+                                                                          sigma=parameters[j,2],
+                                                                          nu=parameters[j,3],
+                                                                          tau=parameters[j,4],
+                                                                          p = quantiles[i])))
+        warning("NAs in MultiQR")
+      }
+    }
   }
 
 

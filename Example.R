@@ -1,8 +1,9 @@
-### hello
+
 ### StrathCast Extended Example
 require(devtools)
 require(roxygen2)
 require(rstudioapi)
+
 PackagePath <- dirname(getActiveDocumentContext()$path)
 setwd(PackagePath)
 
@@ -16,29 +17,31 @@ require(ProbCast)
 
 ### Testing Functionalisty of StrathCast #####
 
-# Add some features first...
+## Add some features first...
 
 Wind$WS100 <- sqrt(Wind$U100^2+Wind$V100^2)
 Wind$Power <- pmin(Wind$WS100,11)^3
 
-# Set-up simple kfold CV
+## Set-up simple kfold CV
 Wind$kfold <- c(rep(c("fold1","fold2"),each=6000),rep("Test",nrow(Wind)-12000))
+# Wind$kfold <- c(rep(c("fold1","fold2","fold3","fold4"),each=nrow(Wind)/4))
 
 ### Multiple Quantile Regression using GBM ####
 test1<-list(data=Wind)
 
 test1$gbm_mqr <- MQR_gbm(data = test1$data,
-                          formula = TARGETVAR~U100+V100,
-                          CVfolds = 2,gbm_params = list(interaction.depth = 1,
-                                                        n.trees = 150,
-                                                        shrinkage = 0.5,
+                          formula = TARGETVAR~U100+V100+U10+V10+(sqrt((U100^2+V100^2))),
+                          CVfolds = 2,gbm_params = list(interaction.depth = 3,
+                                                        n.trees = 1000,
+                                                        shrinkage = 0.05,
                                                         cv.folds = 0,
-                                                        n.minobsinnode = 1,
+                                                        n.minobsinnode = 20,
                                                         bag.fraction = 0.5,
                                                         keep.data = F),
-                          quantiles = seq(0.1,0.9,by=0.1),Sort = T,SortLimits = list(U=0.999,L=0.001))
+                          quantiles = seq(0.05,0.95,by=0.05),Sort = T,SortLimits = list(U=0.999,L=0.001))
 
-plot(test1$gbm_mqr[1:240,])
+plot(test1$gbm_mqr[1:240,],xlab="Time Index",ylab="Power")
+lines(test1$data$TARGETVAR[1:240])
 
 reliability(qrdata = test1$gbm_mqr,
             realisations = test1$data$TARGETVAR,
@@ -66,13 +69,14 @@ hist(test1$X_gbm,breaks = 50)
 
 
 test1$ppd <- Para_gamlss(data = test1$data,
-                         formula = TARGETVAR~WS100, # TARGETVAR~bs(Power,df=3)+bs(WS100,df=3),
+                         formula = TARGETVAR~bs(WS100,df=3),
                          sigma.formula = ~WS100,
                          sigma.start = 0.05,
                          nu.formula = ~WS100,
                          tau.formula = ~WS100,
                          family = BEINF, # NO
                          method=mixed(20,10))
+
 
 summary(test1$ppd$fold1)
 plot(test1$ppd$fold1)
