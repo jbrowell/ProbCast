@@ -5,8 +5,8 @@
 \title{Continuous CFDs}
 \usage{
 contCDF(quantiles, kfold = NULL, inverse = F, method = list(name =
-  "spline", splinemethod = "monoH.FC"), tails = list(method = "interpolate", L
-  = 0, U = 1))
+  "spline", splinemethod = "monoH.FC"), tails = list(method =
+  "interpolate", L = 0, U = 1))
 }
 \arguments{
 \item{quantiles}{A single-row \code{MultiQR} object.}

@@ -1,4 +1,3 @@
-### hello
 ### StrathCast Extended Example
 require(devtools)
 require(roxygen2)
@@ -53,7 +52,7 @@ cdf <- contCDF(quantiles = test1$gbm_mqr[index,],method = "spline")
 plot(cdf(seq(0,1,by=0.001)),type="l")
 cdf <- contCDF(quantiles = test1$gbm_mqr[index,],method = "linear")
 lines(cdf(seq(0,1,by=0.001)),lty=2,col=2)
-cdf <- contCDF(quantiles = test1$gbm_mqr[index,],kfold = NA,method = "spline", tails=list(method="exponential",L=0,U=1,nBins=10,DATA=test1,TARGETVAR="TARGETVAR",ntailpoints=25))
+cdf <- contCDF(quantiles = test1$gbm_mqr[index,],kfold = NA,method = "spline", tails=list(method="exponential",L=0,U=1,nBins=5,preds=test1$gbm_mqr,targetvar=test1$data$TARGETVAR,ntailpoints=25))
 lines(cdf(seq(0,1,by=0.001)),lty=3,col=3)
 
 
