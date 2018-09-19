@@ -727,3 +727,236 @@ PIT.PPD <- function(ppd,data,...){
 
   return(X)
 }
+
+
+#' Fit a gamboostlss paramertirc forecast model
+#'
+#' @param data A \code{data.frame} containing target and explanatory variables. May optionally contain a collumn called "kfold" with numbered/labeled folds and "Test" for test data.
+#' @param formula A formula or list of formulas for differences between formulas for location, scale, shape etc..(see \code{gamboostLSS)
+#' @param families A gamboosLSS family object, which is used to define the distribution and the link functions of the various parameters.
+#' @param parallel \code{boolean} parallelize cross-validation process?
+#' @param pckgs if parallel is TRUE then  specify packages required for each worker (e.g. c("data.table) if data stored as such)
+#' @param ... Additonal arguments passed to \code{gamboostLSS()}.
+#' @return A list of gamboostlss objects corresponsing to kfolds
+#' @export
+Para_gamboostLSS <- function(data,formula,families=GaussianLSS(),parallel = F,cores = NULL,pckgs = NULL,...){
+  
+  # Arrange kfold cross-validation
+  if(is.null(data$kfold)){
+    data$kfold<-1
+  }else{
+    data$kfold[is.na(data$kfold)] <- "Test"
+  }
+  
+  # GAMLSS can't handle NAs...
+  if(sum(is.na(data))>0){
+    warning("NAs in data => data=na.omit(data) passed to gamlss().")
+  }
+  
+  modelList <- list()
+  nms <- c()
+  if (is.list(formula)){
+    for (i in 1:length(formula)){
+      nms <- c(nms,all.names(as.formula(as.character(unname(formula[i])))))
+    }
+  } else{
+    nms <- c(nms,all.names(formula))
+  }
+  data <- as.data.frame(data)
+  
+  if(parallel){
+    
+    no_cores <- length(unique(data$kfold))
+    cl <- makeCluster(no_cores)
+    registerDoSNOW(cl)
+    iterations <- length(unique(data$kfold))
+    pb <- txtProgressBar(max = iterations, style = 3)
+    progress <- function(n) setTxtProgressBar(pb, n)
+    opts <- list(progress = progress)
+    modelList <- foreach(fold = unique(data$kfold),.packages = c("gamboostLSS",pckgs),.options.snow = opts) %dopar% {
+      
+      temp <- gamboostLSS(data = na.omit(data[data$kfold!="Test" & data$kfold!=fold,
+                                              which(colnames(data)%in%c(nms))]),
+                          formula = formula,
+                          families = families,
+                          ...)
+      
+    }
+    close(pb)
+    stopCluster(cl)
+    names(modelList) <- unique(data$kfold)
+    
+    return(modelList)
+    
+  } else{
+    ### Training Data: k-fold cross-validation/out-of-sample predictions
+    
+    
+    for(fold in unique(data$kfold)){
+      
+      temp <- gamboostLSS(data = na.omit(data[data$kfold!="Test" & data$kfold!=fold,
+                                              which(colnames(data)%in%c(nms))]),
+                          formula = formula,
+                          families = families,
+                          ...)
+      
+      modelList[[fold]] <- temp
+      
+    }
+    
+    return(modelList)
+
+    
+  }
+  
+  
+}
+
+
+#' Convert gamboostLSS objects to MultiQR, or alternatively return predicted parameters of predictive distribution.
+#'
+#' @param data A \code{data.frame} containing explanatory variables.
+#' @param models A Para_gamboostLSS object.
+#' @param quantiles Vector of quantiles to be calculated
+#'
+#' @details Details go here...
+#' @return A \code{MultiQR} object derived from gamlss predictive distributions. Alternatively, a matrix condaining the parameters of the predictive gamboostLSS distributions.
+#' @export
+gamboostLSS_2_MultiQR <- function(data,models,quantiles=seq(0.05,0.95,by=0.05),params=F){
+  
+  # Arrange kfold cross-validation
+  if(is.null(data$kfold)){
+    data$kfold<-1
+  }else{
+    data$kfold[is.na(data$kfold)] <- "Test"
+  }
+  
+  data <- as.data.frame(data)
+  # Initialise containers for parameters and quantile forecasts
+  parameters <- matrix(1,nrow=nrow(data),ncol=4)
+  colnames(parameters) <- c("mu", "sigma", "nu", "tau")
+  
+  distFamily <- c()
+  
+  ### current implementation requires all data from gamboost model (don't think you can turn off anyway)
+  # models[[fold]]$mu$baselearner$`bbs(SWH)`$get_names() <----possible alternatives.....
+  # gamb$mu$baselearner$names(gamb$mu$coef())
+  
+  
+  for(fold in unique(data$kfold)){
+    
+    tempdata <- data[,which(colnames(data)%in%c(colnames(attributes(models[[fold]])$data),"kfold"))]
+    
+    # NAs not allowed in newdata. Flags required to record possition.
+    gooddata <- rowSums(is.na(tempdata))==0
+    
+    tempPred <- predict(models[[fold]], newdata = tempdata[data$kfold==fold & gooddata,],type="response")
+    
+    for(i in 1:(length(tempPred))){
+      parameters[data$kfold==fold & gooddata,i] <- tempPred[[i]]
+    }
+    
+    distFamily <- unique(c(distFamily,attributes(attributes(models[[fold]])$families)$name))
+    
+  }
+  
+  if(params){
+    return(parameters)
+  }
+  
+  
+  if(length(distFamily)!=1){stop("length(distFamily)!=1 - Only a single parametric distribution family is allowed.")}
+  
+  myqfun <- attributes(attributes(models[[fold]])$families)$qfun
+  
+  input <- list()
+  if("mu"%in%names(as.list(args(myqfun)))){
+    input$mu=parameters[,1]
+  }
+  if("sigma"%in%names(as.list(args(myqfun)))){
+    input$sigma=parameters[,2]
+  }
+  if("nu"%in%names(as.list(args(myqfun)))){
+    input$nu=parameters[,3]
+  }
+  if("tau"%in%names(as.list(args(myqfun)))){
+    input$tau=parameters[,4]
+  }
+  
+  multipleQuantiles <- matrix(NA,nrow=nrow(data),ncol=length(quantiles))
+  
+  for(i in 1:length(quantiles)){
+    input$p <- quantiles[i]
+    multipleQuantiles[,i] <- do.call(myqfun,input)
+    
+  }
+  
+  colnames(multipleQuantiles) <- paste0("q",100*quantiles)
+  multipleQuantiles <- as.data.frame(multipleQuantiles)
+  class(multipleQuantiles) <- c("MultiQR",class(multipleQuantiles))
+  
+  return(multipleQuantiles)
+  
+  
+}
+
+
+#' Probability integral transform for Para_gamboostLSS objects
+#'
+#' This function produces a fan plot of a MultiQR object.
+#' @param models A Para_gamboostLSS object.
+#' @param data Input data corresponding to \code{qrdata}.
+#' @param dist_fun cumulative distribution function corresponging to families specified in gamboostLSS model (see example).
+#' @param response_name name of response variable in \code{data} object.
+#' @details Details go here...
+#' @return The probability integral transform of \code{data} through the predictive distribution defined by a list of gamboostLSS objects.
+#' @export
+gamboostLSS_2_PIT <- function(models,data,dist_fun,response_name,...){
+  
+  # Arrange kfold cross-validation
+  if(is.null(data$kfold)){
+    if(length(models)!=1){stop("kfold inconsistent with ppd.")}
+    data$kfold<-names(models)
+  }else{
+    data$kfold[is.na(data$kfold)] <- "Test"
+  }
+  
+  data <- as.data.frame(data)
+  
+  distFamily <- c()
+  
+  for(fold in unique(data$kfold)){
+    distFamily <- unique(c(distFamily,attributes(attributes(models[[fold]])$families)$name))
+  }
+  
+  if(length(distFamily)!=1){stop("length(distFamily)!=1 - Only a single parametric distribution family is allowed.")}
+  
+  parameters <- gamboostLSS_2_MultiQR(data=data,models=models,params=T)
+  
+  
+  tempdata <- data[,which(colnames(data)%in%c(colnames(attributes(models[[fold]])$data)))]
+  gooddata <- rowSums(is.na(tempdata))==0
+  
+  input <- list(q=data[[response_name]][gooddata])
+  
+  if("mu"%in%names(as.list(args(dist_fun)))){
+    input$mu=parameters[gooddata,1]
+  }
+  if("sigma"%in%names(as.list(args(dist_fun)))){
+    input$sigma=parameters[gooddata,2]
+  }
+  if("nu"%in%names(as.list(args(dist_fun)))){
+    input$nu=parameters[gooddata,3]
+  }
+  if("tau"%in%names(as.list(args(dist_fun)))){
+    input$tau=parameters[gooddata,4]
+  }
+  
+  X <- rep(NA,nrow(data))
+  X[gooddata] <- do.call(dist_fun,input)
+  
+  
+  return(X)
+}
+
+
