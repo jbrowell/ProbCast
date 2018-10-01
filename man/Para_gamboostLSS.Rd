@@ -10,6 +10,8 @@ Para_gamboostLSS(data, formula, families = GaussianLSS(), parallel = F,
 \arguments{
 \item{data}{A \code{data.frame} containing target and explanatory variables. May optionally contain a collumn called "kfold" with numbered/labeled folds and "Test" for test data.}
 
+\item{formula}{A formula or list of formulas for differences between formulas for location, scale, shape etc..(see \code{gamboostLSS})}
+
 \item{families}{A gamboosLSS family object, which is used to define the distribution and the link functions of the various parameters.}
 
 \item{parallel}{\code{boolean} parallelize cross-validation process?}

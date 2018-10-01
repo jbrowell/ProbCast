@@ -95,10 +95,8 @@ MQR_gbm <- function(data,
     for(q in quantiles){ # Loop over quantiles
       print(paste0("q",q*100))
       
-      # Calculate the number of cores
-      no_cores <- cores
       # Initiate cluster
-      cl <- makeCluster(no_cores)
+      cl <- makeCluster(cores)
       registerDoSNOW(cl)
       #set up progress bar
       iterations <- length(unique(data$kfold))
@@ -107,8 +105,6 @@ MQR_gbm <- function(data,
       opts <- list(progress = progress)
       
       # fit each quantiel model change parameters for CV results
-      
-      
       
       qpred <- foreach(fold = unique(data$kfold),.packages = c("gbm",pckgs),.options.snow = opts,.combine=c) %dopar% {
         
@@ -481,15 +477,21 @@ contCDF <- function(quantiles,kfold=NULL,inverse=F,
 #' @param nu.formula A formula object for fitting a model to the nu parameter, as in the formula above.
 #' @param tau.formula A formula object for fitting a model to the tau parameter, as in the formula above.
 #' @param family A gamlss.family object, which is used to define the distribution and the link functions of the various parameters.
+#' @param parallel \code{boolean} parallelize model fitting process?
+#' @param pckgs if parallel is TRUE then  specify packages required for each worker (e.g. c("data.table) if data stored as such)
+#' @param cores if parallel is TRUE then number of available cores
 #' @param ... Additonal arguments passed to \code{gamlss()}.
 #' @details Details go here...
-#' @return A cumulative densift function
+#' @return A cumulative density function
 #' @export
 Para_gamlss <- function(data,formula,
                         sigma.formula= ~1,
                         nu.formula = ~1,
                         tau.formula = ~1,
                         family=NO(),
+                        parallel = F,
+                        cores = NULL,
+                        pckgs = NULL,
                         ...){
 
   # Arrange kfold cross-validation
@@ -503,34 +505,67 @@ Para_gamlss <- function(data,formula,
   if(sum(is.na(data))>0){
     warning("NAs in data => data=na.omit(data) passed to gamlss().")
   }
-
+  
+  nmsind <- which(colnames(data)%in%c(all.names(formula),all.names(sigma.formula),all.names(nu.formula),all.names(tau.formula),"kfold"))
+  tempdata <- na.omit(eval(parse(text=paste0("data[,c(",paste(nmsind,collapse = ","),")]"))))
   GAMLSSmodelList <- list()
+  
+  if(parallel){
+    
+    cl <- makeCluster(cores)
+    registerDoSNOW(cl)
+    iterations <- length(unique(tempdata$kfold))
+    pb <- txtProgressBar(max = iterations, style = 3)
+    progress <- function(n) setTxtProgressBar(pb, n)
+    opts <- list(progress = progress)
+    GAMLSSmodelList <- foreach(fold = unique(tempdata$kfold),.packages = c("gamlss",pckgs),.export="...",.options.snow = opts) %dopar% {
+      
+      ### works with both data.table and data.frame
+      temp <- gamlss(data = tempdata[tempdata$kfold!=fold & tempdata$kfold!="Test",],
+                     formula = formula,
+                     sigma.formula = sigma.formula,
+                     nu.formula = nu.formula,
+                     tau.formula = tau.formula,
+                     family = family,
+                     ...)
+      
+    }
+    close(pb)
+    stopCluster(cl)
+    names(GAMLSSmodelList) <- unique(tempdata$kfold)
+    rm(tempdata)
+    
+    class(GAMLSSmodelList) <- c("PPD",class(GAMLSSmodelList))
+    return(GAMLSSmodelList)
+    
+  } else{
+    ### Training Data: k-fold cross-validation/out-of-sample predictions
+    
+    
+    for(fold in unique(tempdata$kfold)){
+      print(fold)
+      
+      temp <- gamlss(data = tempdata[tempdata$kfold!=fold & tempdata$kfold!="Test",],
+                     formula = formula,
+                     sigma.formula = sigma.formula,
+                     nu.formula = nu.formula,
+                     tau.formula = tau.formula,
+                     family = family,
+                     ...)
+      
+      GAMLSSmodelList[[fold]] <- temp
+      
+    }
+    rm(tempdata)
+    class(GAMLSSmodelList) <- c("PPD",class(GAMLSSmodelList))
+    return(GAMLSSmodelList)
 
-  for(fold in unique(data$kfold)){
-
-
-    temp <- gamlss(formula = formula,
-                   sigma.formula = sigma.formula,
-                   nu.formula = nu.formula,
-                   tau.formula = tau.formula,
-                   family = family,
-                   data = na.omit(data[data$kfold!=fold & data$kfold!="Test",
-                                       which(colnames(data)%in%c(all.names(formula),
-                                                                 all.names(sigma.formula),
-                                                                 all.names(nu.formula),
-                                                                 all.names(tau.formula)))]),
-                   ...)
-
-    GAMLSSmodelList[[fold]] <- temp
-
+    
   }
 
-  class(GAMLSSmodelList) <- c("PPD",class(GAMLSSmodelList))
-
-
-  return(GAMLSSmodelList)
-
+  
 }
+
 
 
 #' Convert PPD to MultiQR, or alternatively return predicted parameters of predictive distribution.
@@ -732,7 +767,7 @@ PIT.PPD <- function(ppd,data,...){
 #' Fit a gamboostlss paramertirc forecast model
 #'
 #' @param data A \code{data.frame} containing target and explanatory variables. May optionally contain a collumn called "kfold" with numbered/labeled folds and "Test" for test data.
-#' @param formula A formula or list of formulas for differences between formulas for location, scale, shape etc..(see \code{gamboostLSS)
+#' @param formula A formula or list of formulas for differences between formulas for location, scale, shape etc..(see \code{gamboostLSS})
 #' @param families A gamboosLSS family object, which is used to define the distribution and the link functions of the various parameters.
 #' @param parallel \code{boolean} parallelize cross-validation process?
 #' @param pckgs if parallel is TRUE then  specify packages required for each worker (e.g. c("data.table) if data stored as such)
@@ -750,7 +785,7 @@ Para_gamboostLSS <- function(data,formula,families=GaussianLSS(),parallel = F,co
   
   # GAMLSS can't handle NAs...
   if(sum(is.na(data))>0){
-    warning("NAs in data => data=na.omit(data) passed to gamlss().")
+    warning("NAs in data => data=na.omit(data) passed to gamboostlss().")
   }
   
   modelList <- list()
@@ -762,21 +797,21 @@ Para_gamboostLSS <- function(data,formula,families=GaussianLSS(),parallel = F,co
   } else{
     nms <- c(nms,all.names(formula))
   }
-  data <- as.data.frame(data)
+  nmsind <- which(colnames(data)%in%c(nms,"kfold"))
+  tempdata <- na.omit(eval(parse(text=paste0("data[,c(",paste(nmsind,collapse = ","),")]"))))
   
   if(parallel){
     
-    no_cores <- length(unique(data$kfold))
-    cl <- makeCluster(no_cores)
+    cl <- makeCluster(cores)
     registerDoSNOW(cl)
-    iterations <- length(unique(data$kfold))
+    iterations <- length(unique(tempdata$kfold))
     pb <- txtProgressBar(max = iterations, style = 3)
     progress <- function(n) setTxtProgressBar(pb, n)
     opts <- list(progress = progress)
-    modelList <- foreach(fold = unique(data$kfold),.packages = c("gamboostLSS",pckgs),.options.snow = opts) %dopar% {
+    modelList <- foreach(fold = unique(tempdata$kfold),.packages = c("gamboostLSS",pckgs),.options.snow = opts) %dopar% {
       
-      temp <- gamboostLSS(data = na.omit(data[data$kfold!="Test" & data$kfold!=fold,
-                                              which(colnames(data)%in%c(nms))]),
+      ### works with both data.table and data.frame
+      temp <- gamboostLSS(data = tempdata[tempdata$kfold!=fold & tempdata$kfold != "Test",],
                           formula = formula,
                           families = families,
                           ...)
@@ -784,7 +819,8 @@ Para_gamboostLSS <- function(data,formula,families=GaussianLSS(),parallel = F,co
     }
     close(pb)
     stopCluster(cl)
-    names(modelList) <- unique(data$kfold)
+    names(modelList) <- unique(tempdata$kfold)
+    rm(tempdata)
     
     return(modelList)
     
@@ -792,10 +828,10 @@ Para_gamboostLSS <- function(data,formula,families=GaussianLSS(),parallel = F,co
     ### Training Data: k-fold cross-validation/out-of-sample predictions
     
     
-    for(fold in unique(data$kfold)){
+    for(fold in unique(tempdata$kfold)){
+      print(fold)
       
-      temp <- gamboostLSS(data = na.omit(data[data$kfold!="Test" & data$kfold!=fold,
-                                              which(colnames(data)%in%c(nms))]),
+      temp <- gamboostLSS(data = tempdata[tempdata$kfold!=fold & tempdata$kfold != "Test",],
                           formula = formula,
                           families = families,
                           ...)
@@ -803,9 +839,10 @@ Para_gamboostLSS <- function(data,formula,families=GaussianLSS(),parallel = F,co
       modelList[[fold]] <- temp
       
     }
+    rm(tempdata)
     
     return(modelList)
-
+    
     
   }
   
@@ -958,5 +995,4 @@ gamboostLSS_2_PIT <- function(models,data,dist_fun,response_name,...){
   
   return(X)
 }
-
 
