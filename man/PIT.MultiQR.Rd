@@ -4,12 +4,14 @@
 \alias{PIT.MultiQR}
 \title{Probability integral transform: S3 Method for for MultiQR}
 \usage{
-\method{PIT}{MultiQR}(qrdata, obs, ...)
+\method{PIT}{MultiQR}(qrdata, obs, tails, ...)
 }
 \arguments{
 \item{qrdata}{A \code{MultiQR} object.}
 
 \item{obs}{A vector of observations corresponding to \code{qrdata}.}
+
+\item{tails}{A list of arguments passed to \code{condCDF} defining the tails of the CDF}
 
 \item{...}{Additional arguments passed to \code{condCDF}.}
 }

@@ -5,9 +5,10 @@
 \title{Multiple Quantile Regression Using GBM}
 \usage{
 MQR_gbm(data, formula, quantiles = c(0.25, 0.5, 0.75), CVfolds = NULL,
-  gbm_params = list(interaction.depth = 4, n.trees = 500, shrinkage = 0.25,
-  cv.folds = 1, n.minobsinnode = 15, bag.fraction = 0.5, keep.data = F),
-  perf.plot = F, Sort = T, SortLimits = NULL)
+  gbm_params = list(interaction.depth = 4, n.trees = 500, shrinkage =
+  0.25, cv.folds = 1, n.minobsinnode = 15, bag.fraction = 0.5, keep.data =
+  F), perf.plot = F, parallel = F, cores = NULL, pckgs = NULL,
+  Sort = T, SortLimits = NULL)
 }
 \arguments{
 \item{data}{A \code{data.frame} containing target and explanatory variables. May optionally contain a collumn called "kfold" with numbered/labeled folds and "Test" for test data.}
@@ -19,6 +20,12 @@ MQR_gbm(data, formula, quantiles = c(0.25, 0.5, 0.75), CVfolds = NULL,
 \item{gbm_params}{List of parameters to be passed to \code{fit.gbm()}.}
 
 \item{perf.plot}{Plot GBM performance?}
+
+\item{parallel}{\code{boolean} parallelize cross-validation process?}
+
+\item{cores}{if parallel is TRUE then number of available cores}
+
+\item{pckgs}{if parallel is TRUE then  specify packages required for each worker (e.g. c("data.table) if data stored as such)}
 
 \item{Sort}{\code{boolean} Sort quantiles using \code{SortQuantiles()}?}
 

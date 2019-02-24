@@ -5,7 +5,8 @@
 \title{Fit a gamlss paramertirc forecast model}
 \usage{
 Para_gamlss(data, formula, sigma.formula = ~1, nu.formula = ~1,
-  tau.formula = ~1, family = NO(), ...)
+  tau.formula = ~1, family = NO(), parallel = F, cores = NULL,
+  pckgs = NULL, ...)
 }
 \arguments{
 \item{data}{A \code{data.frame} containing target and explanatory variables. May optionally contain a collumn called "kfold" with numbered/labeled folds and "Test" for test data.}
@@ -20,10 +21,16 @@ Para_gamlss(data, formula, sigma.formula = ~1, nu.formula = ~1,
 
 \item{family}{A gamlss.family object, which is used to define the distribution and the link functions of the various parameters.}
 
+\item{parallel}{\code{boolean} parallelize model fitting process?}
+
+\item{cores}{if parallel is TRUE then number of available cores}
+
+\item{pckgs}{if parallel is TRUE then  specify packages required for each worker (e.g. c("data.table) if data stored as such)}
+
 \item{...}{Additonal arguments passed to \code{gamlss()}.}
 }
 \value{
-A cumulative densift function
+A cumulative density function
 }
 \description{
 Fit a gamlss paramertirc forecast model

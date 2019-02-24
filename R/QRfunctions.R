@@ -41,6 +41,9 @@ SortQuantiles <- function(data,Limits=NULL){
 #' @param gbm_params List of parameters to be passed to \code{fit.gbm()}.
 #' @param CVfolds Control for cross-validation if not supplied in \code{data}.
 #' @param perf.plot Plot GBM performance?
+#' @param parallel \code{boolean} parallelize cross-validation process?
+#' @param pckgs if parallel is TRUE then  specify packages required for each worker (e.g. c("data.table) if data stored as such)
+#' @param cores if parallel is TRUE then number of available cores
 #' @param Sort \code{boolean} Sort quantiles using \code{SortQuantiles()}?
 #' @param SortLimits \code{Limits} argument to be passed to \code{SortQuantiles()}. Constrains quantiles to upper and lower limits given by \code{list(U=upperlim,L=lowerlim)}.
 #' @details Details go here...
@@ -59,13 +62,16 @@ MQR_gbm <- function(data,
                                     bag.fraction = 0.5,
                                     keep.data = F),
                     perf.plot=F,
+                    parallel = F,
+                    cores = NULL,
+                    pckgs = NULL,
                     Sort=T,SortLimits=NULL){
-
+  
   ### Set-up Cross-validation
   TEST<-F # Flag for Training (with CV) AND Test output
   if("kfold" %in% colnames(data)){
     if(!is.null(CVfolds)){warning("Using column \"kfold\" from data. Argument \"CVfolds\" is not used.")}
-
+    
     if("Test" %in% data$kfold){
       TEST<-T
       nkfold <- length(unique(data$kfold))-1
@@ -79,42 +85,80 @@ MQR_gbm <- function(data,
     data$kfold <- sort(rep(1:CVfolds,length.out=nrow(data)))
     nkfold <- CVfolds
   }
-
+  
   ### Creae Container for output
   predqs <- data.frame(matrix(NA,ncol = length(quantiles), nrow = nrow(data)))
   colnames(predqs) <- paste0("q",100*quantiles)
-
-  ### Training Data: k-fold cross-validation/out-of-sample predictions
-  for(q in quantiles){ # Loop over quantiles
-    for(fold in unique(data$kfold)){# Loop over CV folds and test data
-
-
-      ### Fit gbm model
-      temp_gbm <- do.call(gbm,c(list(formula=formula,data=data[data$kfold!=fold & data$kfold!="Test" & !is.na(data[[formula[[2]]]]),],distribution = list(name="quantile",alpha=q)),gbm_params))
-
-      ### Save out-of-sample predictions
-      predqs[[paste0("q",100*q)]][data$kfold==fold] <- predict.gbm(temp_gbm,
-                                                                   newdata = data[data$kfold==fold,],
-                                                                   n.trees = gbm.perf(temp_gbm,plot.it = perf.plot))
-
-
-      ### Store some performance data?
-
+  
+  if(parallel){
+    
+    for(q in quantiles){ # Loop over quantiles
+      print(paste0("q",q*100))
+      
+      # Initiate cluster
+      cl <- makeCluster(cores)
+      registerDoSNOW(cl)
+      #set up progress bar
+      iterations <- length(unique(data$kfold))
+      pb <- txtProgressBar(max = iterations, style = 3)
+      progress <- function(n) setTxtProgressBar(pb, n)
+      opts <- list(progress = progress)
+      
+      # fit each quantiel model change parameters for CV results
+      
+      qpred <- foreach(fold = unique(data$kfold),.packages = c("gbm",pckgs),.options.snow = opts,.combine=c) %dopar% {
+        
+        ### Fit gbm model
+        temp_gbm <- do.call(gbm,c(list(formula=formula,data=data[data$kfold!=fold & data$kfold!="Test" & !is.na(data[[formula[[2]]]]),],distribution = list(name="quantile",alpha=q)),gbm_params))
+        
+        ### Save out-of-sample predictions
+        predict.gbm(temp_gbm,
+                    newdata = data[data$kfold==fold,],
+                    n.trees = gbm.perf(temp_gbm,plot.it = perf.plot))
+        
+        
+      }
+      
+      close(pb)
+      stopCluster(cl)
+      
+      predqs[[paste0("q",100*q)]] <- qpred
+    }
+    
+    
+  } else{
+    ### Training Data: k-fold cross-validation/out-of-sample predictions
+    for(q in quantiles){ # Loop over quantiles
+      for(fold in unique(data$kfold)){# Loop over CV folds and test data
+        
+        
+        ### Fit gbm model
+        temp_gbm <- do.call(gbm,c(list(formula=formula,data=data[data$kfold!=fold & data$kfold!="Test" & !is.na(data[[formula[[2]]]]),],distribution = list(name="quantile",alpha=q)),gbm_params))
+        
+        ### Save out-of-sample predictions
+        predqs[[paste0("q",100*q)]][data$kfold==fold] <- predict.gbm(temp_gbm,
+                                                                     newdata = data[data$kfold==fold,],
+                                                                     n.trees = gbm.perf(temp_gbm,plot.it = perf.plot))
+        
+        
+        ### Store some performance data?
+        
+      }
     }
   }
-  ### Out-of-sample on test data
-
+  
   class(predqs) <- c("MultiQR","data.frame")
+  
 
-  ### Sort quantiles and apply upper/lower limits?
   if(Sort){
     predqs <- SortQuantiles(data = predqs,Limits = SortLimits)
   }
-
-
+  
+  
+  
   return(predqs)
-
-
+  
+  
 }
 
 
@@ -342,26 +386,35 @@ contCDF <- function(quantiles,kfold=NULL,inverse=F,
     Rquants <- tails$U
   }else if(tails$method=="exponential"){
 
-    if(!0.5%in%Probs){stop("q50 required for exponential tails.")}
-    if(is.null(tails$DATA$data$kfold)){tails$DATA$data$kfold<-rep(1,nrow(tails$DATA$data))}
-
-    ### Calculate Thickness parameters (kfold and test data accounted for)
-    if(!is.na(kfold)){
-      train <- tails$DATA$data$kfold==kfold
-      test <- tails$DATA$data$kfold!=kfold & !is.na(tails$DATA$data$kfold)
-    }else{
-      train <- !is.na(tails$DATA$data$kfold)
-      test <- is.na(tails$DATA$data$kfold)
+    if(is.null(tails$thickparamFunc)){
+      if(!0.5%in%Probs){stop("q50 required for exponential tails.")}
+      
+      print("single CDF with exponential tails specified")
+      
+      ##introduce kfold CV into here for defining thickness parameter....
+      
+      # if(!0.5%in%Probs){stop("q50 required for exponential tails.")}
+      # if(is.null(tails$DATA$kfold)){tails$DATA$kfold<-rep(1,nrow(tails$DATA))}
+      # 
+      # ### Calculate Thickness parameters (kfold and test data accounted for)
+      # if(!is.na(kfold)){
+      #   train <- tails$DATA$kfold==kfold
+      #   test <- tails$DATA$kfold!=kfold & !is.na(tails$DATA$kfold)
+      # }else{
+      #   train <- !is.na(tails$DATA$kfold)
+      #   test <- is.na(tails$DATA$kfold)
+      # }
+      
+      thickness <- rep(NA,tails$nBins)
+      targetquants <- stats::quantile(tails$targetvar,probs = seq(0, 1, 1/tails$nBins))
+      for(i in 1:tails$nBins){
+        thickness[i] <- mean(tails$targetvar[which(tails$preds$q50>=targetquants[i] & tails$preds$q50<targetquants[i+1])],na.rm = T)
+      }
+      thickparamFunc <- stepfun(seq(0,1,length.out = tails$nBins+1),y=c(0,thickness,1))
+      thicknessP <- thickparamFunc(quantiles[which(Probs==0.5)])
+    } else {
+    thicknessP <- tails$thickparamFunc(quantiles[which(Probs==0.5)])
     }
-
-    thickness <- rep(NA,tails$nBins)
-    for(i in 1:tails$nBins){
-      thickness[i] <- mean(tails$DATA$data[[tails$TARGETVAR]][
-        which(tails$DATA$pred_mqr$q50>=(i-1)/tails$nBins &
-                tails$DATA$pred_mqr$q50 < i/tails$nBins & train)],na.rm = T)
-    }
-    thickparamFunc <- stepfun(seq(0,1,length.out = tails$nBins+1),y=c(0,thickness,1))
-    thicknessP <- thickparamFunc(quantiles[which(Probs==0.5)])
 
     ### Calculate tails
     if(is.null(tails$ntailpoints)){tails$ntailpoints <- 5}
@@ -424,15 +477,21 @@ contCDF <- function(quantiles,kfold=NULL,inverse=F,
 #' @param nu.formula A formula object for fitting a model to the nu parameter, as in the formula above.
 #' @param tau.formula A formula object for fitting a model to the tau parameter, as in the formula above.
 #' @param family A gamlss.family object, which is used to define the distribution and the link functions of the various parameters.
+#' @param parallel \code{boolean} parallelize model fitting process?
+#' @param pckgs if parallel is TRUE then  specify packages required for each worker (e.g. c("data.table) if data stored as such)
+#' @param cores if parallel is TRUE then number of available cores
 #' @param ... Additonal arguments passed to \code{gamlss()}.
 #' @details Details go here...
-#' @return A cumulative densift function
+#' @return A cumulative density function
 #' @export
 Para_gamlss <- function(data,formula,
                         sigma.formula= ~1,
                         nu.formula = ~1,
                         tau.formula = ~1,
                         family=NO(),
+                        parallel = F,
+                        cores = NULL,
+                        pckgs = NULL,
                         ...){
 
   # Arrange kfold cross-validation
@@ -446,34 +505,67 @@ Para_gamlss <- function(data,formula,
   if(sum(is.na(data))>0){
     warning("NAs in data => data=na.omit(data) passed to gamlss().")
   }
-
+  
+  nmsind <- which(colnames(data)%in%c(all.names(formula),all.names(sigma.formula),all.names(nu.formula),all.names(tau.formula),"kfold"))
+  tempdata <- na.omit(eval(parse(text=paste0("data[,c(",paste(nmsind,collapse = ","),")]"))))
   GAMLSSmodelList <- list()
+  
+  if(parallel){
+    
+    cl <- makeCluster(cores)
+    registerDoSNOW(cl)
+    iterations <- length(unique(tempdata$kfold))
+    pb <- txtProgressBar(max = iterations, style = 3)
+    progress <- function(n) setTxtProgressBar(pb, n)
+    opts <- list(progress = progress)
+    GAMLSSmodelList <- foreach(fold = unique(tempdata$kfold),.packages = c("gamlss",pckgs),.export="...",.options.snow = opts) %dopar% {
+      
+      ### works with both data.table and data.frame
+      temp <- gamlss(data = tempdata[tempdata$kfold!=fold & tempdata$kfold!="Test",],
+                     formula = formula,
+                     sigma.formula = sigma.formula,
+                     nu.formula = nu.formula,
+                     tau.formula = tau.formula,
+                     family = family,
+                     ...)
+      
+    }
+    close(pb)
+    stopCluster(cl)
+    names(GAMLSSmodelList) <- unique(tempdata$kfold)
+    rm(tempdata)
+    
+    class(GAMLSSmodelList) <- c("PPD",class(GAMLSSmodelList))
+    return(GAMLSSmodelList)
+    
+  } else{
+    ### Training Data: k-fold cross-validation/out-of-sample predictions
+    
+    
+    for(fold in unique(tempdata$kfold)){
+      print(fold)
+      
+      temp <- gamlss(data = tempdata[tempdata$kfold!=fold & tempdata$kfold!="Test",],
+                     formula = formula,
+                     sigma.formula = sigma.formula,
+                     nu.formula = nu.formula,
+                     tau.formula = tau.formula,
+                     family = family,
+                     ...)
+      
+      GAMLSSmodelList[[fold]] <- temp
+      
+    }
+    rm(tempdata)
+    class(GAMLSSmodelList) <- c("PPD",class(GAMLSSmodelList))
+    return(GAMLSSmodelList)
 
-  for(fold in unique(data$kfold)){
-
-
-    temp <- gamlss(formula = formula,
-                   sigma.formula = sigma.formula,
-                   nu.formula = nu.formula,
-                   tau.formula = tau.formula,
-                   family = family,
-                   data = na.omit(data[data$kfold!=fold & data$kfold!="Test",
-                                       which(colnames(data)%in%c(all.names(formula),
-                                                                 all.names(sigma.formula),
-                                                                 all.names(nu.formula),
-                                                                 all.names(tau.formula)))]),
-                   ...)
-
-    GAMLSSmodelList[[fold]] <- temp
-
+    
   }
 
-  class(GAMLSSmodelList) <- c("PPD",class(GAMLSSmodelList))
-
-
-  return(GAMLSSmodelList)
-
+  
 }
+
 
 
 #' Convert PPD to MultiQR, or alternatively return predicted parameters of predictive distribution.
@@ -586,18 +678,61 @@ PIT <- function(distdata,...) {
 #' This function produces a fan plot of a MultiQR object.
 #' @param qrdata A \code{MultiQR} object.
 #' @param obs A vector of observations corresponding to \code{qrdata}.
+#' @param tails A list of arguments passed to \code{condCDF} defining the tails of the CDF
 #' @param ... Additional arguments passed to \code{condCDF}.
 #' @details Details go here...
 #' @return The probability integral transform of \code{obs} through the predictive distribution defined by \code{qrdata} and interpolation scheme in \code{contCDF}.
 #' @export
-PIT.MultiQR <- function(qrdata,obs,...){
+PIT.MultiQR <- function(qrdata,obs,tails,inverse=FALSE,...){
 
-  if(length(obs)!=nrow(qrdata)){stop("length(obs)!=nrow(qrdata)")}
-
-  X<-rep(NA,nrow(qrdata))
-  for(i in 1:nrow(qrdata)){
-    X[i] <- contCDF(quantiles = qrdata[i,],...)(obs[i])
+  # if(length(obs)!=nrow(qrdata)){stop("length(obs)!=nrow(qrdata)")}
+  
+  if(tails$method=="exponential"){
+    
+    if(!("q50"%in%colnames(qrdata))){stop("q50 required for exponential tails.")}
+    
+    ##introduce kfold CV into here for defining thickness parameter....
+    
+    # if(!0.5%in%Probs){stop("q50 required for exponential tails.")}
+    # if(is.null(tails$DATA$kfold)){tails$DATA$kfold<-rep(1,nrow(tails$DATA))}
+    # 
+    # ### Calculate Thickness parameters (kfold and test data accounted for)
+    # if(!is.na(kfold)){
+    #   train <- tails$DATA$kfold==kfold
+    #   test <- tails$DATA$kfold!=kfold & !is.na(tails$DATA$kfold)
+    # }else{
+    #   train <- !is.na(tails$DATA$kfold)
+    #   test <- is.na(tails$DATA$kfold)
+    # }
+    
+    thickness <- rep(NA,tails$nBins)
+    targetquants <- stats::quantile(tails$targetvar,probs = seq(0, 1, 1/tails$nBins))
+    for(i in 1:tails$nBins){
+      thickness[i] <- mean(tails$targetvar[which(qrdata$q50>=targetquants[i] & qrdata$q50<targetquants[i+1])],na.rm = T)
+    }
+    tails$thickparamFunc <- stepfun(seq(0,1,length.out = tails$nBins+1),y=c(0,thickness,1))
+    
   }
+  
+  if (inverse){
+    
+    X <- matrix(NA,nrow(qrdata),ncol = ncol(obs))
+    for(i in 1:nrow(qrdata)){
+      if(is.na(qrdata[i,1])){X[i,] <- NA}else{
+           X[i,] <- contCDF(quantiles = qrdata[i,],tails = tails,inverse = TRUE,...)(obs[i,])}
+    }
+  } else {
+    
+    X<-rep(NA,nrow(qrdata))
+    for(i in 1:nrow(qrdata)){
+      if(is.na(obs[i])){X[i] <- NA}else{
+          X[i] <- contCDF(quantiles = qrdata[i,],tails = tails,...)(obs[i])
+        }
+    }
+    
+  }
+    
+  
   return(X)
 }
 
@@ -610,7 +745,7 @@ PIT.MultiQR <- function(qrdata,obs,...){
 #' @details Details go here...
 #' @return The probability integral transform of \code{data} through the predictive distribution defined by \code{ppd}, a list of gamlss objects.
 #' @export
-PIT.PPD <- function(ppd,data,...){
+PIT.PPD <- function(ppd,data,inverse=FALSE,inv_probs,...){
 
   # Arrange kfold cross-validation
   if(is.null(data$kfold)){
@@ -645,8 +780,500 @@ PIT.PPD <- function(ppd,data,...){
     input$tau=parameters[keepRows,4]
   }
 
-  X <- rep(NA,nrow(data))
-  X[keepRows] <- do.call(paste0("p",distFamily),input)
+  if (inverse){
+    X <- matrix(NA,nrow(data),ncol = ncol(inv_probs))
+    input$q <- NULL
+    input$p <- inv_probs[keepRows,]
+    X[keepRows,] <- do.call(paste0("q",distFamily),input)
+  } else {
+    X <- rep(NA,nrow(data))
+    X[keepRows] <- do.call(paste0("p",distFamily),input)
+  }
 
   return(X)
 }
+
+
+#' Fit a gamboostlss paramertirc forecast model
+#'
+#' @param data A \code{data.frame} containing target and explanatory variables. May optionally contain a collumn called "kfold" with numbered/labeled folds and "Test" for test data.
+#' @param formula A formula or list of formulas for differences between formulas for location, scale, shape etc..(see \code{gamboostLSS})
+#' @param families A gamboosLSS family object, which is used to define the distribution and the link functions of the various parameters.
+#' @param parallel \code{boolean} parallelize cross-validation process?
+#' @param pckgs if parallel is TRUE then  specify packages required for each worker (e.g. c("data.table) if data stored as such)
+#' @param ... Additonal arguments passed to \code{gamboostLSS()}.
+#' @return A list of gamboostlss objects corresponsing to kfolds
+#' @export
+Para_gamboostLSS <- function(data,formula,families=GaussianLSS(),parallel = F,cores = NULL,pckgs = NULL,...){
+  
+  # Arrange kfold cross-validation
+  if(is.null(data$kfold)){
+    data$kfold<-1
+  }else{
+    data$kfold[is.na(data$kfold)] <- "Test"
+  }
+  
+  # GAMLSS can't handle NAs...
+  if(sum(is.na(data))>0){
+    warning("NAs in data => data=na.omit(data) passed to gamboostlss().")
+  }
+  
+  modelList <- list()
+  nms <- c()
+  if (is.list(formula)){
+    for (i in 1:length(formula)){
+      nms <- c(nms,all.names(as.formula(as.character(unname(formula[i])))))
+    }
+  } else{
+    nms <- c(nms,all.names(formula))
+  }
+  nmsind <- which(colnames(data)%in%c(nms,"kfold"))
+  tempdata <- na.omit(eval(parse(text=paste0("data[,c(",paste(nmsind,collapse = ","),")]"))))
+  
+  if(parallel){
+    
+    cl <- makeCluster(cores)
+    registerDoSNOW(cl)
+    iterations <- length(unique(tempdata$kfold))
+    pb <- txtProgressBar(max = iterations, style = 3)
+    progress <- function(n) setTxtProgressBar(pb, n)
+    opts <- list(progress = progress)
+    modelList <- foreach(fold = unique(tempdata$kfold),.packages = c("gamboostLSS",pckgs),.options.snow = opts) %dopar% {
+      
+      ### works with both data.table and data.frame
+      temp <- gamboostLSS(data = tempdata[tempdata$kfold!=fold & tempdata$kfold != "Test",],
+                          formula = formula,
+                          families = families,
+                          ...)
+      
+    }
+    close(pb)
+    stopCluster(cl)
+    names(modelList) <- unique(tempdata$kfold)
+    rm(tempdata)
+    
+    return(modelList)
+    
+  } else{
+    ### Training Data: k-fold cross-validation/out-of-sample predictions
+    
+    
+    for(fold in unique(tempdata$kfold)){
+      print(fold)
+      
+      temp <- gamboostLSS(data = tempdata[tempdata$kfold!=fold & tempdata$kfold != "Test",],
+                          formula = formula,
+                          families = families,
+                          ...)
+      
+      modelList[[fold]] <- temp
+      
+    }
+    rm(tempdata)
+    
+    return(modelList)
+    
+    
+  }
+  
+  
+}
+
+
+#' Convert gamboostLSS objects to MultiQR, or alternatively return predicted parameters of predictive distribution.
+#'
+#' @param data A \code{data.frame} containing explanatory variables.
+#' @param models A Para_gamboostLSS object.
+#' @param quantiles Vector of quantiles to be calculated
+#'
+#' @details Details go here...
+#' @return A \code{MultiQR} object derived from gamlss predictive distributions. Alternatively, a matrix condaining the parameters of the predictive gamboostLSS distributions.
+#' @export
+gamboostLSS_2_MultiQR <- function(data,models,quantiles=seq(0.05,0.95,by=0.05),params=F){
+  
+  # Arrange kfold cross-validation
+  if(is.null(data$kfold)){
+    data$kfold<-1
+  }else{
+    data$kfold[is.na(data$kfold)] <- "Test"
+  }
+  
+  data <- as.data.frame(data)
+  # Initialise containers for parameters and quantile forecasts
+  parameters <- matrix(1,nrow=nrow(data),ncol=4)
+  colnames(parameters) <- c("mu", "sigma", "nu", "tau")
+  
+  distFamily <- c()
+  
+  ### current implementation requires all data from gamboost model (don't think you can turn off anyway)
+  # models[[fold]]$mu$baselearner$`bbs(SWH)`$get_names() <----possible alternatives.....
+  # gamb$mu$baselearner$names(gamb$mu$coef())
+  
+  
+  for(fold in unique(data$kfold)){
+    
+    tempdata <- data[,which(colnames(data)%in%c(colnames(attributes(models[[fold]])$data),"kfold"))]
+    
+    # NAs not allowed in newdata. Flags required to record possition.
+    gooddata <- rowSums(is.na(tempdata))==0
+    
+    tempPred <- predict(models[[fold]], newdata = tempdata[data$kfold==fold & gooddata,],type="response")
+    
+    for(i in 1:(length(tempPred))){
+      parameters[data$kfold==fold & gooddata,i] <- tempPred[[i]]
+    }
+    
+    distFamily <- unique(c(distFamily,attributes(attributes(models[[fold]])$families)$name))
+    
+  }
+  
+  if(params){
+    return(parameters)
+  }
+  
+  
+  if(length(distFamily)!=1){stop("length(distFamily)!=1 - Only a single parametric distribution family is allowed.")}
+  
+  myqfun <- attributes(attributes(models[[fold]])$families)$qfun
+  
+  input <- list()
+  if("mu"%in%names(as.list(args(myqfun)))){
+    input$mu=parameters[,1]
+  }
+  if("sigma"%in%names(as.list(args(myqfun)))){
+    input$sigma=parameters[,2]
+  }
+  if("nu"%in%names(as.list(args(myqfun)))){
+    input$nu=parameters[,3]
+  }
+  if("tau"%in%names(as.list(args(myqfun)))){
+    input$tau=parameters[,4]
+  }
+  
+  multipleQuantiles <- matrix(NA,nrow=nrow(data),ncol=length(quantiles))
+  
+  for(i in 1:length(quantiles)){
+    input$p <- quantiles[i]
+    multipleQuantiles[,i] <- do.call(myqfun,input)
+    
+  }
+  
+  colnames(multipleQuantiles) <- paste0("q",100*quantiles)
+  multipleQuantiles <- as.data.frame(multipleQuantiles)
+  class(multipleQuantiles) <- c("MultiQR",class(multipleQuantiles))
+  
+  return(multipleQuantiles)
+  
+  
+}
+
+
+#' Probability integral transform for Para_gamboostLSS objects
+#'
+#' This function produces a fan plot of a MultiQR object.
+#' @param models A Para_gamboostLSS object.
+#' @param data Input data corresponding to \code{qrdata}.
+#' @param dist_fun cumulative distribution function corresponging to families specified in gamboostLSS model (see example).
+#' @param response_name name of response variable in \code{data} object.
+#' @details Details go here...
+#' @return The probability integral transform of \code{data} through the predictive distribution defined by a list of gamboostLSS objects.
+#' @export
+gamboostLSS_2_PIT <- function(models,data,dist_fun,response_name,...){
+  
+  # Arrange kfold cross-validation
+  if(is.null(data$kfold)){
+    if(length(models)!=1){stop("kfold inconsistent with ppd.")}
+    data$kfold<-names(models)
+  }else{
+    data$kfold[is.na(data$kfold)] <- "Test"
+  }
+  
+  data <- as.data.frame(data)
+  
+  distFamily <- c()
+  
+  for(fold in unique(data$kfold)){
+    distFamily <- unique(c(distFamily,attributes(attributes(models[[fold]])$families)$name))
+  }
+  
+  if(length(distFamily)!=1){stop("length(distFamily)!=1 - Only a single parametric distribution family is allowed.")}
+  
+  parameters <- gamboostLSS_2_MultiQR(data=data,models=models,params=T)
+  
+  
+  tempdata <- data[,which(colnames(data)%in%c(colnames(attributes(models[[fold]])$data)))]
+  gooddata <- rowSums(is.na(tempdata))==0
+  
+  input <- list(q=data[[response_name]][gooddata])
+  
+  if("mu"%in%names(as.list(args(dist_fun)))){
+    input$mu=parameters[gooddata,1]
+  }
+  if("sigma"%in%names(as.list(args(dist_fun)))){
+    input$sigma=parameters[gooddata,2]
+  }
+  if("nu"%in%names(as.list(args(dist_fun)))){
+    input$nu=parameters[gooddata,3]
+  }
+  if("tau"%in%names(as.list(args(dist_fun)))){
+    input$tau=parameters[gooddata,4]
+  }
+  
+  X <- rep(NA,nrow(data))
+  X[gooddata] <- do.call(dist_fun,input)
+  
+  
+  return(X)
+}
+
+
+#' Multivariate Gaussian covariance/correlation matrices 
+#'
+#' This function produces a list of Multivariate Gaussian spatial/tempral/spatiotemporal covarance/correlation matrices from PIT transformed variables
+#' @param u_data A dataframe of uniform distributed variables.
+#' @param kfold A vector of kfold identifiers.
+#' @param cov_cor specify either covariance or correlation
+#' @details Details go here...
+#' @return A list of covariance/correlation matrices corresponding to kfold ids
+#' @export
+cov.cor_matrix <- function(u_data,kfold=NULL,cov_cor="covariance",...){
+  
+  ### change to autospecify spatial/spatiotemporal from long format marginals? 
+  if(is.null(kfold)){
+    kfold<- rep(1,nrow(u_data))
+  }
+  
+  g_data <- as.data.frame(sapply(u_data, qnorm))
+  
+  matList <- list()
+  
+  if(cov_cor=="covariance"){
+    
+    for (fold in unique(kfold)) {
+      temp <- cov(x = g_data[kfold!=fold & kfold!="Test", ], ...)
+      matList[[fold]] <- temp
+    }
+    
+  } else {
+    
+    for (fold in unique(kfold)) {
+      temp <- cor(x = g_data[kfold!=fold & kfold!="Test", ], ...)
+      matList[[fold]] <- temp
+    }
+    
+  }
+  
+  return(matList)
+}
+
+
+
+#' Generate multivariate forecasts
+#'
+#' This function produces a list of multivariate scenario forecasts in the marginal domain from the spatial/tempral/spatiotemporal covariance matrices and marginal distributions
+#' @param copulatype Either "spatial" of "temporal", note that spatio-temporal can be generated via "temporal" setting
+#' @param no_samps Number of scenarios required
+#' @details Details go here...
+#' @return A list or data frame of multivariate scenario forecasts
+#' @export
+samps_to_scens <- function(copulatype,no_samps,list_margins,list_sigma,list_mean,control,...){
+  
+  
+  if(length(list_margins)>1){
+    if(all(sapply(lapply(list_margins,nrow), identical, lapply(list_margins,nrow)[[1]]))==FALSE){
+      stop("margins not of equal size")
+    }
+  }
+  
+  if(length(list_margins)>1){
+    if(all(sapply(lapply(list_margins,class), identical, lapply(list_margins,class)[[1]]))==FALSE){
+      stop("multiple margins must be same class for now...")
+    }
+  }
+  
+  
+  
+  if(copulatype=="spatial"){
+    
+    samps <- list()
+    #### loop over no_of folds
+    f_ind <- 1
+    for (i in (unique(control$kfold))){
+      
+      print(i)
+      arg_list <- list(n=no_samps,sigma=list_sigma[[f_ind]],mean=list_mean[[f_ind]],...)
+      
+      #### take no of samples corresponding to no_row in margin
+      kf_samps <- replicate(n=sum(control$kfold==i),expr=t(apply(do.call(eval(parse(text="mvtnorm::rmvnorm")),args=arg_list),1,pnorm)))
+      
+      kf_samps2 <- array(NA,dim = c(dim(kf_samps)[3],dim(kf_samps)[1],length(list_margins)))
+      for (j in 1:length(list_margins)){
+        
+        temp <- kf_samps[,j,]
+        temp<- t(temp)
+        kf_samps2[,,j] <- temp
+        rm(temp)
+      }
+      
+      rm(kf_samps)
+      kf_samps <- kf_samps2
+      rm(kf_samps2)
+      
+      
+      samps[[i]] <- kf_samps
+      rm(kf_samps)
+      f_ind <- f_ind+1
+    }
+  } else{ if (copulatype=="temporal"){
+    
+    
+    samps <- list()
+    #### loop over no_of folds
+    f_ind <- 1
+    for (i in (unique(control$kfold))){
+      
+      print(i)
+      arg_list <- list(n=no_samps,sigma=list_sigma[[f_ind]],mean=list_mean[[f_ind]],...)
+      
+      #### take no of samples corresponding to no_row in margin
+      
+      kf_samps <- replicate(n=length(unique(control$issue_ind[control$kfold==i])),
+                            expr=t(apply(do.call(eval(parse(text="mvtnorm::rmvnorm")),args=arg_list),1,pnorm)))
+      
+      if(length(list_margins)>1){
+        kf_samps2 <- array(NA,dim = c(length(unique(control$issue_ind[control$kfold==i]))*length(unique(control$horiz_ind)),dim(kf_samps)[1],length(list_margins)))
+        kf_ind <- seq(0,ncol(list_sigma[[f_ind]]),length(unique(control$horiz_ind)))
+        for (j in 1:length(list_margins)){
+          
+          temp <- kf_samps[,(kf_ind[j]+1):kf_ind[j+1],]
+          dim(temp) <- c(dim(temp)[1],dim(temp)[2]*dim(temp)[3])
+          temp<- t(temp)
+          kf_samps2[,,j] <- temp
+          rm(temp)
+        }
+        
+        rm(kf_samps)
+        kf_samps<- kf_samps2
+        rm(kf_samps2)
+        
+      } else{
+        
+        dim(kf_samps) <- c(dim(kf_samps)[1],dim(kf_samps)[2]*dim(kf_samps)[3])
+        kf_samps <- t(kf_samps)
+        
+      }
+      
+      
+      samps[[i]] <- kf_samps
+      rm(kf_samps)
+      f_ind <- f_ind+1
+    }
+    
+    
+    ###now remove rows which are not present in marginals....
+    for (i in (unique(control$kfold))){
+      
+      mask_hind <- rep(1:(nrow(samps[[i]])/length(unique(control$issue_ind[control$kfold==i]))),length(unique(control$issue_ind[control$kfold==i])))
+      mask_iind <- rep(1:length(unique(control$issue_ind[control$kfold==i])),length(unique(control$horiz_ind)))
+      mask_iind <- mask_iind[order(mask_iind)]
+      
+      maskdf <- as.data.frame(cbind(mask_iind,mask_hind))
+      
+      hind_m <- unique(control$horiz_ind)
+      hind_m <- hind_m[order(hind_m)]
+      maskdf$mask_hind <- hind_m[maskdf$mask_hind]
+      
+      iind <- control$issue_ind[control$kfold==i]
+      iind_m <- diff(c(0,which(diff(iind)!=0),length(iind)))
+      iind_u <- NULL
+      for (j in 1:length(unique(control$issue_ind[control$kfold==i]))){
+        iind_u <- c(iind_u,rep(j,iind_m[j]))
+      }
+      
+      
+      hind <- control$horiz_ind[control$kfold==i]
+      maskdf2 <- as.data.frame(cbind(mask_iind=iind_u,mask_hind=hind))
+      maskdf2$indy <- 1
+      
+      
+      maskdf <- merge.data.frame(maskdf,maskdf2,all.x = T)
+      maskdf <- maskdf[order(maskdf[,1], maskdf[,2]), ]
+      
+      mask_ind <- which(is.na(maskdf$indy))
+      
+      if (length(list_margins)>1){
+        samps[[i]] <- samps[[i]][-c(mask_ind),,]
+      } else{samps[[i]] <- samps[[i]][-c(mask_ind),]}
+      rm(mask_ind,mask_hind,mask_iind,maskdf,maskdf2,iind,iind_m,iind_u,hind,hind_m)
+      
+      
+    }
+    
+    
+  }else{stop("copula type mis-specified")}}
+  
+  
+  if (length(dim(samps[[1]]))>2){
+    
+    sampstemp <- list()
+    for (i in 1:length(list_margins)){
+      sampstemp[[i]] <- as.data.frame(do.call("rbind",sapply(samps,function(x){(x[,,i])},simplify = "list")))
+    }
+  } else{
+    sampstemp <- list()
+    sampstemp[[1]] <- as.data.frame(do.call("rbind",samps))
+    
+  }
+  
+  
+  ### transform Unifrom Variable into original domain
+  ### add support for PPD
+  if (class(list_margins[[1]])[1]%in%c("MultiQR")){
+    
+    if (length(dim(samps[[1]]))>2){
+      sampsfinal <- list()
+      for (j in 1:length(list_margins)){
+        print(paste0("Transforming samples into original domain --- margin ",j))
+        
+        sampsfinal[[j]] <- as.data.frame(PIT.MultiQR(qrdata=list_margins[[j]],obs=sampstemp[[j]],inverse=TRUE,method=control$PIT_method,tails=control$CDFtails))
+      }
+    } else{
+      
+      print(paste0("Transforming samples into original domain"))
+      
+      sampsfinal <- as.data.frame(PIT.MultiQR(qrdata=list_margins,obs=sampstemp,inverse=TRUE,method=control$PIT_method,tails=control$CDFtails))
+      
+    }
+  } else {
+  
+    
+    if (length(dim(samps[[1]]))>2){
+      sampsfinal <- list()
+      for (j in 1:length(list_margins)){
+        print(paste0("Transforming samples into original domain --- margin ",j))
+        gooddata <- rowSums(is.na(list_margins[[j]]))==0
+        good_params <- list_margins[[j]][gooddata,]
+        good_samps <- as.data.frame(lapply(sampstemp[[j]][gooddata,],function(x){do.call(control$q_fun,as.list(cbind(p=x,good_params)))}))
+        sampsfinal[[j]] <- as.data.frame(matrix(NA,nrow(list_margins[[j]]),ncol = no_samps))
+        sampsfinal[[j]][gooddata,] <- good_samps
+      }
+    } else{
+      
+      print(paste0("Transforming samples into original domain"))
+      
+      gooddata <- rowSums(is.na(list_margins[[1]]))==0
+      good_params <- list_margins[[1]][gooddata,]
+      good_samps <- as.data.frame(lapply(sampstemp[[1]][gooddata,],function(x){do.call(control$q_fun,as.list(cbind(p=x,good_params)))}))
+      sampsfinal <- as.data.frame(matrix(NA,nrow(list_margins[[1]]),ncol = no_samps))
+      sampsfinal[gooddata,] <- good_samps 
+    }
+    
+    
+  }
+  
+  return(sampsfinal)
+  
+  
+}
+
+
