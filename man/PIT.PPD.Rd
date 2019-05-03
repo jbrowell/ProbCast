@@ -4,7 +4,7 @@
 \alias{PIT.PPD}
 \title{Probability integral transform: S3 Method for for PPD}
 \usage{
-\method{PIT}{PPD}(ppd, data, ...)
+\method{PIT}{PPD}(ppd, data, inverse = FALSE, inv_probs, ...)
 }
 \arguments{
 \item{ppd}{A \code{PPD} object.}

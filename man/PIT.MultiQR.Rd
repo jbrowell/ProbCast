@@ -4,7 +4,7 @@
 \alias{PIT.MultiQR}
 \title{Probability integral transform: S3 Method for for MultiQR}
 \usage{
-\method{PIT}{MultiQR}(qrdata, obs, tails, ...)
+\method{PIT}{MultiQR}(qrdata, obs, tails, inverse = FALSE, ...)
 }
 \arguments{
 \item{qrdata}{A \code{MultiQR} object.}
