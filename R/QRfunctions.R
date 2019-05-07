@@ -385,10 +385,10 @@ contCDF <- function(quantiles,kfold=NULL,inverse=F,
     RnomP <- 1
     Rquants <- tails$U
   }else if(tails$method=="interpolate_dtail1"){
-      LnomP <- 0
-      Lquants <- quantiles[which(Probs)==0.5] + tails$L
-      RnomP <- 1
-      Rquants <- quantiles[which(Probs)==0.5] + tails$U
+    LnomP <- 0
+    Lquants <- quantiles[which(Probs==0.5)] + tails$L
+    RnomP <- 1
+    Rquants <- quantiles[which(Probs==0.5)] + tails$U
   }else if(tails$method=="exponential"){
 
     if(is.null(tails$thickparamFunc)){
@@ -418,7 +418,7 @@ contCDF <- function(quantiles,kfold=NULL,inverse=F,
       thickparamFunc <- stepfun(seq(0,1,length.out = tails$nBins+1),y=c(0,thickness,1))
       thicknessP <- thickparamFunc(quantiles[which(Probs==0.5)])
     } else {
-    thicknessP <- tails$thickparamFunc(quantiles[which(Probs==0.5)])
+      thicknessP <- tails$thickparamFunc(quantiles[which(Probs==0.5)])
     }
 
     ### Calculate tails
@@ -725,15 +725,15 @@ PIT.MultiQR <- function(qrdata,obs,tails,inverse=FALSE,reltail=NULL,...){
     X <- matrix(NA,nrow(qrdata),ncol = ncol(obs))
     for(i in 1:nrow(qrdata)){
       if(is.na(qrdata[i,1])){X[i,] <- NA}else{
-           X[i,] <- contCDF(quantiles = qrdata[i,],tails = tails,inverse = TRUE,...)(obs[i,])}
+        X[i,] <- contCDF(quantiles = qrdata[i,],tails = tails,inverse = TRUE,...)(obs[i,])}
     }
   }else{
 
     X<-rep(NA,nrow(qrdata))
     for(i in 1:nrow(qrdata)){
-      if(is.na(obs[i])){X[i] <- NA}else{
-          X[i] <- contCDF(quantiles = qrdata[i,],tails = tails,...)(obs[i])
-        }
+      if(is.na(obs[i]) | is.na(sum(qrdata[i,]))){X[i] <- NA}else{
+        X[i] <- contCDF(quantiles = qrdata[i,],tails = tails,...)(obs[i])
+      }
     }
 
   }
@@ -1042,11 +1042,11 @@ gamboostLSS_2_PIT <- function(models,data,dist_fun,response_name,...){
 #' @details Details go here...
 #' @return A list of covariance/correlation matrices corresponding to kfold ids
 #' @export
-cov.cor_matrix <- function(u_data,kfold=NULL,cov_cor="covariance",...){
+cov.cor_matrix <- function(u_data,kfold=NULL,cov_cor="covariance",use="pairwise.complete.obs",...){
 
   ### change to autospecify spatial/spatiotemporal from long format marginals?
   if(is.null(kfold)){
-    kfold<- rep(1,nrow(u_data))
+    kfold <- rep(1,nrow(u_data))
   }
 
   g_data <- as.data.frame(sapply(u_data, qnorm))
@@ -1056,14 +1056,22 @@ cov.cor_matrix <- function(u_data,kfold=NULL,cov_cor="covariance",...){
   if(cov_cor=="covariance"){
 
     for (fold in unique(kfold)) {
-      temp <- cov(x = g_data[kfold!=fold & kfold!="Test", ], ...)
+      if(length(unique(kfold))>1){
+        temp <- cov(x = g_data[kfold!=fold & kfold!="Test", ], use=use,...)
+      }else{
+        temp <- cov(x = g_data, use=use,...)
+      }
       matList[[fold]] <- temp
     }
 
   } else {
 
     for (fold in unique(kfold)) {
-      temp <- cor(x = g_data[kfold!=fold & kfold!="Test", ], ...)
+      if(length(unique(kfold))>1){
+        temp <- cor(x = g_data[kfold!=fold & kfold!="Test", ], use=use,...)
+      }else{
+        temp <- cor(x = g_data, use=use,...)
+      }
       matList[[fold]] <- temp
     }
 
