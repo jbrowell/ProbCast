@@ -8,16 +8,16 @@ require(roxygen2)
 require(rstudioapi)
 
 PackagePath <- dirname(getActiveDocumentContext()$path)
-setwd(PackagePath)
-
 # Install from local repository
 install(PackagePath)
 # Update package documentation
 document(pkg = ".")
-
-
+# Load Package
 require(ProbCast)
 
+
+
+setwd(PackagePath)
 ### Testing Functionalisty of StrathCast #####
 
 ## Add some features first...
