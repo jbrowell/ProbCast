@@ -107,24 +107,24 @@ MQR_gbm <- function(data,
       opts <- list(progress = progress)
 
       # fit each quantiel model change parameters for CV results
-      
+
       qpred <- foreach(fold = unique(data$kfold),.packages = c("gbm",pckgs),.options.snow = opts) %dopar% {
-        
+
         ### Fit gbm model
         temp_gbm <- do.call(gbm,c(list(formula=formula,data=data[data$kfold!=fold & data$kfold!="Test" & !is.na(data[[formula[[2]]]]),],distribution = list(name="quantile",alpha=q)),gbm_params))
 
-        
+
         ### Save out-of-sample predictions
         if(is.null(pred_ntree)){
         predict.gbm(temp_gbm,
                     newdata = data[data$kfold==fold,],
                     n.trees = gbm.perf(temp_gbm,plot.it = perf.plot))
         } else{
-          
+
           predict.gbm(temp_gbm,
                       newdata = data[data$kfold==fold,],
                       n.trees = pred_ntree)
-          
+
         }
 
 
@@ -132,13 +132,13 @@ MQR_gbm <- function(data,
 
       close(pb)
       stopCluster(cl)
-      
+
       names(qpred) <- unique(data$kfold)
-      
+
       for(fold in unique(data$kfold)){# Loop over CV folds and test data
-        
+
         predqs[[paste0("q",100*q)]][data$kfold==fold] <- qpred[[fold]]
-        
+
       }
     }
 
@@ -158,13 +158,13 @@ MQR_gbm <- function(data,
                                                                        newdata = data[data$kfold==fold,],
                                                                        n.trees = gbm.perf(temp_gbm,plot.it = perf.plot))
         } else{
-          
+
           predqs[[paste0("q",100*q)]][data$kfold==fold] <- predict.gbm(temp_gbm,
                                                                        newdata = data[data$kfold==fold,],
                                                                        n.trees = pred_ntree)
-          
+
         }
-        
+
         ### Store some performance data?
 
       }
@@ -1255,17 +1255,17 @@ samps_to_scens <- function(copulatype,no_samps,list_margins,list_sigma,list_mean
     for (i in 1:length(list_margins)){
       sampstemp[[i]] <- as.data.frame(matrix(NA,nrow = length(control$kfold),ncol = no_samps))
       for (j in (unique(control$kfold))){
-        
+
         sampstemp[[i]][control$kfold==j,] <- samps[[j]][,,i]
       }
     }
   } else{
     sampstemp <- as.data.frame(matrix(NA,nrow = length(control$kfold),ncol = no_samps))
     for (j in (unique(control$kfold))){
-      
+
       sampstemp[control$kfold==j,] <- samps[[j]]
     }
-    
+
   }
 
 
