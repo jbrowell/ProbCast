@@ -690,12 +690,11 @@ PIT <- function(distdata,...) {
 #' @param qrdata A \code{MultiQR} object.
 #' @param obs A vector of observations corresponding to \code{qrdata}.
 #' @param tails A list of arguments passed to \code{condCDF} defining the tails of the CDF
-#' @param reltail A list of arguments to adjust upper and lower tail limits relative to
 #' @param ... Additional arguments passed to \code{condCDF}.
 #' @details Details go here...
 #' @return The probability integral transform of \code{obs} through the predictive distribution defined by \code{qrdata} and interpolation scheme in \code{contCDF}.
 #' @export
-PIT.MultiQR <- function(qrdata,obs,tails,inverse=FALSE,reltail=NULL,...){
+PIT.MultiQR <- function(qrdata,obs,tails,inverse=FALSE,...){
 
   # if(length(obs)!=nrow(qrdata)){stop("length(obs)!=nrow(qrdata)")}
 

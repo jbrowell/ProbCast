@@ -1,7 +1,3 @@
-<<<<<<< HEAD
-
-=======
->>>>>>> b4d0d0ab6130ce8f79079a719cb1b95bad390f7a
 ### StrathCast Extended Example
 require(devtools)
 require(roxygen2)
