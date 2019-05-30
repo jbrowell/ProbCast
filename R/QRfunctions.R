@@ -105,9 +105,9 @@ MQR_gbm <- function(data,
       opts <- list(progress = progress)
 
       # fit each quantiel model change parameters for CV results
-
-      qpred <- foreach(fold = unique(data$kfold),.packages = c("gbm",pckgs),.options.snow = opts,.combine=c) %dopar% {
-
+      
+      qpred <- foreach(fold = unique(data$kfold),.packages = c("gbm",pckgs),.options.snow = opts) %dopar% {
+        
         ### Fit gbm model
         temp_gbm <- do.call(gbm,c(list(formula=formula,data=data[data$kfold!=fold & data$kfold!="Test" & !is.na(data[[formula[[2]]]]),],distribution = list(name="quantile",alpha=q)),gbm_params))
 
@@ -121,8 +121,14 @@ MQR_gbm <- function(data,
 
       close(pb)
       stopCluster(cl)
-
-      predqs[[paste0("q",100*q)]] <- qpred
+      
+      names(qpred) <- unique(data$kfold)
+      
+      for(fold in unique(data$kfold)){# Loop over CV folds and test data
+        
+        predqs[[paste0("q",100*q)]][data$kfold==fold] <- qpred[[fold]]
+        
+      }
     }
 
 
@@ -411,7 +417,7 @@ contCDF <- function(quantiles,kfold=NULL,inverse=F,
       # }
 
       thickness <- rep(NA,tails$nBins)
-      targetquants <- stats::quantile(tails$targetvar,probs = seq(0, 1, 1/tails$nBins))
+      targetquants <- stats::quantile(tails$targetvar,probs = seq(0, 1, 1/tails$nBins),na.rm=T)
       for(i in 1:tails$nBins){
         thickness[i] <- mean(tails$targetvar[which(tails$preds$q50>=targetquants[i] & tails$preds$q50<targetquants[i+1])],na.rm = T)
       }
@@ -684,12 +690,11 @@ PIT <- function(distdata,...) {
 #' @param qrdata A \code{MultiQR} object.
 #' @param obs A vector of observations corresponding to \code{qrdata}.
 #' @param tails A list of arguments passed to \code{condCDF} defining the tails of the CDF
-#' @param reltail A list of arguments to adjust upper and lower tail limits relative to
 #' @param ... Additional arguments passed to \code{condCDF}.
 #' @details Details go here...
 #' @return The probability integral transform of \code{obs} through the predictive distribution defined by \code{qrdata} and interpolation scheme in \code{contCDF}.
 #' @export
-PIT.MultiQR <- function(qrdata,obs,tails,inverse=FALSE,reltail=NULL,...){
+PIT.MultiQR <- function(qrdata,obs,tails,inverse=FALSE,...){
 
   # if(length(obs)!=nrow(qrdata)){stop("length(obs)!=nrow(qrdata)")}
 
@@ -712,7 +717,7 @@ PIT.MultiQR <- function(qrdata,obs,tails,inverse=FALSE,reltail=NULL,...){
     # }
 
     thickness <- rep(NA,tails$nBins)
-    targetquants <- stats::quantile(tails$targetvar,probs = seq(0, 1, 1/tails$nBins))
+    targetquants <- stats::quantile(tails$targetvar,probs = seq(0, 1, 1/tails$nBins),na.rm=T)
     for(i in 1:tails$nBins){
       thickness[i] <- mean(tails$targetvar[which(qrdata$q50>=targetquants[i] & qrdata$q50<targetquants[i+1])],na.rm = T)
     }
@@ -1228,15 +1233,21 @@ samps_to_scens <- function(copulatype,no_samps,list_margins,list_sigma,list_mean
 
 
   if (length(dim(samps[[1]]))>2){
-
     sampstemp <- list()
     for (i in 1:length(list_margins)){
-      sampstemp[[i]] <- as.data.frame(do.call("rbind",sapply(samps,function(x){(x[,,i])},simplify = "list")))
+      sampstemp[[i]] <- as.data.frame(matrix(NA,nrow = length(control$kfold),ncol = no_samps))
+      for (j in (unique(control$kfold))){
+        
+        sampstemp[[i]][control$kfold==j,] <- samps[[j]][,,i]
+      }
     }
   } else{
-    sampstemp <- list()
-    sampstemp[[1]] <- as.data.frame(do.call("rbind",samps))
-
+    sampstemp <- as.data.frame(matrix(NA,nrow = length(control$kfold),ncol = no_samps))
+    for (j in (unique(control$kfold))){
+      
+      sampstemp[control$kfold==j,] <- samps[[j]]
+    }
+    
   }
 
 
@@ -1277,7 +1288,7 @@ samps_to_scens <- function(copulatype,no_samps,list_margins,list_sigma,list_mean
 
       gooddata <- rowSums(is.na(list_margins[[1]]))==0
       good_params <- list_margins[[1]][gooddata,]
-      good_samps <- as.data.frame(lapply(sampstemp[[1]][gooddata,],function(x){do.call(control$q_fun,as.list(cbind(p=x,good_params)))}))
+      good_samps <- as.data.frame(lapply(sampstemp[gooddata,],function(x){do.call(control$q_fun,as.list(cbind(p=x,good_params)))}))
       sampsfinal <- as.data.frame(matrix(NA,nrow(list_margins[[1]]),ncol = no_samps))
       sampsfinal[gooddata,] <- good_samps
     }
