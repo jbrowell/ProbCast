@@ -6,7 +6,6 @@
 \usage{
 \method{PIT}{MultiQR}(qrdata, obs, tails, inverse = FALSE,
   reltail = NULL, ...)
-}
 \arguments{
 \item{qrdata}{A \code{MultiQR} object.}
 
