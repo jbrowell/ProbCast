@@ -4,10 +4,10 @@ require(roxygen2)
 require(rstudioapi)
 
 PackagePath <- dirname(getActiveDocumentContext()$path)
-# Install from local repository
-install(PackagePath)
 # Update package documentation
 document(pkg = ".")
+# Install from local repository
+install(PackagePath)
 # Load Package
 require(ProbCast)
 
@@ -77,7 +77,8 @@ cdf <- contCDF(quantiles = test1$gbm_mqr[index,],kfold = NA,method = "spline", t
 lines(cdf(seq(0,1,by=0.001)),lty=3,col=3)
 
 
-test1$X_gbm <- PIT(test1$gbm_mqr,test1$data$TARGETVAR,method = "linear",tails=list(method="exponential",L=0,U=1,nBins=5,preds=test1$gbm_mqr,targetvar=test1$data$TARGETVAR,ntailpoints=25))
+# test1$X_gbm <- PIT(test1$gbm_mqr,test1$data$TARGETVAR,method = "linear",tails=list(method="exponential",L=0,U=1,nBins=5,preds=test1$gbm_mqr,targetvar=test1$data$TARGETVAR,ntailpoints=25))
+test1$X_gbm <- PIT(test1$gbm_mqr,test1$data$TARGETVAR,method = "linear",tails=list(method="interpolate",L=0,U=1))
 hist(test1$X_gbm,breaks = 100,freq=F)
 
 ### Parametric PredDist Using GAMLSS ####

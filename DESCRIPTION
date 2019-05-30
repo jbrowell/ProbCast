@@ -7,4 +7,4 @@ Depends: R (>= 3.5.0), gbm, gamlss, foreach, parallel, doSNOW, gamboostLSS
 License: BSD_3_clause
 Encoding: UTF-8
 LazyData: true
-RoxygenNote: 6.1.1
+RoxygenNote: 6.1.0
