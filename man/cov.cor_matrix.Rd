@@ -4,7 +4,8 @@
 \alias{cov.cor_matrix}
 \title{Multivariate Gaussian covariance/correlation matrices}
 \usage{
-cov.cor_matrix(u_data, kfold = NULL, cov_cor = "covariance", ...)
+cov.cor_matrix(u_data, kfold = NULL, cov_cor = "covariance",
+  use = "pairwise.complete.obs", ...)
 }
 \arguments{
 \item{u_data}{A dataframe of uniform distributed variables.}
