@@ -41,6 +41,7 @@ SortQuantiles <- function(data,Limits=NULL){
 #' @param gbm_params List of parameters to be passed to \code{fit.gbm()}.
 #' @param CVfolds Control for cross-validation if not supplied in \code{data}.
 #' @param perf.plot Plot GBM performance?
+#' @param pred_ntree predict using a user-specified tree, if unspecified an out-of-the bag estimate will be used
 #' @param parallel \code{boolean} parallelize cross-validation process?
 #' @param pckgs if parallel is TRUE then  specify packages required for each worker (e.g. c("data.table) if data stored as such)
 #' @param cores if parallel is TRUE then number of available cores
@@ -63,6 +64,7 @@ MQR_gbm <- function(data,
                                     keep.data = F),
                     perf.plot=F,
                     parallel = F,
+                    pred_ntree = NULL,
                     cores = NULL,
                     pckgs = NULL,
                     Sort=T,SortLimits=NULL){
@@ -111,10 +113,19 @@ MQR_gbm <- function(data,
         ### Fit gbm model
         temp_gbm <- do.call(gbm,c(list(formula=formula,data=data[data$kfold!=fold & data$kfold!="Test" & !is.na(data[[formula[[2]]]]),],distribution = list(name="quantile",alpha=q)),gbm_params))
 
+        
         ### Save out-of-sample predictions
+        if(is.null(pred_ntree)){
         predict.gbm(temp_gbm,
                     newdata = data[data$kfold==fold,],
                     n.trees = gbm.perf(temp_gbm,plot.it = perf.plot))
+        } else{
+          
+          predict.gbm(temp_gbm,
+                      newdata = data[data$kfold==fold,],
+                      n.trees = pred_ntree)
+          
+        }
 
 
       }
@@ -142,11 +153,18 @@ MQR_gbm <- function(data,
         temp_gbm <- do.call(gbm,c(list(formula=formula,data=data[data$kfold!=fold & data$kfold!="Test" & !is.na(data[[formula[[2]]]]),],distribution = list(name="quantile",alpha=q)),gbm_params))
 
         ### Save out-of-sample predictions
-        predqs[[paste0("q",100*q)]][data$kfold==fold] <- predict.gbm(temp_gbm,
-                                                                     newdata = data[data$kfold==fold,],
-                                                                     n.trees = gbm.perf(temp_gbm,plot.it = perf.plot))
-
-
+        if(is.null(pred_ntree)){
+          predqs[[paste0("q",100*q)]][data$kfold==fold] <- predict.gbm(temp_gbm,
+                                                                       newdata = data[data$kfold==fold,],
+                                                                       n.trees = gbm.perf(temp_gbm,plot.it = perf.plot))
+        } else{
+          
+          predqs[[paste0("q",100*q)]][data$kfold==fold] <- predict.gbm(temp_gbm,
+                                                                       newdata = data[data$kfold==fold,],
+                                                                       n.trees = pred_ntree)
+          
+        }
+        
         ### Store some performance data?
 
       }

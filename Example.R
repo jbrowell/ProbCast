@@ -37,7 +37,7 @@ test1$gbm_mqr <- MQR_gbm(data = test1$data,
                                                         n.minobsinnode = 20,
                                                         bag.fraction = 0.5,
                                                         keep.data = F),
-                          quantiles = seq(0.1,0.9,by=0.1),Sort = T,SortLimits = list(U=0.999,L=0.001))
+                          quantiles = seq(0.1,0.9,by=0.1),Sort = T,SortLimits = list(U=0.999,L=0.001),pred_ntree=1000)
 
 plot(test1$gbm_mqr[1:240,],xlab="Time Index",ylab="Power")
 lines(test1$data$TARGETVAR[1:240])

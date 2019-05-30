@@ -7,8 +7,8 @@
 MQR_gbm(data, formula, quantiles = c(0.25, 0.5, 0.75), CVfolds = NULL,
   gbm_params = list(interaction.depth = 4, n.trees = 500, shrinkage =
   0.25, cv.folds = 1, n.minobsinnode = 15, bag.fraction = 0.5, keep.data =
-  F), perf.plot = F, parallel = F, cores = NULL, pckgs = NULL,
-  Sort = T, SortLimits = NULL)
+  F), perf.plot = F, parallel = F, pred_ntree = NULL, cores = NULL,
+  pckgs = NULL, Sort = T, SortLimits = NULL)
 }
 \arguments{
 \item{data}{A \code{data.frame} containing target and explanatory variables. May optionally contain a collumn called "kfold" with numbered/labeled folds and "Test" for test data.}
@@ -22,6 +22,8 @@ MQR_gbm(data, formula, quantiles = c(0.25, 0.5, 0.75), CVfolds = NULL,
 \item{perf.plot}{Plot GBM performance?}
 
 \item{parallel}{\code{boolean} parallelize cross-validation process?}
+
+\item{pred_ntree}{predict using a user-specified tree, if unspecified an out-of-the bag estimate will be used}
 
 \item{cores}{if parallel is TRUE then number of available cores}
 
