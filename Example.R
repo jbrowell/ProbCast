@@ -29,15 +29,33 @@ Wind$kfold <- c(rep(c("fold1","fold2"),each=6000),rep("Test",nrow(Wind)-12000))
 test1<-list(data=Wind)
 
 test1$gbm_mqr <- MQR_gbm(data = test1$data,
-                          formula = TARGETVAR~U100+V100+U10+V10+(sqrt((U100^2+V100^2))),
-                          CVfolds = 2,gbm_params = list(interaction.depth = 3,
+                         formula = TARGETVAR~U100+V100+U10+V10+(sqrt((U100^2+V100^2))),
+                         gbm_params = list(interaction.depth = 3,
                                                         n.trees = 1000,
                                                         shrinkage = 0.05,
                                                         cv.folds = 0,
                                                         n.minobsinnode = 20,
                                                         bag.fraction = 0.5,
                                                         keep.data = F),
-                          quantiles = seq(0.1,0.9,by=0.1),Sort = T,SortLimits = list(U=0.999,L=0.001),pred_ntree=1000)
+                         quantiles = seq(0.1,0.9,by=0.1),
+                         Sort = T,
+                         SortLimits = list(U=0.999,L=0.001))
+
+test1$gbm_mqr <- MQR_gbm(data = test1$data,
+                         formula = TARGETVAR~U100+V100+U10+V10+(sqrt((U100^2+V100^2))),
+                         gbm_params = list(interaction.depth = 3,
+                                           n.trees = 1000,
+                                           shrinkage = 0.05,
+                                           cv.folds = 0,
+                                           n.minobsinnode = 20,
+                                           bag.fraction = 0.5,
+                                           keep.data = F),
+                         parallel = T,
+                         cores = 3,
+                         quantiles = seq(0.1,0.9,by=0.1),
+                         Sort = T,
+                         SortLimits = list(U=0.999,L=0.001))
+
 
 plot(test1$gbm_mqr[1:240,],xlab="Time Index",ylab="Power")
 lines(test1$data$TARGETVAR[1:240])
