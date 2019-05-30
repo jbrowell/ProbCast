@@ -7,4 +7,4 @@ See package documentation for details. A vignette will be produced in due course
 Contributors should follow the following guidelines:
 - Open new branches when adding new functinoality, or making changes to exisig functions
 - Use rogygen to include documentation with each new function. Include helpful notes on all inputs, outputs, and wokrings of the function
-- Add @author to new functions that you have "ownership" of
+- Add yourself as @author to functions that you have "ownership" of
