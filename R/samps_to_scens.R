@@ -20,7 +20,7 @@
 #' 
 #' \dontrun{
 #'temp <- samps_to_scens(copulatype = "temporal",no_samps = 100,list_margins = list(mqr_gbm),list_sigma = par_cvm,list_mean = mean_vec,
-#'                       control=list(kfold = ForecastData$kfold,issue_ind=ForecastData$issueTime,horiz_ind=horiz_ind=ForecastData$Horizon,
+#'                       control=list(kfold = ForecastData$kfold,issue_ind=ForecastData$issueTime,horiz_ind=ForecastData$Horizon,
 #'                                    PIT_method="linear",CDFtails=list(method="interpolate",L=0,U=1)))
 #' }
 #' @export
