@@ -5,7 +5,7 @@
 #' @param no_samps Number of scenarios required
 #' @param list_margins a list of the margins of the copula - e.g. if class is MultiQR --> list(<<MultiQR object>>). Multiple margins are allowed. If parametric class supply a list of the distribution parameters
 #' @param list_sigma list of the covariance matrices corresponding to each fold
-#' @param list_sigma list of the mean vectors corresponding to each fold
+#' @param list_mean list of the mean vectors corresponding to each fold
 #' @param control a list of control parameters, should contain "kfold", "issue_ind", and "horiz_ind" which are the kfold, issue time, and time horizon vectors corresponding to the margins of the copula. If margins MultiQR class also pass "PIT_method" and "CDFtails", which are passed to the PIT function. If the margins are distribution parameter predictions then the user must define "q_fun", which transforms the columns of \code{list_margins} through the quantile function --- see example for more details. 
 #' @param ... other parameters to be passed to mvtnorm::rmvnorm
 #' @details Details go here...
