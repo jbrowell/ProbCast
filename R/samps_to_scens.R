@@ -161,7 +161,6 @@ samps_to_scens <- function(copulatype,no_samps,list_margins,list_sigma,list_mean
     
   }
   
-  
   ### transform Unifrom Variable into original domain
   ### add support for PPD
   if (class(list_margins[[1]])[1]%in%c("MultiQR")){
@@ -177,7 +176,7 @@ samps_to_scens <- function(copulatype,no_samps,list_margins,list_sigma,list_mean
       
       print(paste0("Transforming samples into original domain"))
       
-      sampsfinal <- as.data.frame(PIT.MultiQR(qrdata=list_margins,obs=sampstemp,inverse=TRUE,method=control$PIT_method,tails=control$CDFtails))
+      sampsfinal <- as.data.frame(PIT.MultiQR(qrdata=list_margins[[1]],obs=sampstemp,inverse=TRUE,method=control$PIT_method,tails=control$CDFtails))
       
     }
   } else {
