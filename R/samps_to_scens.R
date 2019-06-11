@@ -6,10 +6,23 @@
 #' @param list_margins a list of the margins of the copula - e.g. if class is MultiQR --> list(<<MultiQR object>>). Multiple margins are allowed. If parametric class supply a list of the distribution parameters
 #' @param list_sigma list of the covariance matrices corresponding to each fold
 #' @param list_sigma list of the mean vectors corresponding to each fold
-#' @param control a list of control parameters, should contain "kfold", "issue_ind", and "horiz_ind" which are the kfold, issue time, and time horizon vectors corresponding to the margins of the copula. If margins MultiQR class also pass "PIT_method" and "CDFtails", which are passed to the PIT function. If the margins are distribution parameter predictions then the user must define "q_fun", which is the quantile function of the parametric dirtibution 
+#' @param control a list of control parameters, should contain "kfold", "issue_ind", and "horiz_ind" which are the kfold, issue time, and time horizon vectors corresponding to the margins of the copula. If margins MultiQR class also pass "PIT_method" and "CDFtails", which are passed to the PIT function. If the margins are distribution parameter predictions then the user must define "q_fun", which transforms the columns of \code{list_margins} through the quantile function --- see example for more details. 
 #' @param ... other parameters to be passed to mvtnorm::rmvnorm
 #' @details Details go here...
 #' @return A list or data frame of multivariate scenario forecasts
+#' @examples
+#' \dontrun{
+#' temp <- samps_to_scens(copulatype = "temporal",no_samps = 100,list_margins = list(param_margins),list_sigma = b_cvm,list_mean = mean_vec,
+#'                        control=list(kfold = ForecastData$kfold,issue_ind=ForecastData$issueTime,horiz_ind=ForecastData$Horizon,
+#'                                     q_fun = function(p, mu = 0, sigma = 1, nu = 1, tau = 0.5, lower.tail = TRUE, log.p = FALSE){
+#'                                     gamlss.dist::qGB2(p = p, mu = mu, sigma = sigma, nu = nu, tau = tau,  lower.tail = lower.tail,log.p = log.p)}))
+#' }
+#' 
+#' \dontrun{
+#'temp <- samps_to_scens(copulatype = "temporal",no_samps = 100,list_margins = list(mqr_gbm),list_sigma = par_cvm,list_mean = mean_vec,
+#'                       control=list(kfold = ForecastData$kfold,issue_ind=ForecastData$issueTime,horiz_ind=horiz_ind=ForecastData$Horizon,
+#'                                    PIT_method="linear",CDFtails=list(method="interpolate",L=0,U=1)))
+#' }
 #' @export
 samps_to_scens <- function(copulatype,no_samps,list_margins,list_sigma,list_mean,control,...){
   
