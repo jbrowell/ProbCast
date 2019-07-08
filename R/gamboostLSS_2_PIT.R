@@ -34,23 +34,11 @@ gamboostLSS_2_PIT <- function(models,data,dist_fun,response_name,...){
   tempdata <- data[,which(colnames(data)%in%c(colnames(attributes(models[[fold]])$data)))]
   gooddata <- rowSums(is.na(tempdata))==0
   
-  input <- list(q=data[[response_name]][gooddata])
+  parameters <- data.frame(parameters)
+  parameters$q <-  data[[response_name]]
   
-  if("mu"%in%names(as.list(args(dist_fun)))){
-    input$mu=parameters[gooddata,1]
-  }
-  if("sigma"%in%names(as.list(args(dist_fun)))){
-    input$sigma=parameters[gooddata,2]
-  }
-  if("nu"%in%names(as.list(args(dist_fun)))){
-    input$nu=parameters[gooddata,3]
-  }
-  if("tau"%in%names(as.list(args(dist_fun)))){
-    input$tau=parameters[gooddata,4]
-  }
-  
-  X <- rep(NA,nrow(data))
-  X[gooddata] <- do.call(dist_fun,input)
+  X <- rep(NA, nrow(data))
+  X[gooddata] <- do.call(dist_fun, parameters[gooddata,])
   
   
   return(X)
