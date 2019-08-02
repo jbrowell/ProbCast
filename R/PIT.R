@@ -1,7 +1,9 @@
 #' Probability integral transform: S3 Generic Method
 #'
-#' @param distdata An object defining cumulative distributions functions. Currently supported: \code{MultiQR}.
+#' @param distdata An object defining cumulative distributions functions. Currently supported: \code{MultiQR} and \code{PPD}.
 #' @param ... Additional arguments.
+#' @details This is an S3 method, see spcific methods for details on functionality.
+#' @return The Probability integral transform (or its invers) of data through distributions specified by \code{distdata}.
 #' @export
 PIT <- function(distdata,...) {
   UseMethod("PIT",distdata)
