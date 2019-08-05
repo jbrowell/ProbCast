@@ -6,10 +6,10 @@ require(rstudioapi)
 PackagePath <- dirname(getActiveDocumentContext()$path)
 setwd(PackagePath)
 
-# Install from local repository
-install(PackagePath)
 # Update package documentation
 document(pkg = ".")
+# Install from local repository
+install(PackagePath)
 # Load Package
 require(ProbCast)
 
