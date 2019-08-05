@@ -105,11 +105,13 @@ contCDF <- function(quantiles,kfold=NULL,inverse=F,
   
   
   ### Options: approxfun, splinefun
-  if(method=="spline"){
-    method <- list(name="spline",splinemethod="monoH.FC")
-  }else if(method=="linear"){
-    method <- list(name="linear")
-  }else{stop("Interpolation method not recognised.")}
+  if(length(method)==1){
+    if(method=="spline"){
+      method <- list(name="spline",splinemethod="monoH.FC")
+    }else if(method=="linear"){
+      method <- list(name="linear")
+    }else{stop("Interpolation method not recognised.")}
+  }
   
   if(method$name=="linear"){
     if(!inverse){
