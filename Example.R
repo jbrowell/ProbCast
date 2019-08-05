@@ -4,10 +4,12 @@ require(roxygen2)
 require(rstudioapi)
 
 PackagePath <- dirname(getActiveDocumentContext()$path)
-# Update package documentation
-document(pkg = ".")
+setwd(PackagePath)
+
 # Install from local repository
 install(PackagePath)
+# Update package documentation
+document(pkg = ".")
 # Load Package
 require(ProbCast)
 

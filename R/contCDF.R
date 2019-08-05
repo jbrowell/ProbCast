@@ -4,14 +4,13 @@
 #' @param quantiles A single-row \code{MultiQR} object.
 #' @param kfolds Fold/test label corresponding to \code{quantiles}.
 #' @param method Method of interpolation. If \code{method="linear"} linear interpolation is used between quantiles. For spline interpolation, \code{method=list(name=spline,splinemethod)}, where spline method is passed to \code{splinefun}.
-#' @param tails Method for tails...
+#' @param tails Method for tails, this must be defined as a list with other control parameters. Default is linear interpolation of tails when \code{method="interpolate} with boundaries at \code{L=0} and \code={U=1}. Exponential tails can be specified through \code{method="exponential"}, the user will either supply user defined thickness parameters for the tail via \code{thicknessPL} and \code{thicknessPR}, otherwise a symetrical tail thickness can be defined data-driven by specifying: number of bins \code{nbins}, a MQR object \code{preds}, and the target variable, \code{targetvar}. The number of interpolation points for the exponential can be defined via \code{ntailpoints}. 
 #' @details Details go here...
 #' @return A cumulative densift function
 #' @export
 contCDF <- function(quantiles,kfold=NULL,inverse=F,
                     method=list(name="spline",splinemethod="monoH.FC"),
-                    tails=list(method="interpolate",
-                               L=0,U=1)){
+                    tails=list(method="interpolate",L=0,U=1)){
   ### TESTING
   # quantiles = test1$pred_mqr[500,]
   # inverse=F
@@ -24,10 +23,6 @@ contCDF <- function(quantiles,kfold=NULL,inverse=F,
   #            ntailpoints=5)
   # kfold=NA
   
-  
-  # rm(quantiles,inverse,tails,method,LnomP,Lquants,Probs,RnomP,Rquants,kfold,i,train,test,thickparamFunc,thickness,thicknessP)
-  
-  ###
   
   ### Quantiles
   if(nrow(quantiles)!=1){stop("quantiles must be a single-row MultiQR object.")}
@@ -47,58 +42,65 @@ contCDF <- function(quantiles,kfold=NULL,inverse=F,
     Rquants <- quantiles[which(Probs==0.5)] + tails$U
   }else if(tails$method=="exponential"){
     
-    if(is.null(tails$thickparamFunc)){
-      if(!0.5%in%Probs){stop("q50 required for exponential tails.")}
+    if(!is.null(tails$thicknessPL) & !is.null(tails$thicknessPR)){
       
-      print("single CDF with exponential tails specified")
       
-      ##introduce kfold CV into here for defining thickness parameter....
+      if(tails$thicknessPL>=min(Probs)){stop("thicknessPL has to be less than min(Probs)")}
+      if(tails$thicknessPR>=min(Probs)){stop("thicknessPR has to be less than min(Probs)")}
+      if(is.null(tails$ntailpoints)){tails$ntailpoints <- 5}
       
-      # if(!0.5%in%Probs){stop("q50 required for exponential tails.")}
-      # if(is.null(tails$DATA$kfold)){tails$DATA$kfold<-rep(1,nrow(tails$DATA))}
-      #
-      # ### Calculate Thickness parameters (kfold and test data accounted for)
-      # if(!is.na(kfold)){
-      #   train <- tails$DATA$kfold==kfold
-      #   test <- tails$DATA$kfold!=kfold & !is.na(tails$DATA$kfold)
-      # }else{
-      #   train <- !is.na(tails$DATA$kfold)
-      #   test <- is.na(tails$DATA$kfold)
-      # }
+      # Left Tail
+      Lquants <- seq(tails$L+min(quantiles)/tails$ntailpoints,by=min(quantiles)/tails$ntailpoints,length.out = tails$ntailpoints-1)
+      LnomP <- tails$thicknessPL*exp((Lquants/min(quantiles))*log(min(Probs)/tails$thicknessPL))
+      Lquants <- c(tails$L,Lquants)
+      LnomP<-c(0,LnomP)
+      # Right Tail
+      Rquants <- rev(tails$U-seq((1-max(quantiles))/tails$ntailpoints,by=(1-max(quantiles))/tails$ntailpoints,length.out = tails$ntailpoints-1))
+      RnomP <- 1-tails$thicknessPR*exp(((1-Rquants)/(1-max(quantiles)))*log((1-max(Probs))/tails$thicknessPR))
+      Rquants <- c(Rquants,tails$U)
+      RnomP<-c(RnomP,1)
       
-      thickness <- rep(NA,tails$nBins)
-      targetquants <- stats::quantile(tails$targetvar,probs = seq(0, 1, 1/tails$nBins),na.rm=T)
-      for(i in 1:tails$nBins){
-        thickness[i] <- mean(tails$targetvar[which(tails$preds$q50>=targetquants[i] & tails$preds$q50<targetquants[i+1])],na.rm = T)
+    } else{
+      if(is.null(tails$thickparamFunc)){
+        if(!0.5%in%Probs){stop("q50 required for exponential tails.")}
+        
+        print("single CDF with exponential tails specified")
+        
+        ##introduce kfold CV into here for defining thickness parameter....
+        
+        thickness <- rep(NA,tails$nBins)
+        targetquants <- stats::quantile(tails$targetvar,probs = seq(0, 1, 1/tails$nBins),na.rm=T)
+        for(i in 1:tails$nBins){
+          thickness[i] <- mean(tails$targetvar[which(tails$preds$q50>=targetquants[i] & tails$preds$q50<targetquants[i+1])],na.rm = T)
+        }
+        thickparamFunc <- stepfun(seq(0,1,length.out = tails$nBins+1),y=c(0,thickness,1))
+        thicknessP <- thickparamFunc(quantiles[which(Probs==0.5)])
+      } else {
+        thicknessP <- tails$thickparamFunc(quantiles[which(Probs==0.5)])
       }
-      thickparamFunc <- stepfun(seq(0,1,length.out = tails$nBins+1),y=c(0,thickness,1))
-      thicknessP <- thickparamFunc(quantiles[which(Probs==0.5)])
-    } else {
-      thicknessP <- tails$thickparamFunc(quantiles[which(Probs==0.5)])
-    }
-    
-    ### Calculate tails
-    if(is.null(tails$ntailpoints)){tails$ntailpoints <- 5}
-    
-    ### thicknessP has to be less than min(Probs)
-    thicknessP <- min(Probs)*10^(-1-thicknessP/tails$U)
-    
-    if(thicknessP>=min(Probs)){stop("thicknessP has to be less than min(Probs)")}
-    
-    # Left Tail
-    Lquants <- seq(tails$L+min(quantiles)/tails$ntailpoints,by=min(quantiles)/tails$ntailpoints,length.out = tails$ntailpoints-1)
-    LnomP <- thicknessP*exp((Lquants/min(quantiles))*log(min(Probs)/thicknessP))
-    Lquants <- c(tails$L,Lquants)
-    LnomP<-c(0,LnomP)
-    # Right Tail
-    Rquants <- rev(tails$U-seq((1-max(quantiles))/tails$ntailpoints,by=(1-max(quantiles))/tails$ntailpoints,length.out = tails$ntailpoints-1))
-    RnomP <- 1-thicknessP*exp(((1-Rquants)/(1-max(quantiles)))*log((1-max(Probs))/thicknessP))
-    Rquants <- c(Rquants,tails$U)
-    RnomP<-c(RnomP,1)
-    
-    # plot(x=c(Lquants,quantiles,Rquants),y=c(LnomP,Probs,RnomP))
-    
-  }else{stop("Tail specification not recognised.")}
+      
+      ### Calculate tails
+      if(is.null(tails$ntailpoints)){tails$ntailpoints <- 5}
+      
+      ### thicknessP has to be less than min(Probs)
+      thicknessP <- min(Probs)*10^(-1-thicknessP/tails$U)
+      
+      if(thicknessP>=min(Probs)){stop("thicknessP has to be less than min(Probs)")}
+      
+      # Left Tail
+      Lquants <- seq(tails$L+min(quantiles)/tails$ntailpoints,by=min(quantiles)/tails$ntailpoints,length.out = tails$ntailpoints-1)
+      LnomP <- thicknessP*exp((Lquants/min(quantiles))*log(min(Probs)/thicknessP))
+      Lquants <- c(tails$L,Lquants)
+      LnomP<-c(0,LnomP)
+      # Right Tail
+      Rquants <- rev(tails$U-seq((1-max(quantiles))/tails$ntailpoints,by=(1-max(quantiles))/tails$ntailpoints,length.out = tails$ntailpoints-1))
+      RnomP <- 1-thicknessP*exp(((1-Rquants)/(1-max(quantiles)))*log((1-max(Probs))/thicknessP))
+      Rquants <- c(Rquants,tails$U)
+      RnomP<-c(RnomP,1)
+      
+      # plot(x=c(Lquants,quantiles,Rquants),y=c(LnomP,Probs,RnomP))
+      
+    }} else{stop("Tail specification not recognised.")}
   
   
   

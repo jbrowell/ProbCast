@@ -13,9 +13,11 @@ gamboostLSS_2_MultiQR(data, models, quantiles = seq(0.05, 0.95, by =
 \item{models}{A Para_gamboostLSS object.}
 
 \item{quantiles}{Vector of quantiles to be calculated}
+
+\item{params, }{return distribution parameters instead?}
 }
 \value{
-A \code{MultiQR} object derived from gamlss predictive distributions. Alternatively, a matrix condaining the parameters of the predictive gamboostLSS distributions.
+A \code{MultiQR} object derived from gamlss predictive distributions. Alternatively, a matrix containing the parameters of the predictive gamboostLSS distributions.
 }
 \description{
 Convert gamboostLSS objects to MultiQR, or alternatively return predicted parameters of predictive distribution.
