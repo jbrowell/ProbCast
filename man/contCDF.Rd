@@ -13,7 +13,7 @@ contCDF(quantiles, kfold = NULL, inverse = F, method = list(name =
 
 \item{method}{Method of interpolation. If \code{method="linear"} linear interpolation is used between quantiles. For spline interpolation, \code{method=list(name=spline,splinemethod)}, where spline method is passed to \code{splinefun}.}
 
-\item{tails}{Method for tails, this must be defined as a list with other control parameters. Default is linear interpolation of tails when \code{method="interpolate} with boundaries at \code{L=0} and \code={U=1}. Exponential tails can be specified through \code{method="exponential"}, the user will either supply user defined thickness parameters for the tail via \code{thicknessPL} and \code{thicknessPR}, otherwise a symetrical tail thickness can be defined data-driven by specifying: number of bins \code{nbins}, a MQR object \code{preds}, and the target variable, \code{targetvar}. The number of interpolation points for the exponential can be defined via \code{ntailpoints}.}
+\item{tails}{Method for tails, this must be defined as a list with other control parameters. Default is linear interpolation of tails when \code{method="interpolate"} with boundaries at \code{L=0} and \code={U=1}. Exponential tails can be specified through \code{method="exponential"}, the user will either supply user defined thickness parameters for the tail via \code{thicknessPL} and \code{thicknessPR}, otherwise a symetrical tail thickness can be defined data-driven by specifying: number of bins \code{nbins}, a MQR object \code{preds}, and the target variable, \code{targetvar}. The number of interpolation points for the exponential can be defined via \code{ntailpoints}.}
 
 \item{kfolds}{Fold/test label corresponding to \code{quantiles}.}
 }
