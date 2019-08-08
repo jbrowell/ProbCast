@@ -73,19 +73,13 @@ MQR_qreg_mboost <- function(data,
                              .options.snow = opts) %dopar% {
                                
                                ### Fit model
-                               # temp_model <- do.call(mboost,c(list(formula=formula,
-                               #                                     data=data[data$kfold!=fold & data$kfold!="Test" & !is.na(data[[formula[[2]]]]),],
-                               #                                     family = QuantReg(tau=q),
-                               #                                     control=boost_control(mstop = bc_mstop),
-                               #                                     weights=w[data$kfold!=fold & data$kfold!="Test" & !is.na(data[[formula[[2]]]])]),
-                               #                                ...))
-                               
                                temp_model <- do.call(mboost,c(list(formula=formula,
                                                                    data=data[data$kfold!=fold & data$kfold!="Test" & !is.na(data[[formula[[2]]]]),],
                                                                    family = QuantReg(tau=q),
                                                                    control=boost_control(mstop = bc_mstop),
-                                                                   weights=w[data$kfold!=fold & data$kfold!="Test" & !is.na(data[[formula[[2]]]])])))
-                               
+                                                                   weights=w[data$kfold!=fold & data$kfold!="Test" & !is.na(data[[formula[[2]]]])]),
+                                                              ...))
+                              
                                ### Return out-of-sample predictions
                                predict.mboost(temp_model,
                                               newdata = data[data$kfold==fold,])
