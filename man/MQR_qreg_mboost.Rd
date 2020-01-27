@@ -6,7 +6,8 @@
 \usage{
 MQR_qreg_mboost(data, formula, quantiles = c(0.25, 0.5, 0.75),
   CVfolds = NULL, ..., bc_mstop = 100, bc_nu = 0.1, w = rep(1,
-  nrow(data)), Sort = T, SortLimits = NULL)
+  nrow(data)), parallel = F, cores = NULL, pckgs = NULL, Sort = T,
+  SortLimits = NULL)
 }
 \arguments{
 \item{data}{A \code{data.frame} containing target and explanatory variables. May optionally contain a collumn called "kfold" with numbered/labeled folds and "Test" for test data.}
@@ -14,6 +15,12 @@ MQR_qreg_mboost(data, formula, quantiles = c(0.25, 0.5, 0.75),
 \item{quantiles}{The quantiles to fit models for.}
 
 \item{CVfolds}{Control for cross-validation if not supplied in \code{data}.}
+
+\item{parallel}{\code{boolean} parallelize cross-validation process?}
+
+\item{cores}{if parallel is TRUE then number of available cores}
+
+\item{pckgs}{if parallel is TRUE then  specify packages required for each worker (e.g. c("data.table) if data stored as such)}
 
 \item{Sort}{\code{boolean} Sort quantiles using \code{SortQuantiles()}?}
 
