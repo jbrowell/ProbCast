@@ -30,7 +30,7 @@ MQR_qreg_mboost <-
            cores = NULL,
            pckgs = NULL,
            Sort=T,SortLimits=NULL,
-           save_models_path=NULL)){
+           save_models_path=NULL){
              
              ### Set-up Cross-validation
              TEST<-F # Flag for Training (with CV) AND Test output
