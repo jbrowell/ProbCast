@@ -91,7 +91,7 @@ MQR_qreg_mboost <-
                                                              ...))
                                           
                                           if(!is.null(save_models_path)){
-                                            save(temp_model,file = paste0(save_models_path,"_q",100*q,"_fold",fold,".Rda"))
+                                            try(save(temp_model,file = paste0(save_models_path,"_q",100*q,"_fold",fold,".Rda")))
                                           }
                                           
                                           
@@ -135,7 +135,7 @@ MQR_qreg_mboost <-
                    
                    
                    if(!is.null(save_models_path)){
-                     save(temp_model,file = paste0(save_models_path,"_q",100*q,"_fold",fold,".Rda"))
+                     try(save(temp_model,file = paste0(save_models_path,"_q",100*q,"_fold",fold,".Rda")))
                    }
                    ## Plot Model Coeffs
                    # plot(temp_model, which=1)
