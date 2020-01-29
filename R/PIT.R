@@ -51,7 +51,7 @@ PIT.MultiQR <- function(qrdata,obs,tails,inverse=FALSE,...){
     }
     
     # Impose range [0,1] on PIT transformation and issue warning if used.
-    if((sum(X>1) + sum(X<0))>0){
+    if((sum(na.omit(X)>1) + sum(na.omit(X)<0))>0){
       warning("Boundary [0,1] imposed on PIT transformation. Check tails of marginals.")
       X <- ifelse((X <- ifelse(X<0,0,X))>1,1,X)
     }
