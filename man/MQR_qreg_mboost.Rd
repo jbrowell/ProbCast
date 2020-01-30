@@ -6,7 +6,8 @@
 \usage{
 MQR_qreg_mboost(data, formula, quantiles = c(0.25, 0.5, 0.75),
   CVfolds = NULL, ..., bc_mstop = 100, bc_nu = 0.1, w = rep(1,
-  nrow(data)), Sort = T, SortLimits = NULL)
+  nrow(data)), parallel = F, cores = NULL, pckgs = NULL, Sort = T,
+  SortLimits = NULL, save_models_path = NULL)
 }
 \arguments{
 \item{data}{A \code{data.frame} containing target and explanatory variables. May optionally contain a collumn called "kfold" with numbered/labeled folds and "Test" for test data.}
@@ -15,9 +16,17 @@ MQR_qreg_mboost(data, formula, quantiles = c(0.25, 0.5, 0.75),
 
 \item{CVfolds}{Control for cross-validation if not supplied in \code{data}.}
 
+\item{parallel}{\code{boolean} parallelize cross-validation process?}
+
+\item{cores}{if parallel is TRUE then number of available cores}
+
+\item{pckgs}{if parallel is TRUE then  specify packages required for each worker (e.g. c("data.table) if data stored as such)}
+
 \item{Sort}{\code{boolean} Sort quantiles using \code{SortQuantiles()}?}
 
 \item{SortLimits}{\code{Limits} argument to be passed to \code{SortQuantiles()}. Constrains quantiles to upper and lower limits given by \code{list(U=upperlim,L=lowerlim)}.}
+
+\item{save_models_path}{Path to save models. Model details and file extension pasted onto this string.}
 
 \item{formaul}{A \code{formula} object with the response on the left of an ~ operator, and the terms, separated by + operators, on the right}
 
