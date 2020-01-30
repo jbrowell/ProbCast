@@ -9,10 +9,16 @@
 #' @return A plot of a \code{MQR}.
 #' @keywords Quantile Regression, plot
 #' @export
-plot.MultiQR <- function(plotdata,targetTimes=NULL,quantiles=colnames(plotdata),...){
+plot.MultiQR <- function(plotdata,targetTimes=NULL,quantiles=colnames(plotdata),ylim="auto",...){
   
   # qs <- colnames(plotdata)
   qs <- quantiles
+  
+  
+  if(ylim=="auto"){
+    ylim <- range(plotdata)
+    ylim <- ylim + rep(diff(ylim),2)*c(-1,1)*0.1
+  }
   
   if(!is.null(targetTimes)){
     if(length(targetTimes)!=nrow(plotdata)){stop("length(targetTimes)!=nrow(plotdata)")}
@@ -24,7 +30,7 @@ plot.MultiQR <- function(plotdata,targetTimes=NULL,quantiles=colnames(plotdata),
   if(!("q50" %in% qs)){stop("MultiQR without q50 not supported yet.")}
   
   
-  plot(plotdata$x,plotdata$q50,type="l",...)
+  plot(plotdata$x,plotdata$q50,type="l",ylim=ylim,...)
   
   if(length(qs)>1){
     for(i in 1:floor(length(qs)/2)){
