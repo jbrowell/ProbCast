@@ -70,6 +70,13 @@ pinball(qrdata = test1$gbm_mqr,
          realisations = test1$data$TARGETVAR,
          kfolds = test1$data$kfold)
 
+
+reliability(qrdata = test1$gbm_mqr,
+            realisations = test1$data$TARGETVAR)
+
+pinball(qrdata = test1$gbm_mqr,
+        realisations = test1$data$TARGETVAR)
+
 index <- 1000
 cdf <- contCDF(quantiles = test1$gbm_mqr[index,],method = "spline")
 plot(cdf(seq(0,1,by=0.001)),type="l")

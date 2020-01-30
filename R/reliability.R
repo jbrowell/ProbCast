@@ -16,11 +16,21 @@ reliability <- function(qrdata,realisations,kfolds=NULL,plot.it=T,...){
   
   qs <- as.numeric(gsub(colnames(qrdata),pattern = "q",replacement = ""))/100
   
+  
+  if(!is.null(kfolds)){
+    total <- "All_cv"} else{
+    total <- "All"  
+    }
+  
   Rel <- data.frame(Nominal=qs,
                     Empirical=as.numeric(rep(NA,length(qs))),
-                    kfold="All")
+                    kfold=total)
   for(q in qs){
-    Rel$Empirical[which(qs==q)] <- mean(qrdata[[paste0("q",100*q)]]>realisations,na.rm = T)
+    if(total == "All_cv"){
+    Rel$Empirical[which(qs==q)] <- mean(qrdata[[paste0("q",100*q)]][kfolds!="Test"]>realisations[kfolds!="Test"],na.rm = T)
+    } else{
+      Rel$Empirical[which(qs==q)] <- mean(qrdata[[paste0("q",100*q)]]>realisations,na.rm = T)
+    }
   }
   
   if(plot.it){
@@ -54,12 +64,12 @@ reliability <- function(qrdata,realisations,kfolds=NULL,plot.it=T,...){
   }
   if(plot.it){
     grid()
-    lines(Rel$Nominal[Rel$kfold=="All"],Rel$Empirical[Rel$kfold=="All"],type="b",col=4,pch=16)
+    lines(Rel$Nominal[Rel$kfold==total],Rel$Empirical[Rel$kfold==total],type="b",col=4,pch=16)
     if(!is.null(kfolds) & !("Test"%in%kfolds)){
       legend("topleft",c("Ideal","Forecast","CV Folds"),lty=c(2,1,1),col=c(1,4,"Grey50"),pch=c(NA,16,16),bty = "n")
     }else if("Test"%in%kfolds){
       lines(Rel$Nominal[Rel$kfold=="Test"],Rel$Empirical[Rel$kfold=="Test"],type="b",col="red",pch=16,cex=1)
-      legend("topleft",c("Ideal","Test","All","CV Folds"),lty=c(2,1,1,1),col=c(1,"red",4,"Grey50"),pch=c(NA,16,16,16),bty = "n")
+      legend("topleft",c("Ideal","Test",total,"CV Folds"),lty=c(2,1,1,1),col=c(1,"red",4,"Grey50"),pch=c(NA,16,16,16),bty = "n")
     }else{
       legend("topleft",c("Ideal","Forecast"),lty=c(2,1),col=c(1,4),pch=c(NA,16),bty = "n")
     }

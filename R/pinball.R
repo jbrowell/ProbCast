@@ -16,13 +16,22 @@ pinball <- function(qrdata,realisations,kfolds=NULL,plot.it=T,...){
   
   qs <- as.numeric(gsub(colnames(qrdata),pattern = "q",replacement = ""))/100
   
+  if(!is.null(kfolds)){
+    total <- "All_cv"} else{
+      total <- "All"  
+  }
+  
   PBL <- data.frame(Quantile=qs,
                     Loss=as.numeric(rep(NA,length(qs))),
-                    kfold="All")
+                    kfold=total)
   for(q in qs){
+    if(total == "All_cv"){
+    PBL$Loss[which(qs==q)] <- mean(((realisations-qrdata[[paste0("q",100*q)]])*q*(realisations>=qrdata[[paste0("q",100*q)]])+
+                                     (realisations-qrdata[[paste0("q",100*q)]])*(q-1)*(realisations<qrdata[[paste0("q",100*q)]]))[kfolds!="Test"],
+                                   na.rm = T)} else{
     PBL$Loss[which(qs==q)] <- mean((realisations-qrdata[[paste0("q",100*q)]])*q*(realisations>=qrdata[[paste0("q",100*q)]])+
-                                     (realisations-qrdata[[paste0("q",100*q)]])*(q-1)*(realisations<qrdata[[paste0("q",100*q)]]),
-                                   na.rm = T)
+                                      (realisations-qrdata[[paste0("q",100*q)]])*(q-1)*(realisations<qrdata[[paste0("q",100*q)]]),na.rm = T)
+    }
   }
   
   # CV folds
@@ -45,7 +54,7 @@ pinball <- function(qrdata,realisations,kfolds=NULL,plot.it=T,...){
   }
   
   if(plot.it){
-    plot(PBL[PBL$kfold=="All",1:2],type="b",pch=16,
+    plot(PBL[PBL$kfold==total,1:2],type="b",pch=16,
          ylim=c(min(PBL$Loss),max(PBL$Loss)),
          xlim=c(0,1),
          ylab="Pinball Loss",...)
@@ -54,7 +63,7 @@ pinball <- function(qrdata,realisations,kfolds=NULL,plot.it=T,...){
       for(fold in unique(kfolds)){
         lines(PBL[PBL$kfold==fold,1:2],type="b",pch=16,col="Grey50")
       }
-      lines(PBL[PBL$kfold=="All",1:2],type="b",pch=16)
+      lines(PBL[PBL$kfold==total,1:2],type="b",pch=16)
     }
     
   }
