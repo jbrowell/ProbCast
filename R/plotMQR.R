@@ -9,7 +9,7 @@
 #' @return A plot of a \code{MQR}.
 #' @keywords Quantile Regression, plot
 #' @export
-plot.MultiQR <- function(plotdata,targetTimes=NULL,quantiles=colnames(plotdata),ylim="auto",...){
+plot.MultiQR <- function(plotdata,targetTimes=NULL,quantiles=colnames(plotdata),ylim="auto",q50_line=F,...){
   
   # qs <- colnames(plotdata)
   qs <- quantiles
@@ -40,6 +40,6 @@ plot.MultiQR <- function(plotdata,targetTimes=NULL,quantiles=colnames(plotdata),
     }
   }
   
-  lines(plotdata$x,plotdata$q50,col="white")
+  if(q50_line){lines(plotdata$x,plotdata$q50,col="white")}
   
 }
