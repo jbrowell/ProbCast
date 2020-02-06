@@ -5,7 +5,8 @@
 \title{Multivariate Gaussian covariance/correlation matrices}
 \usage{
 cov.cor_matrix(u_data, kfold = NULL, cov_cor = "covariance",
-  use = "pairwise.complete.obs", boundary_threshold = NA, ...)
+  use = "pairwise.complete.obs", boundary_threshold = NA,
+  forcePD = F, ...)
 }
 \arguments{
 \item{u_data}{A dataframe of uniform distributed variables.}
@@ -15,6 +16,8 @@ cov.cor_matrix(u_data, kfold = NULL, cov_cor = "covariance",
 \item{cov_cor}{specify either covariance or correlation}
 
 \item{boundary_threshold}{handling of boundary values. Set to NA to exclude, or small value to impose threshold.}
+
+\item{forcePD}{use \code{nearPD} to return a positive definite cov/cor matrix}
 }
 \value{
 A list of covariance/correlation matrices corresponding to kfold ids

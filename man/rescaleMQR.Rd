@@ -9,9 +9,9 @@ rescaleMQR(mqr, mult = 1, add = 0, Order = "ma")
 \arguments{
 \item{mqr}{A \code{MultiQR} object to be re-scaled}
 
-\item{mult}{Multiplicative adjustment}
+\item{mult}{Multiplicative adjustment of length 1 or with length equal to the number of rows in mqr}
 
-\item{add}{Additive adjustment}
+\item{add}{Additive adjustment of length 1 or with length equal to the number of rows in mqr}
 
 \item{order}{Order in which to perform adjustment}
 }
