@@ -7,16 +7,16 @@
 #' @keywords Date Features
 #' @export
 read_holiday_ics <- function(folder=getwd()){
-
+  
   for(file in list.files(pattern = ".ics")){
-
+    
     x <- readLines(file,encoding =  "UTF-8")
     stopifnot(!any(grepl("^\\s+", x))) # disregarding value fields that have linefeeds for the sake of simplicity
     keyval <- do.call(rbind, regmatches(x, regexpr(":", x, fixed = TRUE), invert = TRUE))
     keyval <- keyval[which.max(keyval[,1]=="BEGIN" & keyval[,2]=="VEVENT"):tail(which(keyval[,1]=="END" & keyval[,2]=="VEVENT"), 1),]
     keyval <- cbind.data.frame(keyval, id=cumsum(keyval[,1]=="BEGIN" & keyval[,2]=="VEVENT"))
     df <- reshape(keyval, timevar="1", idvar="id", direction = "wide")
-
+    
     temp <- data.table(Date=as.POSIXct(df$`2.DTSTART;VALUE=DATE`,format="%Y%m%d",tz="Europe/London"),
                        H=df$`2.SUMMARY`)
     setnames(temp,"H",sub('\\.ics$', '', file))
@@ -39,44 +39,69 @@ read_holiday_ics <- function(folder=getwd()){
 #' @keywords Date Features
 #' @export
 add_calendar_variables <- function(data,datetimecol,UKHolidays=NULL){
-
-  if(attributes(data[[datetimecol]]$tz=="UTC")){warning("Time zone is UTC. Local time may be prefereable for clock_hour.")}
+  
+  if(attributes(data[[datetimecol]])$tz=="UTC"){warning("Time zone is UTC. Local time may be prefereable for clock_hour.")}
   
   # time-since beginning of dataset
   data$t <- as.numeric(data[[datetimecol]]-data[[datetimecol]][1])
   data$t <- data$t/max(data$t)
-
+  
   # Day-of-week
   data$dow <- as.factor(format(data[[datetimecol]],"%a"))
-
+  
   # Day-of-year
   data$doy <- as.numeric(format(data[[datetimecol]],"%j"))
-
+  
   # Clock Hour
   data$clock_hour <- as.numeric(format(data[[datetimecol]],"%H"))+
     as.numeric(format(data[[datetimecol]],"%M"))/60
-
+  
   # UK Holidays
   if(!is.null(UKHolidays)){
-
+    
     # UKHolidays <- read_holiday_ics()
+    UKHolidays$Date <- as.Date(UKHolidays[["Date"]])
     UKHolidays$type <- "UK" # Generic holiday - All UK
     UKHolidays$type[is.na(UKHolidays$`england-and-wales`)] <- "Sc" # Generic holiday, Scotland
     UKHolidays$type[is.na(UKHolidays$scotland)] <- "EW" # Generic holiday, Eng & Wal
-    UKHolidays$type[UKHolidays$scotland=="Christmas Day"] <- "Ch" # Christmas Day
-
-    ## Add bridging days and holiday weekends...
-
-    UKHolidays$`england-and-wales` <- NULL
-    UKHolidays$scotland <- NULL
-
+    # UKHolidays$type[UKHolidays$scotland=="Christmas Day"] <- "Ch" # Christmas Day
+    
+    ## Add bridging days and holiday weekends... << To do >>>
+    
+    
     data$Date <- as.Date(data[[datetimecol]])
-    UKHolidays$Date <- as.Date(UKHolidays[["Date"]])
-
+    
+    
     if(!is.null(data$type)){data$type <- NULL}
-    data <- merge(data,UKHolidays,by="Date",all.x = T)
+    data <- merge(data,UKHolidays[,.(Date,type)],by="Date",all.x = T)
     data$type[is.na(data$type)] <- "N"
+    
+    
+    
+    ## Add actual date for fixed-date holidays where substitude days are used
+    temp1 <- melt(UKHolidays[,.(Date,`england-and-wales`,scotland)],id.vars = 1,value.name = "holiday",variable.name = "region")
+    
+    temp1[holiday=="Christmas Day",c("fixed_month","fixed_day"):=list(12,25)]
+    temp1[holiday=="Boxing Day",c("fixed_month","fixed_day"):=list(12,26)]
+    temp1[holiday=="New Year's Day",c("fixed_month","fixed_day"):=list(1,1)]
+    temp1[holiday=="2nd January",c("fixed_month","fixed_day"):=list(1,2)]
+    temp1[holiday=="St Andrew's Day",c("fixed_month","fixed_day"):=list(11,30)]
+    
+    temp_hol <- temp1[!is.na(fixed_day) & (month(Date)!=fixed_month | day(Date)!=fixed_day),]
+    temp_hol[,holiday:="Substitute"]
+    temp_fixed <- temp1[!is.na(fixed_day) & (month(Date)!=fixed_month | day(Date)!=fixed_day),]
+    temp_fixed <- temp_fixed[!is.na(fixed_day) & (month(Date)!=fixed_month | day(Date)!=fixed_day),
+                             Date:=as.Date(paste0(year(Date),"-",fixed_month,"-",fixed_day),tz="UTC")]
+    
+    temp1 <- rbind(temp1[!(!is.na(fixed_day) & (month(Date)!=fixed_month | day(Date)!=fixed_day)),],
+                   temp_fixed,temp_hol)
+    setkey(temp1,Date)
+    temp1 <- dcast(temp1[,.(Date,region,holiday)],Date~region,value.var = "holiday")
+    
+    setnames(temp1,c("england-and-wales","scotland"),c("hol_EW","hol_Scot"))
+    data <- merge(data,temp1,by="Date",all.x = T)
   }
-
   return(data)
+  
 }
+
