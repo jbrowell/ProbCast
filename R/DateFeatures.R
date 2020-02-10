@@ -40,7 +40,7 @@ read_holiday_ics <- function(folder=getwd()){
 #' @export
 add_calendar_variables <- function(data,datetimecol,UKHolidays=NULL){
 
-  if(attributes(data[[datetimecol]]$tz=="UTC")){warning("Time zone is UTC. Local time may be prefereable for clock_hour.")}
+  if(attributes(data[[datetimecol]])$tz=="UTC"){warning("Time zone is UTC. Local time may be prefereable for clock_hour.")}
   
   # time-since beginning of dataset
   data$t <- as.numeric(data[[datetimecol]]-data[[datetimecol]][1])
