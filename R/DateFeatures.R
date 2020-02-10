@@ -99,11 +99,8 @@ add_calendar_variables <- function(data,datetimecol,UKHolidays=NULL){
     temp1 <- dcast(temp1[,.(Date,region,holiday)],Date~region,value.var = "holiday")
     
     setnames(temp1,c("england-and-wales","scotland"),c("hol_EW","hol_Scot"))
-    
     data <- merge(data,temp1,by="Date",all.x = T)
   }
-  
-  
   return(data)
   
 }
