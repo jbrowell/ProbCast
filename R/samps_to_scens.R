@@ -181,10 +181,12 @@ samps_to_scens <- function(copulatype,no_samps,marginals,sigma_kf,mean_kf,contro
   clean_fulldf <- lapply(clean_fulldf,function(x){x[order(x$issue_ind, x$horiz_ind),]})
   
   # merge control cols and the samples to give the final data.frames
-  cont_ids <- lapply(control,function(x){data.frame(issue_ind=x$issue_ind,horiz_ind=x$horiz_ind)})
+  cont_ids <- lapply(control,function(x){data.frame(issue_ind=x$issue_ind,horiz_ind=x$horiz_ind,sort_ind=1:length(x$issue_ind))})
   filtered_samps <- mapply(merge.data.frame,x=cont_ids,y=clean_fulldf,MoreArgs = list(all.x=T),SIMPLIFY = F)
-  # remove issuetimes and horizons for passing through PIT-
-  filtered_samps <- lapply(filtered_samps,function(x){x[,-c(1,2)]})
+  ## preserve order of merged scenario table with input control table
+  filtered_samps <- lapply(filtered_samps,function(x){x[order(x$sort_ind),]})
+  # remove issuetime, horizon, and sorting column for passing through PIT-
+  filtered_samps <- lapply(filtered_samps,function(x){x[,-c(1:3)]})
   
   
   
