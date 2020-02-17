@@ -1,228 +1,222 @@
 #' Generate multivariate forecasts
 #'
-#' This function produces a list of multivariate scenario forecasts in the marginal domain from the spatial/tempral/spatiotemporal covariance matrices and marginal distributions
+#' This function produces a list of multivariate scenario forecasts in the marginal domain from the spatial/tempral/spatiotemporal gaussian covariance matrices and marginal distributions
 #' @param copulatype Either "spatial" of "temporal", note that spatio-temporal can be generated via "temporal" setting
 #' @param no_samps Number of scenarios required
-#' @param list_margins a list of the margins of the copula - e.g. if class is MultiQR --> list(<<MultiQR object>>). Multiple margins are allowed. If parametric class supply a list of the distribution parameters
-#' @param list_sigma list of the covariance matrices corresponding to each fold
-#' @param list_mean list of the mean vectors corresponding to each fold
-#' @param control a list of control parameters, should contain "kfold", "issue_ind", and "horiz_ind" which are the kfold, issue time, and time horizon vectors corresponding to the margins of the copula. If margins MultiQR class also pass "PIT_method" and "CDFtails", which are passed to the PIT function. If the margins are distribution parameter predictions then the user must define "q_fun", which transforms the columns of \code{list_margins} through the quantile function --- see example for more details. 
+#' @param marginals a named list of the margins of the copula - e.g. if class is MultiQR --> list(<<name>> = <<MultiQR object>>). Multiple margins are possible for multiple locations (see examples) although they must be the same class (MQR or distribution parameters). If parametric class supply a list of the distribution parameters here and the corresponding quantile function in \code{control} (see below). The ordering of this list is important for multiple locations --- it should be ordered according to the row/columns in each member of \code{sigma_kf}
+#' @param sigma_kf a named list of the covariance matrices with elements corresponding to each fold.
+#' @param mean_kf a named list of the mean vectors with elements corresponding to each fold
+#' @param control a named list of with nested control parameters (named according to \code{marginals}). Each named list should contain \code{kfold}, \code{issue_ind}, and \code{horiz_ind} which are the kfold, issue time, and lead time vectors corresponding to the margins of the copula. If margins are MultiQR class also define \code{PIT_method} and list \code{CDFtails}, which are passed to the PIT function. If the margins are distribution parameter predictions then define \code{q_fun}, which transforms the columns of \code{marginals} through the quantile function --- see example for more details. 
+#' @param mcmapply_cores defaults to 1. Warning, only change if not using windows OS --- see the \code{parallel::mcmapply} help page for more info. Speed improvements possible when generating sptio-temporal scenarios, set to the number of locations if possible.
 #' @param ... other parameters to be passed to mvtnorm::rmvnorm
+#' @note For spatio-temporal scenarios, each site must have the same number of inputs to the governing covariance matrix. Also, for multiple locations the ordering of the lists of the margins & control, and the structure of the covariance matrices is very important; if the columns/rows in each covariance matrix are ordered loc1_h1, loc1_h2,..., loc2_h1, loc2_h_2,..., loc_3_h1, loc_3_h2,... i.e. location_leadtime --- then the list of the marginals should be in the same order loc1, loc2, loc3,....
 #' @details Details go here...
 #' @return A list or data frame of multivariate scenario forecasts
 #' @examples
 #' \dontrun{
-#' temp <- samps_to_scens(copulatype = "temporal",no_samps = 100,list_margins = list(param_margins),list_sigma = b_cvm,list_mean = mean_vec,
-#'                        control=list(kfold = ForecastData$kfold,issue_ind=ForecastData$issueTime,horiz_ind=ForecastData$Horizon,
-#'                                     q_fun = function(p, mu = 0, sigma = 1, nu = 1, tau = 0.5, lower.tail = TRUE, log.p = FALSE){
-#'                                     gamlss.dist::qGB2(p = p, mu = mu, sigma = sigma, nu = nu, tau = tau,  lower.tail = lower.tail,log.p = log.p)}))
+#' # for parametric type marginals with a Generalized Beta type 2 family
+#' scens <- samps_to_scens(copulatype = "temporal",no_samps = 100,marginals = list(loc_1 = param_margins),sigma_kf = cvm,mean_kf = mean_vec,
+#'                         control=list(loc_1 = list(kfold = loc_1data$kfold, issue_ind = loc_1data$issue_time, horiz_ind = loc_1data$lead_time,
+#'                                                   q_fun = gamlss.dist::qGB2)))
 #' }
-#' 
 #' \dontrun{
-#'temp <- samps_to_scens(copulatype = "temporal",no_samps = 100,list_margins = list(mqr_gbm),list_sigma = par_cvm,list_mean = mean_vec,
-#'                       control=list(kfold = ForecastData$kfold,issue_ind=ForecastData$issueTime,horiz_ind=ForecastData$Horizon,
-#'                                    PIT_method="linear",CDFtails=list(method="interpolate",L=0,U=1)))
+#' # for MQR type marginals
+#' scens <- samps_to_scens(copulatype = "temporal",no_samps = 100,marginals = list(loc_1 = mqr_gbm_1),sigma_kf = cvm,mean_kf = mean_vec,
+#'                         control=list(loc_1 = list(kfold = loc_1data$kfold, issue_ind = loc_1data$issue_time, horiz_ind = loc_1data$lead_time,
+#'                                                   PIT_method = "linear",CDFtails= list(method = "interpolate", L=0,U=1))))
 #' }
+#' \dontrun{
+#' # for spatio-temporal scenarios with MQR type marginals
+#' scens <- samps_to_scens(copulatype = "temporal", no_samps = 100,marginals = list(loc_1 = mqr_gbm,loc_2 = mqr_gbm_2),sigma_kf = cvm_2,mean_kf = mean_vec_2,
+#'                         control=list(loc_1 = list(kfold = loc_1data$kfold, issue_ind = loc_1data$issue_time, horiz_ind = loc_1data$lead_time,
+#'                                                   PIT_method = "linear",CDFtails= list(method = "interpolate", L=0,U=1)),
+#'                                      loc_2 = list(kfold = loc_2data$kfold, issue_ind = loc_2data$issue_time, horiz_ind = loc_2data$lead_time,
+#'                                                   PIT_method = "linear", CDFtails = list(method = "interpolate", L=0, U=1))))
+#' }
+#' @importFrom mvtnorm rmvnorm
+#' @importFrom parallel mcmapply
 #' @export
-samps_to_scens <- function(copulatype,no_samps,list_margins,list_sigma,list_mean,control,...){
+samps_to_scens <- function(copulatype,no_samps,marginals,sigma_kf,mean_kf,control,mcmapply_cores = 1L,...){
   
+  # no kfold capability?
+  # improve ordering of lists cvm matrix...
   
-  if(length(list_margins)>1){
-    if(all(sapply(lapply(list_margins,nrow), identical, lapply(list_margins,nrow)[[1]]))==FALSE){
-      stop("margins not of equal size")
+  if(class(marginals)[1]!="list"){
+    marginals <- list(loc_1 = marginals)
+    warning("1 location detected --- margin coerced to list")
+    if(length(control)>1){
+      control <- list(loc_1 = control)
     }
+    
   }
   
-  if(length(list_margins)>1){
-    if(all(sapply(lapply(list_margins,class), identical, lapply(list_margins,class)[[1]]))==FALSE){
-      stop("multiple margins must be same class for now...")
-    }
+  if(length(marginals)!=length(control)){
+    stop("control dimensions must equal marginals")
   }
   
+  if(!identical(names(marginals),names(control))){
+    stop("control must be named and in the same order as marginals")
+  }
+  
+  if(!identical(names(sigma_kf),names(mean_kf))){
+    stop("mean_kf order must equal sigma_kf")
+  }
+  
+  if(mcmapply_cores!=1){
+    warning("Only change mcmapply_cores if not using Windows OS")
+  }
   
   
   if(copulatype=="spatial"){
     
-    samps <- list()
-    #### loop over no_of folds
-    f_ind <- 1
-    for (i in (unique(control$kfold))){
+    # This function is for extracting spatial scenario samples
+    extr_kf_spatsamp <- function(kf_samp_df,uni_kfold,...){
       
-      print(i)
-      arg_list <- list(n=no_samps,sigma=list_sigma[[f_ind]],mean=list_mean[[f_ind]],...)
+      arg_list <- list(n=no_samps,sigma=sigma_kf[[uni_kfold]],mean=mean_kf[[uni_kfold]],...)
       
-      #### take no of samples corresponding to no_row in margin
-      kf_samps <- replicate(n=sum(control$kfold==i),expr=t(apply(do.call(eval(parse(text="mvtnorm::rmvnorm")),args=arg_list),1,pnorm)))
+      # sample from multivariate gaussian, gives results in a list of matrices
+      kf_samps <- replicate(n=nrow(kf_samp_df),expr=do.call(eval(parse(text="rmvnorm")),args=arg_list),simplify = F)
       
-      kf_samps2 <- array(NA,dim = c(dim(kf_samps)[3],dim(kf_samps)[1],length(list_margins)))
-      for (j in 1:length(list_margins)){
-        
-        temp <- kf_samps[,j,]
-        temp<- t(temp)
-        kf_samps2[,,j] <- temp
-        rm(temp)
-      }
+      # transform sample rows ---> samples in cols and time_ind in rows
+      kf_samps <- lapply(kf_samps,t)
       
-      rm(kf_samps)
-      kf_samps <- kf_samps2
-      rm(kf_samps2)
+      # convert to uniform domain
+      kf_samps <- lapply(kf_samps,pnorm)
       
+      # add ID row column for split list later (will help margins length>1) --- poss imp, impose naming convention on cvms?
+      kf_samps <- lapply(kf_samps,function(x){cbind(x,sort(rep(1:length(marginals),nrow(x)/length(marginals))))})
       
-      samps[[i]] <- kf_samps
-      rm(kf_samps)
-      f_ind <- f_ind+1
+      #bind the rows
+      kf_samps <- data.frame(docall("rbind",kf_samps))
+      
+      # split the matrix up into a list of data.frames by the rowID column for different locations
+      kf_samps <- split(data.frame(kf_samps[,1:c(ncol(kf_samps)-1)]),f=kf_samps[,ncol(kf_samps)])
+      
+      # bind with kf_samp_df time indices
+      kf_samps <- lapply(kf_samps,function(x){cbind(kf_samp_df,x)})
+      
+      # name list
+      names(kf_samps) <- names(marginals)
+      
+      return(kf_samps)
+      
     }
+    
+    # find the unique combinations of issue_time and horizon at per fold across all the locations
+    find_nsamp <- list()
+    for(i in names(sigma_kf)){
+      find_nsamp[[i]] <- unique(do.call(rbind,unname(lapply(control,function(x){data.frame(issue_ind=x$issue_ind[x$kfold==i],horiz_ind=x$horiz_ind[x$kfold==i])}))))
+      find_nsamp[[i]] <- find_nsamp[[i]][order(find_nsamp[[i]]$issue_ind, find_nsamp[[i]]$horiz_ind),]
+    }
+    
+    # extract samples calling etr_kf_spatsamp
+    clean_samps <- mcmapply(extr_kf_spatsamp,kf_samp_df=find_nsamp,uni_kfold = as.list(names(find_nsamp)),MoreArgs = list(...),SIMPLIFY = F,mc.cores = mcmapply_cores)
+    
+    
+    
   } else{ if (copulatype=="temporal"){
     
+    # This function is for extracting temporal/spatio-temporal scenario samples
+    extr_kf_temposamp <- function(issuetimes,uni_kfold,...){
+      
+      arg_list <- list(n=no_samps,sigma=sigma_kf[[uni_kfold]],mean=mean_kf[[uni_kfold]],...)
+      
+      # sample from multivariate gaussian, gives results in a list of matrices
+      kf_samps <- replicate(n=length(issuetimes),expr=do.call(eval(parse(text="rmvnorm")),args=arg_list),simplify = F)
+      
+      # transform sample rows ---> samples in cols and horizon in rows
+      kf_samps <- lapply(kf_samps,t)
+      
+      # convert to uniform domain
+      kf_samps <- lapply(kf_samps,pnorm)
+      
+      # add ID row column for split list later (will help margins length>1) --- poss imp, impose naming convention on cvms?
+      kf_samps <- lapply(kf_samps,function(x){cbind(x,sort(rep(1:length(marginals),nrow(x)/length(marginals))))})
+      
+      # bind the rows
+      kf_samps <- data.frame(docall("rbind",kf_samps))
+      
+      # add issueTime ID to each data.frame
+      issue_ind <- sort(rep(issuetimes,nrow(kf_samps)/length(issuetimes)))
+      
+      # add horiz_ind to vector
+      horiz_ind <- rep(sort(unique(control[[1]]$horiz_ind)),nrow(kf_samps)/length(sort(unique(control[[1]]$horiz_ind))))
+      kf_samps <- cbind(issue_ind,horiz_ind,kf_samps)
+      
+      # split the matrix up into a list of data.frames by the rowID column for different locations
+      kf_samps <- split(data.frame(kf_samps[,1:c(ncol(kf_samps)-1)]),f=kf_samps[,ncol(kf_samps)])
+      
+      # name list
+      names(kf_samps) <- names(marginals)
+      
+      return(kf_samps)
+      
+    }
     
-    samps <- list()
-    #### loop over no_of folds
-    f_ind <- 1
-    for (i in (unique(control$kfold))){
-      
-      print(i)
-      arg_list <- list(n=no_samps,sigma=list_sigma[[f_ind]],mean=list_mean[[f_ind]],...)
-      
-      #### take no of samples corresponding to no_row in margin
-      
-      kf_samps <- replicate(n=length(unique(control$issue_ind[control$kfold==i])),
-                            expr=t(apply(do.call(eval(parse(text="mvtnorm::rmvnorm")),args=arg_list),1,pnorm)))
-      
-      if(length(list_margins)>1){
-        kf_samps2 <- array(NA,dim = c(length(unique(control$issue_ind[control$kfold==i]))*length(unique(control$horiz_ind)),dim(kf_samps)[1],length(list_margins)))
-        kf_ind <- seq(0,ncol(list_sigma[[f_ind]]),length(unique(control$horiz_ind)))
-        for (j in 1:length(list_margins)){
-          
-          temp <- kf_samps[,(kf_ind[j]+1):kf_ind[j+1],]
-          dim(temp) <- c(dim(temp)[1],dim(temp)[2]*dim(temp)[3])
-          temp<- t(temp)
-          kf_samps2[,,j] <- temp
-          rm(temp)
-        }
-        
-        rm(kf_samps)
-        kf_samps<- kf_samps2
-        rm(kf_samps2)
-        
-      } else{
-        
-        dim(kf_samps) <- c(dim(kf_samps)[1],dim(kf_samps)[2]*dim(kf_samps)[3])
-        kf_samps <- t(kf_samps)
-        
-      }
-      
-      
-      samps[[i]] <- kf_samps
-      rm(kf_samps)
-      f_ind <- f_ind+1
+    
+    
+    # find number of unique issue_times per fold across all the locations (use data.frame to avoid losing posixct class if present)
+    find_issue <- list()
+    for(i in names(sigma_kf)){
+      find_issue[[i]] <- unique(do.call(rbind,unname(lapply(control,function(x){data.frame(issue_ind=unique(x$issue_ind[x$kfold==i]))}))))
+      find_issue[[i]] <- find_issue[[i]][order(find_issue[[i]]$issue_ind),]
     }
     
     
-    ###now remove rows which are not present in marginals....
-    for (i in (unique(control$kfold))){
-      
-      mask_hind <- rep(1:(nrow(samps[[i]])/length(unique(control$issue_ind[control$kfold==i]))),length(unique(control$issue_ind[control$kfold==i])))
-      mask_iind <- rep(1:length(unique(control$issue_ind[control$kfold==i])),length(unique(control$horiz_ind)))
-      mask_iind <- mask_iind[order(mask_iind)]
-      
-      maskdf <- as.data.frame(cbind(mask_iind,mask_hind))
-      
-      hind_m <- unique(control$horiz_ind)
-      hind_m <- hind_m[order(hind_m)]
-      maskdf$mask_hind <- hind_m[maskdf$mask_hind]
-      
-      iind <- control$issue_ind[control$kfold==i]
-      iind_m <- diff(c(0,which(diff(iind)!=0),length(iind)))
-      iind_u <- NULL
-      for (j in 1:length(unique(control$issue_ind[control$kfold==i]))){
-        iind_u <- c(iind_u,rep(j,iind_m[j]))
-      }
-      
-      
-      hind <- control$horiz_ind[control$kfold==i]
-      maskdf2 <- as.data.frame(cbind(mask_iind=iind_u,mask_hind=hind))
-      maskdf2$indy <- 1
-      
-      
-      maskdf <- merge.data.frame(maskdf,maskdf2,all.x = T)
-      maskdf <- maskdf[order(maskdf[,1], maskdf[,2]), ]
-      
-      mask_ind <- which(is.na(maskdf$indy))
-      
-      if (length(list_margins)>1){
-        samps[[i]] <- samps[[i]][-c(mask_ind),,]
-      } else{samps[[i]] <- samps[[i]][-c(mask_ind),]}
-      rm(mask_ind,mask_hind,mask_iind,maskdf,maskdf2,iind,iind_m,iind_u,hind,hind_m)
-      
-      
-    }
+    # extract samples calling etr_kf_temposamp --- check mc.set.seed if users want to set the seed for each kfold --- https://stackoverflow.com/questions/30456481/controlling-seeds-with-mclapply
+    clean_samps <- mcmapply(extr_kf_temposamp,issuetimes=find_issue,uni_kfold = as.list(names(find_issue)),MoreArgs = list(...),SIMPLIFY = F,mc.cores = mcmapply_cores)
     
     
   }else{stop("copula type mis-specified")}}
   
   
-  if (length(dim(samps[[1]]))>2){
-    sampstemp <- list()
-    for (i in 1:length(list_margins)){
-      sampstemp[[i]] <- as.data.frame(matrix(NA,nrow = length(control$kfold),ncol = no_samps))
-      for (j in (unique(control$kfold))){
-        
-        sampstemp[[i]][control$kfold==j,] <- samps[[j]][,,i]
-      }
+  
+  # merge samples with control data.frames to filter to the required samples for passing to the PIT
+  # return clean_samps in time order
+  clean_fulldf <- list()
+  for(i in names(marginals)){
+    clean_fulldf[[i]] <- docall(rbind,lapply(clean_samps,function(x){x[[i]]}))
+  }
+  # set order of df
+  clean_fulldf <- lapply(clean_fulldf,function(x){x[order(x$issue_ind, x$horiz_ind),]})
+  
+  # merge control cols and the samples to give the final data.frames
+  cont_ids <- lapply(control,function(x){data.frame(issue_ind=x$issue_ind,horiz_ind=x$horiz_ind,sort_ind=1:length(x$issue_ind))})
+  filtered_samps <- mapply(merge.data.frame,x=cont_ids,y=clean_fulldf,MoreArgs = list(all.x=T),SIMPLIFY = F)
+  ## preserve order of merged scenario table with input control table
+  filtered_samps <- lapply(filtered_samps,function(x){x[order(x$sort_ind),]})
+  # remove issuetime, horizon, and sorting column for passing through PIT-
+  filtered_samps <- lapply(filtered_samps,function(x){x[,-c(1:3)]})
+  
+  
+  
+  ### transform Unifrom Variable into original domain
+  ### add S3 support for PPD...
+  if (class(marginals[[1]])[1]%in%c("MultiQR")){
+    
+    method_list <- lapply(control,function(x){x$PIT_method})
+    CDFtail_list <- lapply(control,function(x){x$CDFtails})
+    
+    print(paste0("Transforming samples into original domain"))
+    sampsfinal <- mcmapply(function(...){data.frame(PIT.MultiQR(...))},qrdata=marginals,obs=filtered_samps,method=method_list,tails = CDFtail_list, SIMPLIFY = F,MoreArgs = list(inverse=TRUE),mc.cores = mcmapply_cores)
+    
+    
+  } else {
+    
+    ### make sure before as.list in do.call the object is a data.frame
+    return_ppdsamps <- function(samps,margin,quant_f){
+      ppd_samps <- as.data.frame(lapply(samps,function(x){do.call(quant_f,as.list(data.frame(cbind(p=x,margin))))}))
+      return(ppd_samps)
     }
-  } else{
-    sampstemp <- as.data.frame(matrix(NA,nrow = length(control$kfold),ncol = no_samps))
-    for (j in (unique(control$kfold))){
-      
-      sampstemp[control$kfold==j,] <- samps[[j]]
-    }
+    
+    q_list <- lapply(control,function(x){x$q_fun})
+    
+    print(paste0("Transforming samples into original domain"))
+    sampsfinal <- mcmapply(return_ppdsamps,samps = filtered_samps, margin = marginals,quant_f = q_list,SIMPLIFY = F,mc.cores = mcmapply_cores)
+    
     
   }
   
-  ### transform Unifrom Variable into original domain
-  ### add support for PPD
-  if (class(list_margins[[1]])[1]%in%c("MultiQR")){
-    
-    if (length(dim(samps[[1]]))>2){
-      sampsfinal <- list()
-      for (j in 1:length(list_margins)){
-        print(paste0("Transforming samples into original domain --- margin ",j))
-        
-        sampsfinal[[j]] <- as.data.frame(PIT.MultiQR(qrdata=list_margins[[j]],obs=sampstemp[[j]],inverse=TRUE,method=control$PIT_method,tails=control$CDFtails))
-      }
-    } else{
-      
-      print(paste0("Transforming samples into original domain"))
-      
-      sampsfinal <- as.data.frame(PIT.MultiQR(qrdata=list_margins[[1]],obs=sampstemp,inverse=TRUE,method=control$PIT_method,tails=control$CDFtails))
-      
-    }
-  } else {
-    
-    
-    if (length(dim(samps[[1]]))>2){
-      sampsfinal <- list()
-      for (j in 1:length(list_margins)){
-        print(paste0("Transforming samples into original domain --- margin ",j))
-        gooddata <- rowSums(is.na(list_margins[[j]]))==0
-        good_params <- list_margins[[j]][gooddata,]
-        good_samps <- as.data.frame(lapply(sampstemp[[j]][gooddata,],function(x){do.call(control$q_fun,as.list(cbind(p=x,good_params)))}))
-        sampsfinal[[j]] <- as.data.frame(matrix(NA,nrow(list_margins[[j]]),ncol = no_samps))
-        sampsfinal[[j]][gooddata,] <- good_samps
-      }
-    } else{
-      
-      print(paste0("Transforming samples into original domain"))
-      
-      gooddata <- rowSums(is.na(list_margins[[1]]))==0
-      good_params <- list_margins[[1]][gooddata,]
-      good_samps <- as.data.frame(lapply(sampstemp[gooddata,],function(x){do.call(control$q_fun,as.list(cbind(p=x,good_params)))}))
-      sampsfinal <- as.data.frame(matrix(NA,nrow(list_margins[[1]]),ncol = no_samps))
-      sampsfinal[gooddata,] <- good_samps
-    }
-    
-    
-  }
   
   return(sampsfinal)
   
