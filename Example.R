@@ -33,22 +33,21 @@ test1<-list(data=Wind)
 test1$gbm_mqr <- MQR_gbm(data = test1$data,
                          formula = TARGETVAR~U100+V100+U10+V10+(sqrt((U100^2+V100^2))),
                          gbm_params = list(interaction.depth = 3,
-                                                        n.trees = 1000,
-                                                        shrinkage = 0.05,
-                                                        cv.folds = 0,
-                                                        n.minobsinnode = 20,
-                                                        bag.fraction = 0.5,
-                                                        keep.data = F),
+                                           n.trees = 1000,
+                                           shrinkage = 0.05,
+                                           n.minobsinnode = 20,
+                                           bag.fraction = 0.5,
+                                           keep.data = F),
                          quantiles = seq(0.1,0.9,by=0.1),
                          Sort = T,
-                         SortLimits = list(U=0.999,L=0.001))
+                         SortLimits = list(U=0.999,L=0.001),
+                         pred_ntree = 1000)
 
-test1$gbm_mqr <- MQR_gbm(data = test1$data,
+test1$gbm_mqr2 <- MQR_gbm(data = test1$data,
                          formula = TARGETVAR~U100+V100+U10+V10+(sqrt((U100^2+V100^2))),
                          gbm_params = list(interaction.depth = 3,
                                            n.trees = 1000,
                                            shrinkage = 0.05,
-                                           cv.folds = 0,
                                            n.minobsinnode = 20,
                                            bag.fraction = 0.5,
                                            keep.data = F),
@@ -56,7 +55,25 @@ test1$gbm_mqr <- MQR_gbm(data = test1$data,
                          cores = 3,
                          quantiles = seq(0.1,0.9,by=0.1),
                          Sort = T,
-                         SortLimits = list(U=0.999,L=0.001))
+                         SortLimits = list(U=0.999,L=0.001),
+                         pred_ntree = 1000)
+
+
+test1$gbm_mqr3 <- MQR_gbm(data = test1$data,
+                         formula = TARGETVAR~U100+V100+U10+V10+(sqrt((U100^2+V100^2))),
+                         gbm_params = list(interaction.depth = 3,
+                                           n.trees = 1000,
+                                           shrinkage = 0.05,
+                                           n.minobsinnode = 20,
+                                           bag.fraction = 0.5,
+                                           keep.data = F),
+                         parallel = T,
+                         cores = detectCores(),
+                         quantiles = seq(0.1,0.9,by=0.1),
+                         Sort = T,
+                         SortLimits = list(U=0.999,L=0.001),
+                         pred_ntree = 1000,
+                         para_over_q = T)
 
 
 plot(test1$gbm_mqr[1:240,],xlab="Time Index",ylab="Power")
@@ -69,6 +86,13 @@ reliability(qrdata = test1$gbm_mqr,
 pinball(qrdata = test1$gbm_mqr,
          realisations = test1$data$TARGETVAR,
          kfolds = test1$data$kfold)
+
+
+reliability(qrdata = test1$gbm_mqr,
+            realisations = test1$data$TARGETVAR)
+
+pinball(qrdata = test1$gbm_mqr,
+        realisations = test1$data$TARGETVAR)
 
 index <- 1000
 cdf <- contCDF(quantiles = test1$gbm_mqr[index,],method = "spline")
@@ -101,15 +125,17 @@ test1$ppd <- Para_gamlss(data = test1$data,
 summary(test1$ppd$fold1)
 plot(test1$ppd$fold1)
 
-
 test1$gamlssParams <- PPD_2_MultiQR(data=test1$data,
                                    models = test1$ppd,
                                    params = T)
 
+# some issue with the gamlss predictions here, needs futher digging...
+test1$gamlssParams[which(test1$gamlssParams[,1]>=1),1] <- 0.99999
+test1$gamlssParams[which(test1$gamlssParams[,2]>=1),2] <- 0.99999
+
 test1$gamlss_mqr <- PPD_2_MultiQR(data=test1$data,
                                   models = test1$ppd,
                                   params = F)
-
 
 reliability(qrdata = test1$gamlss_mqr,
             realisations = test1$data$TARGETVAR,
@@ -123,5 +149,41 @@ pinball(qrdata = test1$gamlss_mqr,
 # test1$data[test1$data$TARGETVAR<0 | test1$data$TARGETVAR>1,]
 test1$X_gamlss <- PIT(test1$ppd,data = test1$data)
 hist(test1$X_gamlss,breaks = 100,freq = F,ylim = c(0,2)); lines(c(0,1),c(1,1),lty=2)
+
+
+
+#### generate temporal scenarios using the gaussion copula and PPD marginals
+
+# define temporal covariance matrix
+u_obsind <- data.frame(kfold=test1$data$kfold,t_time=test1$data$TARGETdtm,i_time=test1$data$ISSUEdtm,u_obs = test1$X_gamlss)
+u_obsind$lead_time <- as.numeric(format(u_obsind$t_time, "%H"))
+u_obsind$t_time<-NULL
+
+
+u_obswide <- reshape(u_obsind,idvar = "i_time",direction = "wide",v.names = "u_obs",timevar = "lead_time",sep = "_")
+u_obswide <- u_obswide[order(u_obswide$i_time),]
+
+# function doesn't use "Test" data when defining any of the matrices if kfold is specified
+cvm <- covcor_matrix(u_data = u_obswide[,-c(1:2)],cov_cor = "covariance",kfold = u_obswide$kfold, scale = T, method = "pearson")
+image(cvm$fold1)
+image(cvm$Test)
+
+# sample cvm and convert to power domain
+f_nsamp <- 10
+mean_list <- list()
+for (i in levels(unique(u_obsind$kfold))){
+  mean_list[[i]] <- rep(0, 24)
+}
+# method for parametric pred dist.
+scen_gc <- samps_to_scens(copulatype = "temporal",no_samps = f_nsamp,marginals = list(loc_1 = test1$gamlssParams),sigma_kf = cvm,mean_kf = mean_list,
+                          control=list(loc_1 = list(kfold = u_obsind$kfold,issue_ind=u_obsind$i_time,horiz_ind=u_obsind$lead_time,
+                                                    q_fun = gamlss.dist::qBEINF)))
+
+plot(scen_gc$loc_1[1:240,c(1)],ylim=c(0,1),xlab="Time Index",ylab="Power",col="grey80",lty=2,type="l")
+for (i in 2:10){
+  lines(scen_gc$loc_1[1:240,c(i)],col="grey80",lty=2)
+}
+lines(test1$data$TARGETVAR[1:240])
+
 
 
