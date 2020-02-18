@@ -23,23 +23,9 @@ PIT.MultiQR <- function(qrdata,obs,tails,inverse=FALSE,...){
   
   # if(length(obs)!=nrow(qrdata)){stop("length(obs)!=nrow(qrdata)")}
   
-  if(tails$method=="exponential"){
+  if(tails$method=="exponential" & is.null(tails$thicknessPL) & is.null(tails$thicknessPR)){
     
     if(!("q50"%in%colnames(qrdata))){stop("q50 required for exponential tails.")}
-    
-    ##introduce kfold CV into here for defining thickness parameter....
-    
-    # if(!0.5%in%Probs){stop("q50 required for exponential tails.")}
-    # if(is.null(tails$DATA$kfold)){tails$DATA$kfold<-rep(1,nrow(tails$DATA))}
-    #
-    # ### Calculate Thickness parameters (kfold and test data accounted for)
-    # if(!is.na(kfold)){
-    #   train <- tails$DATA$kfold==kfold
-    #   test <- tails$DATA$kfold!=kfold & !is.na(tails$DATA$kfold)
-    # }else{
-    #   train <- !is.na(tails$DATA$kfold)
-    #   test <- is.na(tails$DATA$kfold)
-    # }
     
     thickness <- rep(NA,tails$nBins)
     targetquants <- stats::quantile(tails$targetvar,probs = seq(0, 1, 1/tails$nBins),na.rm=T)
@@ -64,6 +50,12 @@ PIT.MultiQR <- function(qrdata,obs,tails,inverse=FALSE,...){
       if(is.na(obs[i]) | is.na(sum(qrdata[i,]))){X[i] <- NA}else{
         X[i] <- contCDF(quantiles = qrdata[i,],tails = tails,...)(obs[i])
       }
+    }
+    
+    # Impose range [0,1] on PIT transformation and issue warning if used.
+    if((sum(na.omit(X)>1) + sum(na.omit(X)<0))>0){
+      warning("Boundary [0,1] imposed on PIT transformation. Check tails of marginals.")
+      X <- ifelse((X <- ifelse(X<0,0,X))>1,1,X)
     }
     
   }

@@ -3,9 +3,9 @@
 #' @param data A \code{data.frame} containing explanatory variables.
 #' @param models A Para_gamboostLSS object.
 #' @param quantiles Vector of quantiles to be calculated
-#'
+#' @param params, return distribution parameters instead?
 #' @details Details go here...
-#' @return A \code{MultiQR} object derived from gamlss predictive distributions. Alternatively, a matrix condaining the parameters of the predictive gamboostLSS distributions.
+#' @return A \code{MultiQR} object derived from gamlss predictive distributions. Alternatively, a matrix containing the parameters of the predictive gamboostLSS distributions.
 #' @export
 gamboostLSS_2_MultiQR <- function(data,models,quantiles=seq(0.05,0.95,by=0.05),params=F){
   
@@ -18,8 +18,8 @@ gamboostLSS_2_MultiQR <- function(data,models,quantiles=seq(0.05,0.95,by=0.05),p
   
   data <- as.data.frame(data)
   # Initialise containers for parameters and quantile forecasts
-  parameters <- matrix(1,nrow=nrow(data),ncol=4)
-  colnames(parameters) <- c("mu", "sigma", "nu", "tau")
+  parameters <- matrix(1, nrow = nrow(data), ncol =  length(names(models[[1]])))
+  colnames(parameters) <- names(models[[1]])
   
   distFamily <- c()
   
@@ -53,27 +53,12 @@ gamboostLSS_2_MultiQR <- function(data,models,quantiles=seq(0.05,0.95,by=0.05),p
   if(length(distFamily)!=1){stop("length(distFamily)!=1 - Only a single parametric distribution family is allowed.")}
   
   myqfun <- attributes(attributes(models[[fold]])$families)$qfun
+  parameters <- data.frame(parameters)
   
-  input <- list()
-  if("mu"%in%names(as.list(args(myqfun)))){
-    input$mu=parameters[,1]
-  }
-  if("sigma"%in%names(as.list(args(myqfun)))){
-    input$sigma=parameters[,2]
-  }
-  if("nu"%in%names(as.list(args(myqfun)))){
-    input$nu=parameters[,3]
-  }
-  if("tau"%in%names(as.list(args(myqfun)))){
-    input$tau=parameters[,4]
-  }
-  
-  multipleQuantiles <- matrix(NA,nrow=nrow(data),ncol=length(quantiles))
-  
-  for(i in 1:length(quantiles)){
-    input$p <- quantiles[i]
-    multipleQuantiles[,i] <- do.call(myqfun,input)
-    
+  multipleQuantiles <- matrix(NA, nrow = nrow(data), ncol = length(quantiles))
+  for (i in 1:length(quantiles)) {
+    parameters$p <- quantiles[i]
+    multipleQuantiles[, i] <- do.call(myqfun, parameters)
   }
   
   colnames(multipleQuantiles) <- paste0("q",100*quantiles)
