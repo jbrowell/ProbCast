@@ -4,14 +4,19 @@
 \alias{reliability}
 \title{Reliability Diagram for MultiQR}
 \usage{
-reliability(qrdata, realisations, kfolds = NULL, plot.it = T, ...)
+reliability(qrdata, realisations, kfolds = NULL, subsets = NULL,
+  breaks = 4, plot.it = T, ...)
 }
 \arguments{
 \item{qrdata}{\code{MultiQR} object.}
 
 \item{realisations}{Vector of realisations corresponding to rows of \code{qrdata}. \code{NA} accepted.}
 
-\item{kfolds}{Optional vector of fold/test labels corresponding to rows of \code{qrdata}.}
+\item{kfolds}{Optional vector of fold/test labels corresponding to rows of \code{qrdata}. Cannot be used with \code{subsets}.}
+
+\item{subsets}{Optional vector of covariates to bin data by. Breaks between bins are the empirical quantiles of \code{subsets}. Cannot be used with \code{kfold}.}
+
+\item{breaks}{Number of quantiles to divide subsets by, results in \code{breaks+1} bins.}
 
 \item{plot.it}{\code{boolean}. Make a plot?}
 
