@@ -3,7 +3,9 @@
 #' This function plots a reliabiltiy diagram for a MultiQR object and returns the plotdata
 #' @param qrdata \code{MultiQR} object.
 #' @param realisations Vector of realisations corresponding to rows of \code{qrdata}. \code{NA} accepted.
-#' @param kfolds Optional vector of fold/test labels corresponding to rows of \code{qrdata}.
+#' @param kfolds Optional vector of fold/test labels corresponding to rows of \code{qrdata}. Cannot be used with \code{subsets}.
+#' @param subsets Optional vector of covariates to bin data by. Breaks between bins are the empirical quantiles of \code{subsets}. Cannot be used with \code{kfold}.
+#' @param breaks Number of quantiles to divide subsets by, results in \code{breaks+1} bins.
 #' @param plot.it \code{boolean}. Make a plot?
 #' @param ... Additional arguments passed to \code{plot()}.
 #' @details Details go here...
@@ -19,7 +21,8 @@ reliability <- function(qrdata,realisations,kfolds=NULL,subsets=NULL,breaks=4,pl
     if(length(subsets)!=length(realisations)){stop("!is.null(subsets) & nrow(subsets)!=length(realisations)")}
   }
   if(!is.null(kfolds) & !is.null(subsets)){stop("Only one of subsets and kfolds can !=NULL.")}
-  
+  if(breaks<1){stop("breaks must be a positive integer.")}
+    
   qs <- as.numeric(gsub(colnames(qrdata),pattern = "q",replacement = ""))/100
   
   
@@ -98,11 +101,18 @@ reliability <- function(qrdata,realisations,kfolds=NULL,subsets=NULL,breaks=4,pl
   if(plot.it){
     grid()
     if(!is.null(subsets)){
-      legend("topleft",c("Ideal",paste0(c("<=",paste0(round(break_qs[2:breaks],digits=1)," - "),">"),
+      if(breaks==1){
+        legend("topleft",c("Ideal",paste0("<=",break_qs[2]),paste0(">",break_qs[2])),
+               lty=c(2,rep(1,breaks+1)),
+               col=c(1,rainbow(breaks+1)),
+               pch=c(NA,rep(16,breaks+1)),bty = "n")
+      }else{
+      legend("topleft",c("Ideal",paste0(c("<=",paste0(round(break_qs[2:breaks],digits=1)," to "),">"),
                                         round(break_qs[c(2:(breaks+1),breaks+1)],digits=1))),
              lty=c(2,rep(1,breaks+1)),
              col=c(1,rainbow(breaks+1)),
              pch=c(NA,rep(16,breaks+1)),bty = "n")
+      }
     }else{
       lines(Rel$Nominal[Rel$kfold==total],Rel$Empirical[Rel$kfold==total],type="b",col=4,pch=16)
       if(!is.null(kfolds) & !("Test"%in%kfolds)){
