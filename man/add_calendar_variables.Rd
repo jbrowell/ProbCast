@@ -4,10 +4,10 @@
 \alias{add_calendar_variables}
 \title{Add Calendar Features}
 \usage{
-add_calendar_variables(data, datetimecol, UKHolidays = NULL)
+add_calendar_variables(dt, datetimecol, UKHolidays = NULL)
 }
 \arguments{
-\item{data}{\code{data.frame} to have date/time feature columns added}
+\item{dt}{\code{data.table} to have date/time feature columns added}
 
 \item{datetimecol}{column name of \code{POSIX} time stamps}
 
