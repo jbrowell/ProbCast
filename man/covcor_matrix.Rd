@@ -6,7 +6,7 @@
 \usage{
 covcor_matrix(u_data, kfold = NULL, cov_cor = "covariance",
   use = "pairwise.complete.obs", boundary_threshold = NA,
-  forcePD = F,scale = F, ...)
+  forcePD = F, scale = F, ...)
 }
 \arguments{
 \item{u_data}{A dataframe of uniform distributed variables.}
@@ -15,11 +15,11 @@ covcor_matrix(u_data, kfold = NULL, cov_cor = "covariance",
 
 \item{cov_cor}{specify either covariance or correlation}
 
-\item{forcePD}{use \code{nearPD} to return a positive definite cov/cor matrix}
-\item{scale}{scale gaussian variable inputs to have unit variance for covariance matrix? Defaults to FALSE.}
 \item{boundary_threshold}{handling of boundary values. Set to NA to exclude, or small value to impose threshold.}
 
 \item{forcePD}{use \code{nearPD} to return a positive definite cov/cor matrix}
+
+\item{scale}{scale gaussian variable inputs to have unit variance for covariance matrix? Defaults to FALSE.}
 }
 \value{
 A list of covariance/correlation matrices corresponding to kfold ids
