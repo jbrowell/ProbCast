@@ -30,36 +30,36 @@ Wind$kfold <- c(rep(c("fold1","fold2"),each=6000),rep("Test",nrow(Wind)-12000))
 ### Multiple Quantile Regression using GBM ####
 test1<-list(data=Wind)
 
+# test1$gbm_mqr <- MQR_gbm(data = test1$data,
+#                          formula = TARGETVAR~U100+V100+U10+V10+(sqrt((U100^2+V100^2))),
+#                          gbm_params = list(interaction.depth = 3,
+#                                            n.trees = 1000,
+#                                            shrinkage = 0.05,
+#                                            n.minobsinnode = 20,
+#                                            bag.fraction = 0.5,
+#                                            keep.data = F),
+#                          quantiles = seq(0.1,0.9,by=0.1),
+#                          Sort = T,
+#                          SortLimits = list(U=0.999,L=0.001),
+#                          pred_ntree = 1000)
+# 
+# test1$gbm_mqr <- MQR_gbm(data = test1$data,
+#                          formula = TARGETVAR~U100+V100+U10+V10+(sqrt((U100^2+V100^2))),
+#                          gbm_params = list(interaction.depth = 3,
+#                                            n.trees = 1000,
+#                                            shrinkage = 0.05,
+#                                            n.minobsinnode = 20,
+#                                            bag.fraction = 0.5,
+#                                            keep.data = F),
+#                          parallel = T,
+#                          cores = 3,
+#                          quantiles = seq(0.1,0.9,by=0.1),
+#                          Sort = T,
+#                          SortLimits = list(U=0.999,L=0.001),
+#                          pred_ntree = 1000)
+
+
 test1$gbm_mqr <- MQR_gbm(data = test1$data,
-                         formula = TARGETVAR~U100+V100+U10+V10+(sqrt((U100^2+V100^2))),
-                         gbm_params = list(interaction.depth = 3,
-                                           n.trees = 1000,
-                                           shrinkage = 0.05,
-                                           n.minobsinnode = 20,
-                                           bag.fraction = 0.5,
-                                           keep.data = F),
-                         quantiles = seq(0.1,0.9,by=0.1),
-                         Sort = T,
-                         SortLimits = list(U=0.999,L=0.001),
-                         pred_ntree = 1000)
-
-test1$gbm_mqr2 <- MQR_gbm(data = test1$data,
-                         formula = TARGETVAR~U100+V100+U10+V10+(sqrt((U100^2+V100^2))),
-                         gbm_params = list(interaction.depth = 3,
-                                           n.trees = 1000,
-                                           shrinkage = 0.05,
-                                           n.minobsinnode = 20,
-                                           bag.fraction = 0.5,
-                                           keep.data = F),
-                         parallel = T,
-                         cores = 3,
-                         quantiles = seq(0.1,0.9,by=0.1),
-                         Sort = T,
-                         SortLimits = list(U=0.999,L=0.001),
-                         pred_ntree = 1000)
-
-
-test1$gbm_mqr3 <- MQR_gbm(data = test1$data,
                          formula = TARGETVAR~U100+V100+U10+V10+(sqrt((U100^2+V100^2))),
                          gbm_params = list(interaction.depth = 3,
                                            n.trees = 1000,
@@ -69,15 +69,22 @@ test1$gbm_mqr3 <- MQR_gbm(data = test1$data,
                                            keep.data = F),
                          parallel = T,
                          cores = detectCores(),
-                         quantiles = seq(0.1,0.9,by=0.1),
+                         quantiles = seq(0.05,0.95,by=0.05),
                          Sort = T,
                          SortLimits = list(U=0.999,L=0.001),
                          pred_ntree = 1000,
                          para_over_q = T)
 
 
-plot(test1$gbm_mqr[1:240,],xlab="Time Index",ylab="Power")
-lines(test1$data$TARGETVAR[1:240])
+# test1$gbm_mqr <- test1$gbm_mqr3
+
+par(mar=c(3,3,0.5,1))  # Trim margin around plot [b,l,t,r]
+par(tcl=0.35)  # Switch tick marks to insides of axes
+par(mgp=c(1.5,0.2,0))  # Set margin lines; default c(3,1,0) [title,labels,line]
+par(xaxs="r",yaxs="r")  # Extend axis limits by 4% ("i" does no extension)
+
+plot(test1$gbm_mqr[1:72,],xlab="Time Index [Hours]",ylab="Power [Capacity Factor]",axes=F); axis(1,0:12*6,pos=-0.07); axis(2,las=1)
+lines(test1$data$TARGETVAR[1:250],lwd=3)
 
 reliability(qrdata = test1$gbm_mqr,
             realisations = test1$data$TARGETVAR,
@@ -94,14 +101,17 @@ reliability(qrdata = test1$gbm_mqr,
 pinball(qrdata = test1$gbm_mqr,
         realisations = test1$data$TARGETVAR)
 
-index <- 1000
+index <- 54
+x <- seq(0,1,by=0.001)
 cdf <- contCDF(quantiles = test1$gbm_mqr[index,],method = "spline")
-plot(cdf(seq(0,1,by=0.001)),type="l")
+plot(x,cdf(x),type="l",xlab="Target Variable",ylab="CDF",axes=F); axis(1); axis(2,las=2); #grid()
 cdf <- contCDF(quantiles = test1$gbm_mqr[index,],method = "linear")
-lines(cdf(seq(0,1,by=0.001)),lty=2,col=2)
+lines(x,cdf(x),lty=2,col=2)
 cdf <- contCDF(quantiles = test1$gbm_mqr[index,],kfold = NA,method = "spline", tails=list(method="exponential",L=0,U=1,nBins=5,preds=test1$gbm_mqr,targetvar=test1$data$TARGETVAR,ntailpoints=25))
-lines(cdf(seq(0,1,by=0.001)),lty=3,col=3)
-
+lines(x,cdf(seq(0,1,by=0.001)),lty=3,col=4)
+points(test1$gbm_mqr[index,],as.numeric(gsub("q","",colnames(test1$gbm_mqr[index,])))/100)
+legend(0.01,1,c("Predicted Quantiles","Linear","Spline","Spline with Exponential Tails"),
+       pch=c(1,NA,NA,NA),lty=c(NA,2,1,3),col=c(1,2,1,4),bty="n")
 
 # test1$X_gbm <- PIT(test1$gbm_mqr,test1$data$TARGETVAR,method = "linear",tails=list(method="exponential",L=0,U=1,nBins=5,preds=test1$gbm_mqr,targetvar=test1$data$TARGETVAR,ntailpoints=25))
 test1$X_gbm <- PIT(test1$gbm_mqr,test1$data$TARGETVAR,method = "linear",tails=list(method="interpolate",L=0,U=1))

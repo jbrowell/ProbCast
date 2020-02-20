@@ -27,7 +27,7 @@ plot.MultiQR <- function(plotdata,targetTimes=NULL,quantiles=colnames(plotdata),
     plotdata$x <- 1:nrow(plotdata)
   }
   
-  if(!("q50" %in% qs)){stop("MultiQR without q50 not supported yet.")}
+  if(!("q50" %in% qs)){stop("MultiQR without q50 not supported")}
   
   
   plot(plotdata$x,plotdata$q50,type="l",ylim=ylim,...)
