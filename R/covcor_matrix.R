@@ -19,16 +19,12 @@ covcor_matrix  <- function(u_data,kfold=NULL,cov_cor="covariance",
     kfold <- rep(1,nrow(u_data))
   }
   
-  
-  g_data <- as.data.frame(sapply(u_data, qnorm))
-  u_data <- as.matrix(u_data)
-  
   # Handle 0s and 1s: either avoir infty or produce NAs
-  u_data <- ifelse(u_data==0,boundary_threshold,u_data)
-  u_data <- ifelse(u_data==1,1-boundary_threshold,u_data)
+  u_data[u_data==0] <- boundary_threshold
+  u_data[u_data==1] <- 1-boundary_threshold
   
   # Transform to Gaussian...
-  g_data <- qnorm(u_data)
+  g_data <- as.data.frame(lapply(u_data, qnorm))
   rm(u_data)
 
   matList <- list()

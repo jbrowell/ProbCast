@@ -39,7 +39,7 @@ PIT.MultiQR <- function(qrdata,obs,tails,inverse=FALSE,...){
     X <- matrix(NA,nrow(qrdata),ncol = ncol(obs))
     for(i in 1:nrow(qrdata)){
       if(is.na(qrdata[i,1])){X[i,] <- NA}else{
-        X[i,] <- contCDF(quantiles = qrdata[i,],tails = tails,inverse = TRUE,...)(obs[i,])}
+        X[i,] <- contCDF(quantiles = qrdata[i,],tails = tails,inverse = TRUE,...)(as.numeric(obs[i,]))}
     }
   }else{
     
