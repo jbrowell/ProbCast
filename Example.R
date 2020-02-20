@@ -83,7 +83,7 @@ par(tcl=0.35)  # Switch tick marks to insides of axes
 par(mgp=c(1.5,0.2,0))  # Set margin lines; default c(3,1,0) [title,labels,line]
 par(xaxs="r",yaxs="r")  # Extend axis limits by 4% ("i" does no extension)
 
-plot(test1$gbm_mqr[1:72,],xlab="Time Index [Hours]",ylab="Power [Capacity Factor]",axes=F); axis(1,0:12*6,pos=-0.07); axis(2,las=1)
+plot(test1$gbm_mqr[1:72,],xlab="Time Index [Hours]",ylab="Power [Capacity Factor]",axes=F,Legend = 1); axis(1,0:12*6,pos=-0.07); axis(2,las=1)
 lines(test1$data$TARGETVAR[1:250],lwd=3)
 
 reliability(qrdata = test1$gbm_mqr,

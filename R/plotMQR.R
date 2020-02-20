@@ -4,12 +4,14 @@
 #' @param plotdata A \code{MultiQR} object to be plotted
 #' @param targetTimes A vector of forecast target times corresponding to \code{plotdata}.
 #' @param quantiles A charater vector. By default the column names from MultiQR object, i.e. all available quantiles. Alternatively, a subset may be specified here.
+#' @param q50_line Should the q50 be plotted as a line? This can mis-lead users who may interpret it as the most likely temporal trajectory.
+#' @param Legens Location of legend to be produced. E.g. "topleft"
 #' @param ... Additional arguments passed to \code{plot()}.
 #' @details Details go here...
 #' @return A plot of a \code{MQR}.
 #' @keywords Quantile Regression, plot
 #' @export
-plot.MultiQR <- function(plotdata,targetTimes=NULL,quantiles=colnames(plotdata),ylim="auto",q50_line=F,...){
+plot.MultiQR <- function(plotdata,targetTimes=NULL,quantiles=colnames(plotdata),ylim="auto",q50_line=F,Legend=NULL,...){
   
   # qs <- colnames(plotdata)
   qs <- quantiles
@@ -41,5 +43,13 @@ plot.MultiQR <- function(plotdata,targetTimes=NULL,quantiles=colnames(plotdata),
   }
   
   if(q50_line){lines(plotdata$x,plotdata$q50,col="white")}
+  
+  if(!is.null(Legend)){
+    qs <- as.numeric(gsub("q","",qs))
+    legend(Legend,paste0((rev(qs)-qs)[1:floor(length(qs)/2)],"%"),
+           pch=15,bty="n",
+           col=rainbow(5*length(qs))[3*length(qs)-1:floor(length(qs)/2)],
+           ncol=ceiling(length(qs)/10),title = "Prediction Interval")
+  }
   
 }
