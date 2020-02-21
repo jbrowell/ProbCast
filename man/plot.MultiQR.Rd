@@ -5,7 +5,8 @@
 \title{Plot a Quantile Forecast}
 \usage{
 \method{plot}{MultiQR}(plotdata, targetTimes = NULL,
-  quantiles = colnames(plotdata), ylim = "auto", q50_line = F, ...)
+  quantiles = colnames(plotdata), ylim = "auto", q50_line = F,
+  Legend = NULL, ...)
 }
 \arguments{
 \item{plotdata}{A \code{MultiQR} object to be plotted}
@@ -14,7 +15,11 @@
 
 \item{quantiles}{A charater vector. By default the column names from MultiQR object, i.e. all available quantiles. Alternatively, a subset may be specified here.}
 
+\item{q50_line}{Should the q50 be plotted as a line? This can mis-lead users who may interpret it as the most likely temporal trajectory.}
+
 \item{...}{Additional arguments passed to \code{plot()}.}
+
+\item{Legens}{Location of legend to be produced. E.g. "topleft"}
 }
 \value{
 A plot of a \code{MQR}.
