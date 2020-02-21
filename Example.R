@@ -105,8 +105,7 @@ pinball(qrdata = test1$gbm_mqr,
 
 
 reliability(qrdata = test1$gbm_mqr,
-            realisations = test1$data$TARGETVAR,
-            bootstrap = 100)
+            realisations = test1$data$TARGETVAR)
 
 reliability(qrdata = test1$gbm_mqr[test1$data$kfold=="Test",],
             realisations = test1$data$TARGETVAR[test1$data$kfold=="Test"],
