@@ -24,7 +24,7 @@ Wind$WS100 <- sqrt(Wind$U100^2+Wind$V100^2)
 Wind$Power <- pmin(Wind$WS100,11)^3
 
 ## Set-up simple kfold CV
-Wind$kfold <- c(rep(c("fold1","fold2"),each=6000),rep("Test",nrow(Wind)-12000))
+Wind$kfold <- c(rep(c("fold1","fold2","fold3"),each=4000),rep("Test",nrow(Wind)-12000))
 # Wind$kfold <- c(rep(c("fold1","fold2","fold3","fold4"),each=nrow(Wind)/4))
 
 ### Multiple Quantile Regression using GBM ####
@@ -102,7 +102,13 @@ pinball(qrdata = test1$gbm_mqr,
 
 
 reliability(qrdata = test1$gbm_mqr,
-            realisations = test1$data$TARGETVAR)
+            realisations = test1$data$TARGETVAR,
+            bootstrap = 500)
+
+reliability(qrdata = test1$gbm_mqr,
+            realisations = test1$data$TARGETVAR,
+            subsets = test1$data$WS100,breaks = 2,
+            bootstrap = 100)
 
 pinball(qrdata = test1$gbm_mqr,
         realisations = test1$data$TARGETVAR)

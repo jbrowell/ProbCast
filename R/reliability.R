@@ -6,12 +6,13 @@
 #' @param kfolds Optional vector of fold/test labels corresponding to rows of \code{qrdata}. Cannot be used with \code{subsets}.
 #' @param subsets Optional vector of covariates to bin data by. Breaks between bins are the empirical quantiles of \code{subsets}. Cannot be used with \code{kfold}.
 #' @param breaks Number of quantiles to divide subsets by, results in \code{breaks+1} bins.
+#' @param bootstrap Calculate this number of boostrap samples to estimate 95% confdence interval
 #' @param plot.it \code{boolean}. Make a plot?
 #' @param ... Additional arguments passed to \code{plot()}.
 #' @details Details go here...
 #' @return Reliability data and, if plot.it=T, a reliability diagram.
 #' @export
-reliability <- function(qrdata,realisations,kfolds=NULL,subsets=NULL,breaks=4,plot.it=T,...){
+reliability <- function(qrdata,realisations,kfolds=NULL,subsets=NULL,breaks=4,bootstrap=NULL,plot.it=T,...){
   
   if(nrow(qrdata)!=length(realisations)){stop("nrow(qrdata)!=length(realisations)")}
   if(!is.null(kfolds)){
@@ -22,7 +23,7 @@ reliability <- function(qrdata,realisations,kfolds=NULL,subsets=NULL,breaks=4,pl
   }
   if(!is.null(kfolds) & !is.null(subsets)){stop("Only one of subsets and kfolds can !=NULL.")}
   if(breaks<1){stop("breaks must be a positive integer.")}
-    
+  
   qs <- as.numeric(gsub(colnames(qrdata),pattern = "q",replacement = ""))/100
   
   
@@ -35,12 +36,37 @@ reliability <- function(qrdata,realisations,kfolds=NULL,subsets=NULL,breaks=4,pl
   Rel <- data.frame(Nominal=qs,
                     Empirical=as.numeric(rep(NA,length(qs))),
                     kfold=total,
-                    subset=NA)
+                    subset=NA,
+                    upper=NA,
+                    lower=NA)
   for(q in qs){
     if(total == "All_cv"){
       Rel$Empirical[which(qs==q)] <- mean(qrdata[[paste0("q",100*q)]][kfolds!="Test"]>realisations[kfolds!="Test"],na.rm = T)
-    } else{
+      
+      if(!is.null(bootstrap)){
+        bs_data <- rep(NA,bootstrap)
+        for(i in 1:bootstrap){
+          data_length <- length(qrdata[[paste0("q",100*q)]][kfolds!="Test"])
+          i_samp <- sample(1:data_length,size = data_length,replace = T)
+          bs_data[i] <- mean(qrdata[[paste0("q",100*q)]][kfolds!="Test"][i_samp]>realisations[kfolds!="Test"][i_samp],na.rm = T)        
+        }
+        Rel$upper[which(qs==q)] <- quantile(bs_data,probs = 0.975)
+        Rel$lower[which(qs==q)] <- quantile(bs_data,probs = 0.025)
+      }
+      
+    }else{
       Rel$Empirical[which(qs==q)] <- mean(qrdata[[paste0("q",100*q)]]>realisations,na.rm = T)
+      
+      if(!is.null(bootstrap)){
+        bs_data <- rep(NA,bootstrap)
+        for(i in 1:bootstrap){
+          data_length <- length(qrdata[[paste0("q",100*q)]])
+          i_samp <- sample(1:data_length,size = data_length,replace = T)
+          bs_data[i] <- mean(qrdata[[paste0("q",100*q)]][i_samp]>realisations[i_samp],na.rm = T)        
+        }
+        Rel$upper[which(qs==q)] <- quantile(bs_data,probs = 0.975)
+        Rel$lower[which(qs==q)] <- quantile(bs_data,probs = 0.025)
+      }
     }
   }
   
@@ -63,15 +89,12 @@ reliability <- function(qrdata,realisations,kfolds=NULL,subsets=NULL,breaks=4,pl
       for(q in qs){
         tempRel$Empirical[which(qs==q)] <- mean(qrdata[[paste0("q",100*q)]][kfolds==fold]>realisations[kfolds==fold],na.rm = T)
       }
-      if(plot.it){
-        if(fold=="Test"){
-          # lines(tempRel$Nominal,tempRel$Empirical,type="b",col="red",pch=16,cex=1)
-          # Moved later so that is on top...
-        }else{
-          lines(tempRel$Nominal,tempRel$Empirical,type="b",col="Grey50",pch=16,cex=0.7)
-        }
-      }
+      
       Rel <- rbind(Rel,tempRel)
+      
+      if(plot.it & fold!="Test"){
+        lines(tempRel$Nominal,tempRel$Empirical,type="b",col="Grey50",pch=16,cex=0.7)
+      }  
     }
   }
   
@@ -86,13 +109,36 @@ reliability <- function(qrdata,realisations,kfolds=NULL,subsets=NULL,breaks=4,pl
       tempRel <- data.frame(Nominal=qs,
                             Empirical=as.numeric(rep(NA,length(qs))),
                             subset=i-1,
-                            kfold=NA)
+                            kfold=NA,
+                            upper=NA,
+                            lower=NA)
       for(q in qs){
         tempRel$Empirical[which(qs==q)] <- mean(qrdata[[paste0("q",100*q)]][indexs]>realisations[indexs],na.rm = T)
+        
+        if(!is.null(bootstrap)){
+          bs_data <- rep(NA,bootstrap)
+          for(j in 1:bootstrap){
+            data_length <- length(qrdata[[paste0("q",100*q)]][indexs])
+            i_samp <- sample(1:data_length,size = data_length,replace = T)
+            bs_data[j] <- mean(qrdata[[paste0("q",100*q)]][indexs][i_samp]>realisations[indexs][i_samp],na.rm = T)
+          }
+          tempRel$upper[which(qs==q)] <- quantile(bs_data,probs = 0.975)
+          tempRel$lower[which(qs==q)] <- quantile(bs_data,probs = 0.025)
+        }
+        
       }
+      
       if(plot.it){
+        
+        if(!is.null(bootstrap)){
+          polygon(x = c(tempRel$Nominal,rev(tempRel$Nominal)),
+                  y=c(tempRel$upper,rev(tempRel$lower)),
+                  col = rainbow(breaks+1,alpha = 0.3)[i-1],border = NA)
+        }
+        
         lines(tempRel$Nominal,tempRel$Empirical,type="b",col=rainbow(breaks+1)[i-1],pch=16)
       }
+      
       Rel <- rbind(Rel,tempRel)
     }
     
@@ -107,14 +153,25 @@ reliability <- function(qrdata,realisations,kfolds=NULL,subsets=NULL,breaks=4,pl
                col=c(1,rainbow(breaks+1)),
                pch=c(NA,rep(16,breaks+1)),bty = "n")
       }else{
-      legend("topleft",c("Ideal",paste0(c("<=",paste0(round(break_qs[2:breaks],digits=1)," to "),">"),
-                                        round(break_qs[c(2:(breaks+1),breaks+1)],digits=1))),
-             lty=c(2,rep(1,breaks+1)),
-             col=c(1,rainbow(breaks+1)),
-             pch=c(NA,rep(16,breaks+1)),bty = "n")
+        legend("topleft",c("Ideal",paste0(c("<=",paste0(round(break_qs[2:breaks],digits=1)," to "),">"),
+                                          round(break_qs[c(2:(breaks+1),breaks+1)],digits=1))),
+               lty=c(2,rep(1,breaks+1)),
+               col=c(1,rainbow(breaks+1)),
+               pch=c(NA,rep(16,breaks+1)),bty = "n")
       }
     }else{
+      
+      if(!is.null(bootstrap)){
+        # lines(Rel$Nominal[Rel$kfold==total],Rel$upper[Rel$kfold==total],type="l",col=4)
+        # lines(Rel$Nominal[Rel$kfold==total],Rel$lower[Rel$kfold==total],type="l",col=4)
+        polygon(x = c(Rel$Nominal[Rel$kfold==total],rev(Rel$Nominal[Rel$kfold==total])),
+                y=c(Rel$upper[Rel$kfold==total],rev(Rel$lower[Rel$kfold==total])),
+                col = rgb(0,0,1,alpha = 0.3),border = NA)
+        
+      }
+      
       lines(Rel$Nominal[Rel$kfold==total],Rel$Empirical[Rel$kfold==total],type="b",col=4,pch=16)
+      
       if(!is.null(kfolds) & !("Test"%in%kfolds)){
         legend("topleft",c("Ideal","Forecast","CV Folds"),lty=c(2,1,1),col=c(1,4,"Grey50"),pch=c(NA,16,16),bty = "n")
       }else if("Test"%in%kfolds){

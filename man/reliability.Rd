@@ -5,7 +5,7 @@
 \title{Reliability Diagram for MultiQR}
 \usage{
 reliability(qrdata, realisations, kfolds = NULL, subsets = NULL,
-  breaks = 4, plot.it = T, ...)
+  breaks = 4, bootstrap = NULL, plot.it = T, ...)
 }
 \arguments{
 \item{qrdata}{\code{MultiQR} object.}
@@ -17,6 +17,8 @@ reliability(qrdata, realisations, kfolds = NULL, subsets = NULL,
 \item{subsets}{Optional vector of covariates to bin data by. Breaks between bins are the empirical quantiles of \code{subsets}. Cannot be used with \code{kfold}.}
 
 \item{breaks}{Number of quantiles to divide subsets by, results in \code{breaks+1} bins.}
+
+\item{bootstrap}{Calculate this number of boostrap samples to estimate 95% confdence interval}
 
 \item{plot.it}{\code{boolean}. Make a plot?}
 
