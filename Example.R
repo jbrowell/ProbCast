@@ -103,11 +103,12 @@ pinball(qrdata = test1$gbm_mqr,
 
 reliability(qrdata = test1$gbm_mqr,
             realisations = test1$data$TARGETVAR,
-            bootstrap = 500)
+            bootstrap = 100)
 
-reliability(qrdata = test1$gbm_mqr,
-            realisations = test1$data$TARGETVAR,
-            subsets = test1$data$WS100,breaks = 2,
+reliability(qrdata = test1$gbm_mqr[test1$data$kfold=="Test",],
+            realisations = test1$data$TARGETVAR[test1$data$kfold=="Test"],
+            subsets = test1$data$WS100[test1$data$kfold=="Test"],
+            breaks = 4,
             bootstrap = 100)
 
 pinball(qrdata = test1$gbm_mqr,
@@ -125,7 +126,7 @@ points(test1$gbm_mqr[index,],as.numeric(gsub("q","",colnames(test1$gbm_mqr[index
 legend(0.01,1,c("Predicted Quantiles","Linear","Spline","Spline with Exponential Tails"),
        pch=c(1,NA,NA,NA),lty=c(NA,2,1,3),col=c(1,2,1,4),bty="n")
 
-test1$X_gbm <- PIT(test1$gbm_mqr,test1$data$TARGETVAR,method = "spline",tails=list(method="exponential",L=0,U=1,nBins=5,preds=test1$gbm_mqr,targetvar=test1$data$TARGETVAR,ntailpoints=25))
+# test1$X_gbm <- PIT(test1$gbm_mqr,test1$data$TARGETVAR,method = "spline",tails=list(method="exponential",L=0,U=1,nBins=5,preds=test1$gbm_mqr,targetvar=test1$data$TARGETVAR,ntailpoints=25))
 test1$X_gbm <- PIT(test1$gbm_mqr,test1$data$TARGETVAR,method = "spline",tails=list(method="interpolate",L=0,U=1))
 hist(test1$X_gbm,breaks = 50,freq=F,ylim = c(0,3)); lines(c(0,1),c(1,1),lty=2)
 

@@ -85,7 +85,9 @@ reliability <- function(qrdata,realisations,kfolds=NULL,subsets=NULL,breaks=4,bo
       tempRel <- data.frame(Nominal=qs,
                             Empirical=as.numeric(rep(NA,length(qs))),
                             kfold=fold,
-                            subset=NA)
+                            subset=NA,
+                            upper=NA,
+                            lower=NA)
       for(q in qs){
         tempRel$Empirical[which(qs==q)] <- mean(qrdata[[paste0("q",100*q)]][kfolds==fold]>realisations[kfolds==fold],na.rm = T)
       }
