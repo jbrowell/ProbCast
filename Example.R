@@ -86,11 +86,14 @@ par(xaxs="r",yaxs="r")  # Extend axis limits by 4% ("i" does no extension)
 # plot(test1$gbm_mqr[1:72,],xlab="Time Index [Hours]",ylab="Power [Capacity Factor]",axes=F,Legend = 1); axis(1,0:12*6,pos=-0.07); axis(2,las=1)
 # lines(test1$data$TARGETVAR[1:250],lwd=3)
 
-# thought it might be good to show 1 issueTime? obv a good one :p
-set.seed(222)
-i_ts <- sample(unique(test1$data$ISSUEdtm),1)
+## thought it might be good to show 1 issueTime? obv a good one :p
+# set.seed(222)
+# i_ts <- sample(unique(test1$data$ISSUEdtm),1)
+
+i_ts <- unique(test1$data$ISSUEdtm)[3]
+
 plot(test1$gbm_mqr[which(test1$data$ISSUEdtm==i_ts),],xlab="Time Index [Hours]",ylab="Power [Capacity Factor]",axes=F,Legend = 1,ylim=c(0,1)); axis(1,1:24,pos=-0.07); axis(2,las=1)
-lines(test1$data$TARGETVAR[which(test1$data$ISSUEdtm==i_ts)],lwd=3)
+# lines(test1$data$TARGETVAR[which(test1$data$ISSUEdtm==i_ts)],lwd=3)
 
 reliability(qrdata = test1$gbm_mqr,
             realisations = test1$data$TARGETVAR,
@@ -193,24 +196,28 @@ lattice::levelplot(cvm_gbm[["Test"]], xlab="lead time [hours]", ylab="lead time 
                    main="Test --- Covariance")
 
 # sample cvm and convert to power domain
-f_nsamp <- 20
+f_nsamp <- 200
 mean_list <- list()
 for (i in levels(unique(u_obsind$kfold))){
   mean_list[[i]] <- rep(0, 24)
 }
-# method for parametric pred dist.
+## method for parametric pred dist.
+# scen_gbm <- samps_to_scens(copulatype = "temporal",no_samps = f_nsamp,marginals = list(loc_1 = test1$gbm_mqr),sigma_kf = cvm_gbm,mean_kf = mean_list,
+#                           control=list(loc_1 = list(kfold = u_obsind$kfold,issue_ind=u_obsind$i_time,horiz_ind=u_obsind$lead_time,
+#                                                     PIT_method="spline",
+#                                                     CDFtails = list(method="interpolate",L=0,U=1,ntailpoints=100))))
 scen_gbm <- samps_to_scens(copulatype = "temporal",no_samps = f_nsamp,marginals = list(loc_1 = test1$gbm_mqr),sigma_kf = cvm_gbm,mean_kf = mean_list,
-                          control=list(loc_1 = list(kfold = u_obsind$kfold,issue_ind=u_obsind$i_time,horiz_ind=u_obsind$lead_time,
-                                                    PIT_method="spline",
-                                                    CDFtails = list(method="interpolate",L=0,U=1,ntailpoints=100))))
+                           control=list(loc_1 = list(kfold = u_obsind$kfold,issue_ind=u_obsind$i_time,horiz_ind=u_obsind$lead_time,
+                                                     PIT_method="linear",
+                                                     CDFtails = list(method="interpolate",L=0,U=1,ntailpoints=100))))
 
-plot(scen_gbm$loc_1[which(test1$data$ISSUEdtm==i_ts),c(1)],ylim=c(0,1),xlab="Lead Time [Hours]",ylab="Power [Capacity Factor]",col="grey75",lty=1,type="l",axes = F); axis(1,1:24,pos=-0.07); axis(2,las=1)
-for (i in 2:f_nsamp){
-  lines(scen_gbm$loc_1[which(test1$data$ISSUEdtm==i_ts),c(i)],col="grey75",lty=1)
-}
-lines(test1$data$TARGETVAR[which(test1$data$ISSUEdtm==i_ts)],lwd=2)
-legend("bottomleft",c("scenarios","measured"),col = c("grey75","black"),pch=c(NA,NA,NA),bty="n",lty=1)
 
+
+matplot(scen_gbm$loc_1[which(test1$data$ISSUEdtm==i_ts),],type="l",ylim=c(0,1),lty=1,
+        xlab="Lead Time [Hours]",ylab="Power [Capacity Factor]",
+        col=gray(0.1,alpha = 0.1),axes = F); axis(1,1:24,pos=-0.07); axis(2,las=1)
+# lines(test1$data$TARGETVAR[which(test1$data$ISSUEdtm==i_ts)],lwd=2)
+# legend("bottomleft",c("scenarios","measured"),col = c("grey75","black"),pch=c(NA,NA,NA),bty="n",lty=1)
 
 
 
@@ -237,12 +244,11 @@ scen_gamlss <- samps_to_scens(copulatype = "temporal",no_samps = f_nsamp,margina
                            control=list(loc_1 = list(kfold = u_obsind$kfold,issue_ind=u_obsind$i_time,horiz_ind=u_obsind$lead_time,
                                                      q_fun = gamlss.dist::qBEINF)))
 
-plot(scen_gamlss$loc_1[which(test1$data$ISSUEdtm==i_ts),c(1)],ylim=c(0,1),xlab="Lead Time [Hours]",ylab="Power [Capacity Factor]",col="grey75",lty=1,type="l",axes = F); axis(1,1:24,pos=-0.07); axis(2,las=1)
-for (i in 2:f_nsamp){
-  lines(scen_gamlss$loc_1[which(test1$data$ISSUEdtm==i_ts),c(i)],col="grey75",lty=1)
-}
-lines(test1$data$TARGETVAR[which(test1$data$ISSUEdtm==i_ts)],lwd=2)
-legend("bottomleft",c("scenarios","measured"),col = c("grey75","black"),pch=c(NA,NA,NA),bty="n",lty=1)
+matplot(scen_gamlss$loc_1[which(test1$data$ISSUEdtm==i_ts),],type="l",ylim=c(0,1),lty=1,
+        xlab="Lead Time [Hours]",ylab="Power [Capacity Factor]",
+        col=gray(0.1,alpha = 0.1),axes = F); axis(1,1:24,pos=-0.07); axis(2,las=1)
+# lines(test1$data$TARGETVAR[which(test1$data$ISSUEdtm==i_ts)],lwd=2)
+# legend("topleft",c("scenarios","measured"),col = c("grey75","black"),pch=c(NA,NA,NA),bty="n",lty=1)
 
 
 

@@ -6,18 +6,23 @@
 #' @param quantiles A charater vector. By default the column names from MultiQR object, i.e. all available quantiles. Alternatively, a subset may be specified here.
 #' @param q50_line Should the q50 be plotted as a line? This can mis-lead users who may interpret it as the most likely temporal trajectory.
 #' @param Legens Location of legend to be produced. E.g. "topleft"
+#' @param cols Color scheme. May be a list of colors with length >= \code{floor(length(qunatiles)/2)} or function that returns a vector of colors.
 #' @param ... Additional arguments passed to \code{plot()}.
 #' @details Details go here...
 #' @return A plot of a \code{MQR}.
 #' @keywords Quantile Regression, plot
 #' @export
-plot.MultiQR <- function(plotdata,targetTimes=NULL,quantiles=colnames(plotdata),ylim="auto",q50_line=F,Legend=NULL,...){
+plot.MultiQR <- function(plotdata,targetTimes=NULL,quantiles=colnames(plotdata),
+                         ylim="auto",q50_line=F,Legend=NULL,
+                         cols=colorRampPalette(c("dodgerblue1","cyan")),...){
   
   # qs <- colnames(plotdata)
   qs <- quantiles
+  if(class(cols)=="function"){
+    cols <- cols(floor(length(qs)/2))
+  }
   
-  
-  if(ylim=="auto"){
+  if(ylim[1]=="auto"){
     ylim <- range(plotdata)
     ylim <- ylim + rep(diff(ylim),2)*c(-1,1)*0.1
   }
@@ -38,7 +43,7 @@ plot.MultiQR <- function(plotdata,targetTimes=NULL,quantiles=colnames(plotdata),
     for(i in 1:floor(length(qs)/2)){
       polygon(c(plotdata$x,rev(plotdata$x)),
               c(plotdata[[qs[i]]],rev(plotdata[[qs[length(qs)+1-i]]])),
-              col=rainbow(5*length(qs))[3*length(qs)-i], border=NA)
+              col=cols[i], border=NA)
     }
   }
   
@@ -48,7 +53,7 @@ plot.MultiQR <- function(plotdata,targetTimes=NULL,quantiles=colnames(plotdata),
     qs <- as.numeric(gsub("q","",qs))
     legend(Legend,paste0((rev(qs)-qs)[1:floor(length(qs)/2)],"%"),
            pch=15,bty="n",
-           col=rainbow(5*length(qs))[3*length(qs)-1:floor(length(qs)/2)],
+           col=cols,
            ncol=ceiling(length(qs)/10),title = "Prediction Interval")
   }
   
