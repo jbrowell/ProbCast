@@ -95,12 +95,22 @@ pinball(qrdata = test1$gbm_mqr,
         realisations = test1$data$TARGETVAR)
 
 index <- 1000
+quants <- seq(0,1,by=0.001)
 cdf <- contCDF(quantiles = test1$gbm_mqr[index,],method = "spline")
-plot(cdf(seq(0,1,by=0.001)),type="l")
+plot(quants,cdf(quants),type="l")
 cdf <- contCDF(quantiles = test1$gbm_mqr[index,],method = "linear")
-lines(cdf(seq(0,1,by=0.001)),lty=2,col=2)
-cdf <- contCDF(quantiles = test1$gbm_mqr[index,],kfold = NA,method = "spline", tails=list(method="exponential",L=0,U=1,nBins=5,preds=test1$gbm_mqr,targetvar=test1$data$TARGETVAR,ntailpoints=25))
-lines(cdf(seq(0,1,by=0.001)),lty=3,col=3)
+lines(quants,cdf(quants),lty=2,col=2)
+cdf <- contCDF(quantiles = test1$gbm_mqr[index,],method = "spline", tails=list(method="exponential",L=0,U=1,nBins=5,preds=test1$gbm_mqr,targetvar=test1$data$TARGETVAR,ntailpoints=25))
+lines(quants,cdf(quants),lty=3,col=3)
+cdf <- contCDF(quantiles = test1$gbm_mqr[index,],method = "spline", tails=list(method="dyn_exponential",ntailpoints=25))
+lines(quants,cdf(quants),lty=4,col=4)
+# example Gumbel PPD predictions for the tail
+rt_data <- data.frame(mu=0.8,sigma=0.1)
+lt_data <- data.frame(mu=0.1,sigma=.015)
+cdf <- contCDF(quantiles = test1$gbm_mqr[index,],method = "spline", tails=list(method="ppd_GUtails",rt=rt_data,lt=lt_data,ntailpoints=25))
+lines(quants,cdf(quants),lty=5,col=5)
+
+
 
 
 # test1$X_gbm <- PIT(test1$gbm_mqr,test1$data$TARGETVAR,method = "linear",tails=list(method="exponential",L=0,U=1,nBins=5,preds=test1$gbm_mqr,targetvar=test1$data$TARGETVAR,ntailpoints=25))

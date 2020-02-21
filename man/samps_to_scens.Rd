@@ -4,8 +4,16 @@
 \alias{samps_to_scens}
 \title{Generate multivariate forecasts}
 \usage{
-samps_to_scens(copulatype, no_samps, marginals, sigma_kf, mean_kf, control,
-  mcmapply_cores = 1L, ...)
+samps_to_scens(
+  copulatype,
+  no_samps,
+  marginals,
+  sigma_kf,
+  mean_kf,
+  control,
+  mcmapply_cores = 1L,
+  ...
+)
 }
 \arguments{
 \item{copulatype}{Either "spatial" of "temporal", note that spatio-temporal can be generated via "temporal" setting}

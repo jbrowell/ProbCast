@@ -4,8 +4,7 @@
 \alias{plot.MultiQR}
 \title{Plot a Quantile Forecast}
 \usage{
-\method{plot}{MultiQR}(plotdata, targetTimes = NULL,
-  quantiles = colnames(plotdata), ...)
+\method{plot}{MultiQR}(plotdata, targetTimes = NULL, quantiles = colnames(plotdata), ...)
 }
 \arguments{
 \item{plotdata}{A \code{MultiQR} object to be plotted}

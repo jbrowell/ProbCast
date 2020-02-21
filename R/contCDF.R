@@ -4,9 +4,14 @@
 #' @param quantiles A single-row \code{MultiQR} object.
 #' @param kfolds Fold/test label corresponding to \code{quantiles}.
 #' @param method Method of interpolation. If \code{method="linear"} linear interpolation is used between quantiles. For spline interpolation, \code{method=list(name=spline,splinemethod)}, where spline method is passed to \code{splinefun}.
-#' @param tails Method for tails, this must be defined as a list with other control parameters. Default is linear interpolation of tails when \code{method="interpolate"} with boundaries at \code{L=0} and \code{U=1}. Exponential tails can be specified through \code{method="exponential"}, the user will either supply user defined thickness parameters for the tail via \code{thicknessPL} and \code{thicknessPR}, otherwise a symetrical tail thickness can be defined data-driven by specifying: number of bins \code{nbins}, a MQR object \code{preds}, and the target variable, \code{targetvar}. The number of interpolation points for the exponential can be defined via \code{ntailpoints}. 
+#' @param tails Method for tails, this must be defined as a list with other control parameters. Default is linear interpolation of tails when \code{method="interpolate"} with boundaries at \code{L=0} and \code{U=1}. The number of interpolation points for the tail can be defined via \code{ntailpoints}. Alternative methods include:
+#' \itemize{
+#'   \item Exponential tails can be specified through \code{method="exponential"}, the user can either supply user defined thickness parameters for the tail via \code{thicknessPL} and \code{thicknessPR}, otherwise a symetrical tail thickness can be defined data-driven by specifying: number of bins \code{nbins}, a MQR object \code{preds}, and the target variable, \code{targetvar}.  
+#'   \item Dynamic exponential tails can be specified through \code{method="dyn_exponential"}, where the tail depends on the values for the upper and lower quantile of \code{qrdata}, these are only valid for an input variable scale of \code{[0,1]}. 
+#'   \item Gamlss Gumbel tails can be specified through \code{method="ppd_GUtails"}, where the user can supply \code{rt} and \code{lt}  data.frames of the distribution parameter predictions for the right and left tail respecitevely, the CDF is blended between \code{quantiles} and the gumbel tails; these are also only valid for an input variable scale of \code{[0,1]}. For this method \code{ntailpoints} default is 100. 
+#' }
 #' @details Details go here...
-#' @return A cumulative densift function
+#' @return A cumulative density function
 #' @export
 contCDF <- function(quantiles,kfold=NULL,inverse=F,
                     method=list(name="spline",splinemethod="monoH.FC"),
@@ -100,7 +105,87 @@ contCDF <- function(quantiles,kfold=NULL,inverse=F,
       
       # plot(x=c(Lquants,quantiles,Rquants),y=c(LnomP,Probs,RnomP))
       
-    }} else{stop("Tail specification not recognised.")}
+    }
+  }else if(tails$method=="dyn_exponential"){
+    
+    if(is.null(tails$ntailpoints)){tails$ntailpoints <- 5}
+    
+    # function only tested for inputs between zero and 1 at the moment, outwith that need to modify to capture minimum bound of tail
+    # watch dividing by 0....
+    paraf <- function(rho,x,minq){
+      if(rho<minq){rho <- minq}
+      x*rho*exp((1/x)^(1/((1-rho)^(1/rho)))*log(minq/rho))
+    }
+    
+    # samplebetween 0-1 to get tail shape
+    Lquants <- seq(0,1,length.out = tails$ntailpoints)
+    # find nominal probabilities
+    LnomP <- paraf(min(quantiles),Lquants,min(Probs))
+    # remove max value from tail q[(Pr = min(probs))] and normalize shape between available quantile space
+    Lquants <- Lquants[1:(length(Lquants)-1)]*min(quantiles)
+    # remove max probability from tail (Pr = min(Probs))
+    LnomP<-LnomP[1:(length(LnomP)-1)]
+    
+    # same for R tail
+    Rquants <- seq(0,1,length.out = tails$ntailpoints)
+    RnomP <- rev(1-paraf(1-max(quantiles),Rquants,minq = 1-max(Probs)))
+    Rquants <- rev(((1-Rquants[2:length(Rquants)])*(1-max(quantiles)))+max(quantiles))
+    RnomP<-RnomP[2:length(RnomP)]
+    
+  } else if(tails$method=="ppd_GUtails"){
+    
+    # spline for blending quantiles with ppd tail - will extrapolate linearly beyond boundaries
+    quant_sp <- splinefun(x=c(quantiles),y=c(Probs),method="monoH.FC")
+    
+    # gumbel distribution
+    # only tested for inputs between zero and 1 at the moment
+    if(is.null(tails$ntailpoints)){tails$ntailpoints <- 100}
+    
+    if(min(quantiles)>0){
+      # [0 & 1] give infinite quantiles..
+      LnomP <- seq(0,0.99,length.out = tails$ntailpoints)
+      # find quantiles
+      Lquants <- gamlss.dist::qGU(p = LnomP,mu = tails$lt$mu,sigma = tails$lt$sigma)
+      # set lower bound to 0 
+      Lquants[1] <- 0
+      # force negative quantiles to zero...fudge
+      Lquants[Lquants<0] <- 0
+      # rescale input probabilities to required scale
+      LnomP <- (LnomP)*min(Probs)
+      
+      # retain valid quantiles and probabilities given the current qrdata and blend with ppd tails
+      # find point of cross over
+      ind <- which.min((LnomP-quant_sp(Lquants))^2)
+      # retain final valid quantiles and nominal probabilities of the tail
+      Lquants <- Lquants[1:ind]
+      LnomP <- LnomP[1:ind]
+      
+    } else{
+      Lquants <- 0
+      LnomP <- 0
+    }
+    
+    # same for right tail
+    if(max(quantiles)<1){
+      RnomP <- seq(0,0.99,length.out = tails$ntailpoints)
+      Rquants <- gamlss.dist::qGU(p = RnomP,mu = tails$rt$mu,sigma = tails$rt$sigma)
+      Rquants[1] <- 0
+      Rquants[Rquants<0] <- 0
+      Rquants <- rev(1-Rquants)
+      RnomP <- rev(((1-RnomP)*min(Probs))+max(Probs))
+      
+      ind <- which.min((RnomP-quant_sp(Rquants))^2)
+      Rquants <- Rquants[ind:length(Rquants)]
+      RnomP <- RnomP[ind:length(RnomP)]
+
+      
+    } else{
+      Rquants <- 1
+      RnomP <- 1
+    }
+    
+      
+    } else{stop("Tail specification not recognised.")}
   
   
   

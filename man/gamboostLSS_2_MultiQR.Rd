@@ -4,8 +4,12 @@
 \alias{gamboostLSS_2_MultiQR}
 \title{Convert gamboostLSS objects to MultiQR, or alternatively return predicted parameters of predictive distribution.}
 \usage{
-gamboostLSS_2_MultiQR(data, models, quantiles = seq(0.05, 0.95, by =
-  0.05), params = F)
+gamboostLSS_2_MultiQR(
+  data,
+  models,
+  quantiles = seq(0.05, 0.95, by = 0.05),
+  params = F
+)
 }
 \arguments{
 \item{data}{A \code{data.frame} containing explanatory variables.}
