@@ -23,9 +23,12 @@ setwd(PackagePath)
 Wind$WS100 <- sqrt(Wind$U100^2+Wind$V100^2)
 Wind$Power <- pmin(Wind$WS100,11)^3
 
-## Set-up simple kfold CV
-Wind$kfold <- c(rep(c("fold1","fold2","fold3"),each=4000),rep("Test",nrow(Wind)-12000))
-# Wind$kfold <- c(rep(c("fold1","fold2","fold3","fold4"),each=nrow(Wind)/4))
+## Set-up simple kfold CV. NB --- For scenario forecasting make sure the CV folds don't cross issue times
+Wind$kfold <- "fold1"
+Wind$kfold[Wind$ISSUEdtm>as.POSIXct("2012-06-30",tz="UTC")] <- "fold2"
+Wind$kfold[Wind$ISSUEdtm>as.POSIXct("2012-12-31",tz="UTC")] <- "fold3"
+Wind$kfold[Wind$ISSUEdtm>as.POSIXct("2013-06-30",tz="UTC")] <- "Test"
+
 
 ### Multiple Quantile Regression using GBM ####
 test1<-list(data=Wind)
@@ -130,9 +133,10 @@ pinball(qrdata = test1$gbm_mqr[test1$data$kfold=="Test",],
         ylim=c(0,.1))
 
 
-
-
-
+pinball(qrdata = test1$gbm_mqr[test1$data$kfold=="Test",],
+        realisations = test1$data$TARGETVAR[test1$data$kfold=="Test"],
+        subsets = as.factor((test1$data$TARGETdtm-test1$data$ISSUEdtm)[test1$data$kfold=="Test"]),
+        ylim=c(0,.1))
 
 
 
@@ -180,7 +184,7 @@ test1$gamlss_mqr <- PPD_2_MultiQR(data=test1$data,
                                   models = test1$ppd,
                                   params = F)
 
-plot(test1$gamlss_mqr[which(test1$data$ISSUEdtm==i_ts),],xlab="Time Index [Hours]",ylab="Power [Capacity Factor]",axes=F,Legend = 1,ylim=c(0,1)); axis(1,1:24,pos=-0.07); axis(2,las=1)
+plot(test1$gamlss_mqr[which(test1$data$ISSUEdtm==i_ts),],xlab="Lead time [Hours]",ylab="Power [Capacity Factor]",axes=F,Legend = 1,ylim=c(0,1)); axis(1,1:24,pos=-0.07); axis(2,las=1)
 lines(test1$data$TARGETVAR[which(test1$data$ISSUEdtm==i_ts)],lwd=3)
 
 reliability(qrdata = test1$gamlss_mqr,
@@ -221,13 +225,11 @@ for (i in levels(unique(u_obsind$kfold))){
   mean_list[[i]] <- rep(0, 24)
 }
 ## method for parametric pred dist.
-# scen_gbm <- samps_to_scens(copulatype = "temporal",no_samps = f_nsamp,marginals = list(loc_1 = test1$gbm_mqr),sigma_kf = cvm_gbm,mean_kf = mean_list,
-#                           control=list(loc_1 = list(kfold = u_obsind$kfold,issue_ind=u_obsind$i_time,horiz_ind=u_obsind$lead_time,
-#                                                     PIT_method="spline",
-#                                                     CDFtails = list(method="interpolate",L=0,U=1,ntailpoints=100))))
+
+
 scen_gbm <- samps_to_scens(copulatype = "temporal",no_samps = f_nsamp,marginals = list(loc_1 = test1$gbm_mqr),sigma_kf = cvm_gbm,mean_kf = mean_list,
                            control=list(loc_1 = list(kfold = u_obsind$kfold,issue_ind=u_obsind$i_time,horiz_ind=u_obsind$lead_time,
-                                                     PIT_method="linear",
+                                                     PIT_method="spline",
                                                      CDFtails = list(method="interpolate",L=0,U=1,ntailpoints=100))))
 
 
@@ -268,6 +270,84 @@ matplot(scen_gamlss$loc_1[which(test1$data$ISSUEdtm==i_ts),],type="l",ylim=c(0,1
         col=gray(0.1,alpha = 0.1),axes = F); axis(1,1:24,pos=-0.07); axis(2,las=1)
 # lines(test1$data$TARGETVAR[which(test1$data$ISSUEdtm==i_ts)],lwd=2)
 # legend("topleft",c("scenarios","measured"),col = c("grey75","black"),pch=c(NA,NA,NA),bty="n",lty=1)
+
+
+
+
+
+
+#######################
+#### Evaluate scenarios forecasts using scoringRules
+#######################
+
+library(scoringRules)
+library(data.table)
+
+# weight matrix function for variogram score
+mat <- function(d,horizon){w_vs <- matrix(NA, nrow = d, ncol = d)
+for(d1 in 1:d){for(d2 in 1:d){w_vs[d1,d2] <- 0.5^abs(horizon[d1]-horizon[d2])}}
+return(w_vs)}
+
+
+
+### gbm
+FCs <- data.table(cbind(test1$data,scen_gbm$loc_1))
+FCs[,horiz:=as.numeric(TARGETdtm - ISSUEdtm)]
+test1$mvscore_gbm <- FCs[,list(ES=es_sample(y=TARGETVAR,dat=(as.matrix(.SD))),
+                               wVS1=vs_sample(y=TARGETVAR,dat=(as.matrix(.SD)),w=mat(d = .N,horizon = horiz),p=1),
+                               wVS.5=vs_sample(y=TARGETVAR,dat=(as.matrix(.SD)),w=mat(d = .N,horizon = horiz),p=.5))
+                         ,.SDcols=paste0("X",1:f_nsamp),by=c("kfold","ISSUEdtm")]
+
+
+### gamlss
+FCs <- data.table(cbind(test1$data,scen_gamlss$loc_1))
+FCs[,horiz:=as.numeric(TARGETdtm - ISSUEdtm)]
+test1$mvscore_gamlss <- FCs[,list(ES=es_sample(y=TARGETVAR,dat=(as.matrix(.SD))),
+                                  wVS1=vs_sample(y=TARGETVAR,dat=(as.matrix(.SD)),w=mat(d = .N,horizon = horiz),p=1),
+                                  wVS.5=vs_sample(y=TARGETVAR,dat=(as.matrix(.SD)),w=mat(d = .N,horizon = horiz),p=.5))
+                         ,.SDcols=paste0("X",1:f_nsamp),by=c("kfold","ISSUEdtm")]
+
+
+
+test1$mvscore_gbm[,lapply(.SD,function(x){mean(x,na.rm = T)}),.SDcols=c("ES","wVS1","wVS.5"),by=.(kfold)]
+test1$mvscore_gamlss[,lapply(.SD,function(x){mean(x,na.rm = T)}),.SDcols=c("ES","wVS1","wVS.5"),by=.(kfold)]
+
+
+
+# Block bootstrap sampling --- accounting for the tempral correlation of weather patters. Blocks of 7 days...
+
+test1$mvscore_gbm[,block:=as.numeric(floor((ISSUEdtm-as.POSIXct("2012-01-01 00:00:00",tz="UTC"))/(60*60*24*7)))]
+test1$mvscore_gamlss[,block:=as.numeric(floor((ISSUEdtm-as.POSIXct("2012-01-01 00:00:00",tz="UTC"))/(60*60*24*7)))]
+
+
+evalplot_block <- function(data_table, block,nboot = 100, na.rm = TRUE, ylab = "Value [Capacity Factor]",scores = c("ES","wVS1","wVS.5"),...) {
+  
+  boot <- NULL
+  for(i in 1:nboot) {
+  bootind <- sample(unique(block), replace = TRUE)
+  data <- rbindlist(lapply(bootind,function(x){data_table[block==x]}))
+
+  boot <- rbind(boot, colMeans(data[,.SD,.SDcols = scores], na.rm = na.rm))
+  rm(data)
+  }
+  
+  boxplot(boot, ylab = ylab, xlab= "score", ...)
+}
+
+
+### ES CV - gbm
+par(mfrow = c(1,1), mar = c(3,3,0.5,0),tcl=0.35, mgp=c(1.5,0.2,0), xaxs="r",yaxs="r")
+evalplot_block(test1$mvscore_gbm[kfold!="Test"],block = test1$mvscore_gbm[kfold!="Test",block],axes=F,ylim=c(0.3,1.1))
+axis(2, at=seq(0.3,1.1,0.1), labels=seq(0.3,1.1,0.1), lwd=2, cex=1.2);axis(1, at=1:3,labels = c("ES","wVS1","wVS.5"),lwd=2, cex=1.2)
+
+### ES CV - gamlss
+par(mfrow = c(1,1), mar = c(3,3,0.5,0),tcl=0.35, mgp=c(1.5,0.2,0), xaxs="r",yaxs="r")
+evalplot_block(test1$mvscore_gamlss[kfold!="Test"],block = test1$mvscore_gamlss[kfold!="Test",block],axes=F,ylim=c(0.3,1.1))
+axis(2, at=seq(0.3,1.1,0.1), labels=seq(0.3,1.1,0.1), lwd=2, cex=1.2);axis(1, at=1:3,labels = c("ES","wVS1","wVS.5"),lwd=2, cex=1.2)
+
+
+
+
 
 
 
