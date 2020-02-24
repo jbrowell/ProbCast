@@ -83,13 +83,6 @@ par(tcl=0.35)  # Switch tick marks to insides of axes
 par(mgp=c(1.5,0.2,0))  # Set margin lines; default c(3,1,0) [title,labels,line]
 par(xaxs="r",yaxs="r")  # Extend axis limits by 4% ("i" does no extension)
 
-# plot(test1$gbm_mqr[1:72,],xlab="Time Index [Hours]",ylab="Power [Capacity Factor]",axes=F,Legend = 1); axis(1,0:12*6,pos=-0.07); axis(2,las=1)
-# lines(test1$data$TARGETVAR[1:250],lwd=3)
-
-## thought it might be good to show 1 issueTime? obv a good one :p
-# set.seed(222)
-# i_ts <- sample(unique(test1$data$ISSUEdtm),1)
-
 i_ts <- unique(test1$data$ISSUEdtm)[3]
 
 plot(test1$gbm_mqr[which(test1$data$ISSUEdtm==i_ts),],xlab="Time Index [Hours]",ylab="Power [Capacity Factor]",axes=F,Legend = 1,ylim=c(0,1)); axis(1,1:24,pos=-0.07); axis(2,las=1)
@@ -105,7 +98,7 @@ pinball(qrdata = test1$gbm_mqr,
 
 
 reliability(qrdata = test1$gbm_mqr,
-            realisations = test1$data$TARGETVAR)
+            realisations = test1$data$TARGETVAR,bootstrap = 100)
 
 reliability(qrdata = test1$gbm_mqr[test1$data$kfold=="Test",],
             realisations = test1$data$TARGETVAR[test1$data$kfold=="Test"],
@@ -114,7 +107,34 @@ reliability(qrdata = test1$gbm_mqr[test1$data$kfold=="Test",],
             bootstrap = 100)
 
 pinball(qrdata = test1$gbm_mqr,
-        realisations = test1$data$TARGETVAR)
+        realisations = test1$data$TARGETVAR,
+        bootstrap = 100)
+
+pinball(qrdata = test1$gbm_mqr,
+            realisations = test1$data$TARGETVAR,
+            kfolds = test1$data$kfold,
+            bootstrap = 100,ylim=c(0,.08))
+
+pinball(qrdata = test1$gbm_mqr[test1$data$kfold=="Test",],
+        realisations = test1$data$TARGETVAR[test1$data$kfold=="Test"],
+        subsets = test1$data$WS100[test1$data$kfold=="Test"],
+        breaks = 4,
+        ylim=c(0,.1))
+
+
+pinball(qrdata = test1$gbm_mqr[test1$data$kfold=="Test",],
+        realisations = test1$data$TARGETVAR[test1$data$kfold=="Test"],
+        subsets = test1$data$WS100[test1$data$kfold=="Test"],
+        breaks = 4,
+        bootstrap = 100,
+        ylim=c(0,.1))
+
+
+
+
+
+
+
 
 index <- 54
 x <- seq(0,1,by=0.001)
