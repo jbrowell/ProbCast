@@ -120,13 +120,6 @@ pinball(qrdata = test1$gbm_mqr[test1$data$kfold=="Test",],
         realisations = test1$data$TARGETVAR[test1$data$kfold=="Test"],
         subsets = test1$data$WS100[test1$data$kfold=="Test"],
         breaks = 4,
-        ylim=c(0,.1))
-
-
-pinball(qrdata = test1$gbm_mqr[test1$data$kfold=="Test",],
-        realisations = test1$data$TARGETVAR[test1$data$kfold=="Test"],
-        subsets = test1$data$WS100[test1$data$kfold=="Test"],
-        breaks = 4,
         bootstrap = 100,
         ylim=c(0,.1))
 
@@ -312,7 +305,7 @@ test1$mvscore_gamlss[,lapply(.SD,function(x){mean(x,na.rm = T)}),.SDcols=c("ES",
 
 
 
-# Block bootstrap sampling --- accounting for the tempral correlation of weather patters. Blocks of 7 days...
+# Block bootstrap sampling --- accounting for the temporal correlation of weather patters. Blocks of 7 days...
 
 test1$mvscore_gbm[,block:=as.numeric(floor((ISSUEdtm-as.POSIXct("2012-01-01 00:00:00",tz="UTC"))/(60*60*24*7)))]
 test1$mvscore_gamlss[,block:=as.numeric(floor((ISSUEdtm-as.POSIXct("2012-01-01 00:00:00",tz="UTC"))/(60*60*24*7)))]
@@ -335,13 +328,13 @@ evalplot_block <- function(data_table, block,nboot = 100, na.rm = TRUE, ylab = "
 
 ### ES CV - gbm
 par(mfrow = c(1,1), mar = c(3,3,0.5,0),tcl=0.35, mgp=c(1.5,0.2,0), xaxs="r",yaxs="r")
-evalplot_block(test1$mvscore_gbm[kfold!="Test"],block = test1$mvscore_gbm[kfold!="Test",block],axes=F,ylim=c(0.3,1.1))
+evalplot_block(test1$mvscore_gbm[kfold=="Test"],block = test1$mvscore_gbm[kfold=="Test",block],axes=F,ylim=c(0.3,1.1))
 axis(2, at=seq(0.3,1.1,0.1), labels=seq(0.3,1.1,0.1), lwd=2, cex=1.2);axis(1, at=1:3,labels = c("ES","wVS1","wVS.5"),lwd=2, cex=1.2)
 
 ### ES CV - gamlss
 par(mfrow = c(1,1), mar = c(3,3,0.5,0),tcl=0.35, mgp=c(1.5,0.2,0), xaxs="r",yaxs="r")
-evalplot_block(test1$mvscore_gamlss[kfold!="Test"],block = test1$mvscore_gamlss[kfold!="Test",block],axes=F,ylim=c(0.3,1.1))
-axis(2, at=seq(0.3,1.1,0.1), labels=seq(0.3,1.1,0.1), lwd=2, cex=1.2);axis(1, at=1:3,labels = c("ES","wVS1","wVS.5"),lwd=2, cex=1.2)
+evalplot_block(test1$mvscore_gamlss[kfold=="Test"],block = test1$mvscore_gamlss[kfold=="Test",block],axes=F,ylim=c(0.4,1.2))
+axis(2, at=seq(0.4,1.2,0.1), labels=seq(0.4,1.2,0.1), lwd=2, cex=1.2);axis(1, at=1:3,labels = c("ES","wVS1","wVS.5"),lwd=2, cex=1.2)
 
 
 
