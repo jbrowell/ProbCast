@@ -167,6 +167,9 @@ test1$gamlssParams <- PPD_2_MultiQR(data=test1$data,
                                    models = test1$ppd,
                                    params = T)
 
+
+
+
 # some issue with the gamlss predictions here, needs futher digging...
 test1$gamlssParams[which(test1$gamlssParams[,1]>=1),1] <- 0.99999
 test1$gamlssParams[which(test1$gamlssParams[,2]>=1),2] <- 0.99999
