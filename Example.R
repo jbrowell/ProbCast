@@ -24,9 +24,9 @@ Wind$WS100 <- sqrt(Wind$U100^2+Wind$V100^2)
 Wind$Power <- pmin(Wind$WS100,11)^3
 
 ## Set-up simple kfold CV. NB --- For scenario forecasting make sure the CV folds don't cross issue times
-Wind$kfold <- "fold1"
-Wind$kfold[Wind$ISSUEdtm>as.POSIXct("2012-06-30",tz="UTC")] <- "fold2"
-Wind$kfold[Wind$ISSUEdtm>as.POSIXct("2012-12-31",tz="UTC")] <- "fold3"
+Wind$kfold <- "Fold 1"
+Wind$kfold[Wind$ISSUEdtm>as.POSIXct("2012-06-30",tz="UTC")] <- "Fold 2"
+Wind$kfold[Wind$ISSUEdtm>as.POSIXct("2012-12-31",tz="UTC")] <- "Fold 3"
 Wind$kfold[Wind$ISSUEdtm>as.POSIXct("2013-06-30",tz="UTC")] <- "Test"
 
 
@@ -78,8 +78,6 @@ test1$gbm_mqr <- MQR_gbm(data = test1$data,
                          pred_ntree = 1000,
                          para_over_q = T)
 
-
-# test1$gbm_mqr <- test1$gbm_mqr3
 
 par(mar=c(3,3,0.5,1))  # Trim margin around plot [b,l,t,r]
 par(tcl=0.35)  # Switch tick marks to insides of axes

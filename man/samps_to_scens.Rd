@@ -34,7 +34,11 @@ This function produces a list of multivariate scenario forecasts in the marginal
 Details go here...
 }
 \note{
-For spatio-temporal scenarios, each site must have the same number of inputs to the governing covariance matrix. Also, for multiple locations the ordering of the lists of the margins & control, and the structure of the covariance matrices is very important; if the columns/rows in each covariance matrix are ordered loc1_h1, loc1_h2,..., loc2_h1, loc2_h_2,..., loc_3_h1, loc_3_h2,... i.e. location_leadtime --- then the list of the marginals should be in the same order loc1, loc2, loc3,....
+For spatio-temporal scenarios, each site must have the same number of inputs to the governing covariance matrix.
+
+For multiple locations the ordering of the lists of the margins & control, and the structure of the covariance matrices is very important; if the columns/rows in each covariance matrix are ordered loc1_h1, loc1_h2,..., loc2_h1, loc2_h_2,..., loc_3_h1, loc_3_h2,... i.e. location_leadtime --- then the list of the marginals should be in the same order loc1, loc2, loc3,....
+
+Ensure kfold ids in the control list do not change within any issue time --- i.e. make sure the issue times are unique to each fold.
 }
 \examples{
 \dontrun{

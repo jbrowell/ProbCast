@@ -6,7 +6,8 @@
 \usage{
 \method{plot}{MultiQR}(plotdata, targetTimes = NULL,
   quantiles = colnames(plotdata), ylim = "auto", q50_line = F,
-  Legend = NULL, ...)
+  Legend = NULL, cols = colorRampPalette(c("dodgerblue1", "cyan")),
+  ...)
 }
 \arguments{
 \item{plotdata}{A \code{MultiQR} object to be plotted}
@@ -16,6 +17,8 @@
 \item{quantiles}{A charater vector. By default the column names from MultiQR object, i.e. all available quantiles. Alternatively, a subset may be specified here.}
 
 \item{q50_line}{Should the q50 be plotted as a line? This can mis-lead users who may interpret it as the most likely temporal trajectory.}
+
+\item{cols}{Color scheme. May be a list of colors with length >= \code{floor(length(qunatiles)/2)} or function that returns a vector of colors.}
 
 \item{...}{Additional arguments passed to \code{plot()}.}
 
