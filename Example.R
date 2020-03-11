@@ -227,7 +227,6 @@ scen_gbm <- samps_to_scens(copulatype = "temporal",no_samps = f_nsamp,marginals 
                                                      CDFtails = list(method="interpolate",L=0,U=1,ntailpoints=100))))
 
 
-
 matplot(scen_gbm$loc_1[which(test1$data$ISSUEdtm==i_ts),],type="l",ylim=c(0,1),lty=1,
         xlab="Lead Time [Hours]",ylab="Power [Capacity Factor]",
         col=gray(0.1,alpha = 0.1),axes = F); axis(1,1:24,pos=-0.07); axis(2,las=1)
@@ -313,32 +312,33 @@ test1$mvscore_gamlss[,lapply(.SD,function(x){mean(x,na.rm = T)}),.SDcols=c("ES",
 test1$mvscore_gbm[,block:=as.numeric(floor((ISSUEdtm-as.POSIXct("2012-01-01 00:00:00",tz="UTC"))/(60*60*24*7)))]
 test1$mvscore_gamlss[,block:=as.numeric(floor((ISSUEdtm-as.POSIXct("2012-01-01 00:00:00",tz="UTC"))/(60*60*24*7)))]
 
+mv_dt <- rbindlist(list(gbm = test1$mvscore_gbm,gamlss = test1$mvscore_gamlss),idcol = "marginal")
+mv_dt[,marginal:=factor(marginal,levels = c("gamlss","gbm"))]
+setorder(mv_dt,ISSUEdtm)
 
-evalplot_block <- function(data_table, block,nboot = 100, na.rm = TRUE, ylab = "Value [Capacity Factor]",scores = c("ES","wVS1","wVS.5"),...) {
+
+evalplot_block <- function(data_table, block,nboot = 100, na.rm = TRUE,score = "ES",...) {
   
   boot <- NULL
   for(i in 1:nboot) {
   bootind <- sample(unique(block), replace = TRUE)
   data <- rbindlist(lapply(bootind,function(x){data_table[block==x]}))
 
-  boot <- rbind(boot, colMeans(data[,.SD,.SDcols = scores], na.rm = na.rm))
+  boot <- rbind(boot, data[,as.list(colMeans(.SD,na.rm = na.rm)),.SDcols = score,by=.(marginal)])
   rm(data)
   }
   
-  boxplot(boot, ylab = ylab, xlab= "score", ...)
+  boxplot(data = boot, as.formula(paste0(score,"~ marginal")),ylab = score,xlab = "", ...)
 }
 
 
 ### ES CV - gbm
-par(mfrow = c(1,1), mar = c(3,3,0.5,0),tcl=0.35, mgp=c(1.5,0.2,0), xaxs="r",yaxs="r")
-evalplot_block(test1$mvscore_gbm[kfold=="Test"],block = test1$mvscore_gbm[kfold=="Test",block],axes=F,ylim=c(0.3,1.1))
-axis(2, at=seq(0.3,1.1,0.1), labels=seq(0.3,1.1,0.1), lwd=2, cex=1.2);axis(1, at=1:3,labels = c("ES","wVS1","wVS.5"),lwd=2, cex=1.2)
 
-### ES CV - gamlss
-par(mfrow = c(1,1), mar = c(3,3,0.5,0),tcl=0.35, mgp=c(1.5,0.2,0), xaxs="r",yaxs="r")
-evalplot_block(test1$mvscore_gamlss[kfold=="Test"],block = test1$mvscore_gamlss[kfold=="Test",block],axes=F,ylim=c(0.4,1.2))
-axis(2, at=seq(0.4,1.2,0.1), labels=seq(0.4,1.2,0.1), lwd=2, cex=1.2);axis(1, at=1:3,labels = c("ES","wVS1","wVS.5"),lwd=2, cex=1.2)
-
+par(mfrow = c(1,2), mar = c(1.5,3,0.5,0),tcl=0.35, mgp=c(1.5,0.2,0), xaxs="r",yaxs="r")
+evalplot_block(mv_dt[kfold=="Test"],block = mv_dt[kfold=="Test",block],axes=F,ylim=c(0.4,0.75))
+axis(2,seq(0.4,.75,0.05),lwd=2, cex=1.2);axis(1, at=1:2,labels = c("gamlss","gbm"),lwd=2, cex=1.2)
+evalplot_block(mv_dt[kfold=="Test"],block = mv_dt[kfold=="Test",block],score="wVS1",axes=F,ylim=c(0.4,0.75))
+axis(2,seq(0.4,.75,0.05),lwd=2, cex=1.2);axis(1, at=1:2,labels = c("gamlss","gbm"),lwd=2, cex=1.2)
 
 
 
