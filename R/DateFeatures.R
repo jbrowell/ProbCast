@@ -11,7 +11,8 @@ read_holiday_ics <- function(folder=getwd()){
   for(file in list.files(pattern = ".ics")){
 
     x <- readLines(file,encoding =  "UTF-8")
-    x <- gsub(x,pattern = "'",replacement = "'")
+    x <- gsub(x,pattern = "Andrew.+s",replacement = "Andrew's")
+    x <- gsub(x,pattern = "Year.+s",replacement = "Year's")
     stopifnot(!any(grepl("^\\s+", x))) # disregarding value fields that have linefeeds for the sake of simplicity
     keyval <- do.call(rbind, regmatches(x, regexpr(":", x, fixed = TRUE), invert = TRUE))
     keyval <- keyval[which.max(keyval[,1]=="BEGIN" & keyval[,2]=="VEVENT"):tail(which(keyval[,1]=="END" & keyval[,2]=="VEVENT"), 1),]
