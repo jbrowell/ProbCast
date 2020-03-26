@@ -44,19 +44,14 @@ PIT.MultiQR <- function(qrdata,obs,tails,inverse=FALSE,...){
     X <- matrix(NA,nrow(qrdata),ncol = ncol(obs))
     for(i in 1:nrow(qrdata)){
       if(is.na(qrdata[i,1])){X[i,] <- NA}else{
-        if(tails$method=="ppd_GUtails"){
-          X[i,] <- contCDF(quantiles = qrdata[i,],tails = append(tails[-which(names(tails)%in%c("lt","rt"))],list(rt=tails$rt[i,],lt=tails$lt[i,])),inverse = TRUE,...)(as.numeric(obs[i,]))} else{
-            X[i,] <- contCDF(quantiles = qrdata[i,],tails = tails,inverse = TRUE,...)(as.numeric(obs[i,]))}
-      }
+        X[i,] <- contCDF(quantiles = qrdata[i,],tails = tails,inverse = TRUE,...)(as.numeric(obs[i,]))}
     }
   }else{
     
     X<-rep(NA,nrow(qrdata))
     for(i in 1:nrow(qrdata)){
       if(is.na(obs[i]) | is.na(sum(qrdata[i,]))){X[i] <- NA}else{
-        if(tails$method=="ppd_GUtails"){
-          X[i] <- contCDF(quantiles = qrdata[i,],tails = append(tails[-which(names(tails)%in%c("lt","rt"))],list(rt=tails$rt[i,],lt=tails$lt[i,])),...)(obs[i])} else{
-            X[i] <- contCDF(quantiles = qrdata[i,],tails = tails,...)(obs[i])}
+        X[i] <- contCDF(quantiles = qrdata[i,],tails = tails,...)(obs[i])
       }
     }
     

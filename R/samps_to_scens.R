@@ -9,7 +9,9 @@
 #' @param control a named list of with nested control parameters (named according to \code{marginals}). Each named list should contain \code{kfold}, \code{issue_ind}, and \code{horiz_ind} which are the kfold, issue time, and lead time vectors corresponding to the margins of the copula. If margins are MultiQR class also define \code{PIT_method} and list \code{CDFtails}, which are passed to the PIT function. If the margins are distribution parameter predictions then define \code{q_fun}, which transforms the columns of \code{marginals} through the quantile function --- see example for more details. 
 #' @param mcmapply_cores defaults to 1. Warning, only change if not using windows OS --- see the \code{parallel::mcmapply} help page for more info. Speed improvements possible when generating sptio-temporal scenarios, set to the number of locations if possible.
 #' @param ... other parameters to be passed to mvtnorm::rmvnorm
-#' @note For spatio-temporal scenarios, each site must have the same number of inputs to the governing covariance matrix. Also, for multiple locations the ordering of the lists of the margins & control, and the structure of the covariance matrices is very important; if the columns/rows in each covariance matrix are ordered loc1_h1, loc1_h2,..., loc2_h1, loc2_h_2,..., loc_3_h1, loc_3_h2,... i.e. location_leadtime --- then the list of the marginals should be in the same order loc1, loc2, loc3,....
+#' @note For spatio-temporal scenarios, each site must have the same number of inputs to the governing covariance matrix.
+#' @note For multiple locations the ordering of the lists of the margins & control, and the structure of the covariance matrices is very important; if the columns/rows in each covariance matrix are ordered loc1_h1, loc1_h2,..., loc2_h1, loc2_h_2,..., loc_3_h1, loc_3_h2,... i.e. location_leadtime --- then the list of the marginals should be in the same order loc1, loc2, loc3,....
+#' @note Ensure kfold ids in the control list do not change within any issue time --- i.e. make sure the issue times are unique to each fold. 
 #' @details Details go here...
 #' @return A list or data frame of multivariate scenario forecasts
 #' @examples
@@ -187,6 +189,8 @@ samps_to_scens <- function(copulatype,no_samps,marginals,sigma_kf,mean_kf,contro
   filtered_samps <- lapply(filtered_samps,function(x){x[order(x$sort_ind),]})
   # remove issuetime, horizon, and sorting column for passing through PIT-
   filtered_samps <- lapply(filtered_samps,function(x){x[,-c(1:3)]})
+  
+  
   
   
   
