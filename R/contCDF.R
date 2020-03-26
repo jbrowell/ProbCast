@@ -114,8 +114,9 @@ contCDF <- function(quantiles,kfold=NULL,inverse=F,
     # watch dividing by 0....
     paraf <- function(rho,x,minq){
       if(rho<minq){rho <- minq}
-      x*rho*exp((1/x)^(1/((1-rho)^(1/rho)))*log(minq/rho))
+      x*rho*exp((1/x)^(1/(1-rho))*log(minq/rho))
     }
+    
     
     # samplebetween 0-1 to get tail shape
     Lquants <- seq(0,1,length.out = tails$ntailpoints)
@@ -132,60 +133,7 @@ contCDF <- function(quantiles,kfold=NULL,inverse=F,
     Rquants <- rev(((1-Rquants[2:length(Rquants)])*(1-max(quantiles)))+max(quantiles))
     RnomP<-RnomP[2:length(RnomP)]
     
-  } else if(tails$method=="ppd_GUtails"){
-    
-    # spline for blending quantiles with ppd tail - will extrapolate linearly beyond boundaries
-    quant_sp <- splinefun(x=c(quantiles),y=c(Probs),method="monoH.FC")
-    
-    # gumbel distribution
-    # only tested for inputs between zero and 1 at the moment
-    if(is.null(tails$ntailpoints)){tails$ntailpoints <- 100}
-    
-    if(min(quantiles)>0){
-      # [0 & 1] give infinite quantiles..
-      LnomP <- seq(0,0.99,length.out = tails$ntailpoints)
-      # find quantiles
-      Lquants <- gamlss.dist::qGU(p = LnomP,mu = tails$lt$mu,sigma = tails$lt$sigma)
-      # set lower bound to 0 
-      Lquants[1] <- 0
-      # force negative quantiles to zero...fudge
-      Lquants[Lquants<0] <- 0
-      # rescale input probabilities to required scale
-      LnomP <- (LnomP)*min(Probs)
-      
-      # retain valid quantiles and probabilities given the current qrdata and blend with ppd tails
-      # find point of cross over
-      ind <- which.min((LnomP-quant_sp(Lquants))^2)
-      # retain final valid quantiles and nominal probabilities of the tail
-      Lquants <- Lquants[1:ind]
-      LnomP <- LnomP[1:ind]
-      
-    } else{
-      Lquants <- 0
-      LnomP <- 0
-    }
-    
-    # same for right tail
-    if(max(quantiles)<1){
-      RnomP <- seq(0,0.99,length.out = tails$ntailpoints)
-      Rquants <- gamlss.dist::qGU(p = RnomP,mu = tails$rt$mu,sigma = tails$rt$sigma)
-      Rquants[1] <- 0
-      Rquants[Rquants<0] <- 0
-      Rquants <- rev(1-Rquants)
-      RnomP <- rev(((1-RnomP)*min(Probs))+max(Probs))
-      
-      ind <- which.min((RnomP-quant_sp(Rquants))^2)
-      Rquants <- Rquants[ind:length(Rquants)]
-      RnomP <- RnomP[ind:length(RnomP)]
-
-      
-    } else{
-      Rquants <- 1
-      RnomP <- 1
-    }
-    
-      
-    } else{stop("Tail specification not recognised.")}
+  } else{stop("Tail specification not recognised.")}
   
   
   
