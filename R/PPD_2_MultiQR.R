@@ -3,12 +3,15 @@
 #' @param data A \code{data.frame} containing explanatory variables.
 #' @param models An \code{PPD} object.
 #' @param quantiles Vector of quantiles to be calculated
-#'
+#' @param params return distribution parameter predictions?
 #' @details Details go here...
 #' @return A \code{MultiQR} object derived from gamlss predictive distributions. Alternatively, a matrix condaining the parameters of the predictive  gamlss distributions.
 #' @export
-
 PPD_2_MultiQR <- function(data,models,quantiles=seq(0.05,0.95,by=0.05),params=F){
+  
+  if(class(data)!="data.frame"){
+    data <- data.frame(data)
+  }
   
   # Arrange kfold cross-validation
   if(is.null(data$kfold)){
