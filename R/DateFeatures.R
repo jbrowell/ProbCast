@@ -5,6 +5,7 @@
 #' @details Details go here...
 #' @return Table of UK Holidays
 #' @keywords Date Features
+#' @import data.table
 #' @export
 read_holiday_ics <- function(folder=getwd()){
 
