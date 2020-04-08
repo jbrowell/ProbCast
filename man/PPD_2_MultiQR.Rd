@@ -4,8 +4,7 @@
 \alias{PPD_2_MultiQR}
 \title{Convert PPD to MultiQR, or alternatively return predicted parameters of predictive distribution.}
 \usage{
-PPD_2_MultiQR(data, models, quantiles = seq(0.05, 0.95, by = 0.05),
-  params = F)
+PPD_2_MultiQR(data, models, quantiles = seq(0.05, 0.95, by = 0.05), params = F)
 }
 \arguments{
 \item{data}{A \code{data.frame} containing explanatory variables.}

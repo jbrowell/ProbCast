@@ -4,8 +4,16 @@
 \alias{reliability}
 \title{Reliability Diagram for MultiQR}
 \usage{
-reliability(qrdata, realisations, kfolds = NULL, subsets = NULL,
-  breaks = 4, bootstrap = NULL, plot.it = T, ...)
+reliability(
+  qrdata,
+  realisations,
+  kfolds = NULL,
+  subsets = NULL,
+  breaks = 4,
+  bootstrap = NULL,
+  plot.it = T,
+  ...
+)
 }
 \arguments{
 \item{qrdata}{\code{MultiQR} object.}

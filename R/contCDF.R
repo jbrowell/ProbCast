@@ -100,7 +100,26 @@ contCDF <- function(quantiles,kfold=NULL,inverse=F,
       
       # plot(x=c(Lquants,quantiles,Rquants),y=c(LnomP,Probs,RnomP))
       
-    }} else{stop("Tail specification not recognised.")}
+    }
+  }else if(tails$method=="gpd"){
+    
+    Rquants <- tails$tail_qs+rev(quantiles)[1]
+    RnomP <- pgpd(q=Rquants,location=rev(quantiles)[1],shape = tails$shape_r,scale=tails$scale_r)
+    RnomP[length(RnomP)] <- 1
+    RnomP <- RnomP*(1-rev(Probs)[1])+rev(Probs)[1]
+    # plot(Rquants,RnomP)
+    
+    Lquants <- tails$tail_qs
+    LnomP <- rev(1-pgpd(q=Lquants,location=0,shape = tails$shape_l,scale=tails$scale_l))
+    LnomP[1] <- 0
+    LnomP <- LnomP*Probs[1]
+    Lquants <- Lquants-max(Lquants)+quantiles[1]
+    # plot(Lquants,LnomP)
+    
+    # plot(c(Lquants,quantiles,Rquants),c(LnomP,Probs,RnomP))
+    
+    
+  }else{stop("Tail specification not recognised.")}
   
   
   
@@ -129,5 +148,15 @@ contCDF <- function(quantiles,kfold=NULL,inverse=F,
                        method=method$splinemethod))
     }
   }else{stop("Interpolation method not recognised.")}
+}
+
+
+
+pgpd <- function(q,location=0,scale,shape){
+  if(shape!=0){
+    1-(1+shape*(q-location)/scale)^(-1/shape)
+  }else{
+    1-exp(-(q-location)/scale)
+  }
 }
 
