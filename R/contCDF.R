@@ -4,7 +4,7 @@
 #' @param quantiles A single-row \code{MultiQR} object.
 #' @param kfolds Fold/test label corresponding to \code{quantiles}.
 #' @param method Method of interpolation. If \code{method="linear"} linear interpolation is used between quantiles. For spline interpolation, \code{method=list(name=spline,splinemethod)}, where spline method is passed to \code{splinefun}.
-#' @param tails Method for tails, this must be defined as a list with other control parameters. Default is linear interpolation of tails when \code{method="interpolate"} with boundaries at \code{L=0} and \code{U=1}. Exponential tails can be specified through \code{method="exponential"}, the user will either supply user defined thickness parameters for the tail via \code{thicknessPL} and \code{thicknessPR}, otherwise a symetrical tail thickness can be defined data-driven by specifying: number of bins \code{nbins}, a MQR object \code{preds}, and the target variable, \code{targetvar}. The number of interpolation points for the exponential can be defined via \code{ntailpoints}. 
+#' @param tails Method for tails, this must be defined as a list with other control parameters. See details. Default is linear interpolation of tails when \code{method="interpolate"} with boundaries at \code{L=0} and \code{U=1}. Exponential tails can be specified through \code{method="exponential"}, the user will either supply user defined thickness parameters for the tail via \code{thicknessPL} and \code{thicknessPR}, otherwise a symetrical tail thickness can be defined data-driven by specifying: number of bins \code{nbins}, a MQR object \code{preds}, and the target variable, \code{targetvar}. The number of interpolation points for the exponential can be defined via \code{ntailpoints}. The Generalised Pareto Distribution may be chosen with \code{method="gpd"}, and additional arguments \code{scale_r,shape_r,scale_l,shape_l,tail_qs} specifying the right and left scale and shapre parameters and the incraments beyond the final quantiles to evaluate the gpd at, e.g. \code{tail_qs=seq(0.1,1,by=0.1)} to exctend into the tails by +/- 1 in steps of 0.1.
 #' @details Details go here...
 #' @return A cumulative densift function
 #' @export
@@ -100,7 +100,26 @@ contCDF <- function(quantiles,kfold=NULL,inverse=F,
       
       # plot(x=c(Lquants,quantiles,Rquants),y=c(LnomP,Probs,RnomP))
       
-    }} else{stop("Tail specification not recognised.")}
+    }
+  }else if(tails$method=="gpd"){
+    
+    Rquants <- tails$tail_qs+rev(quantiles)[1]
+    RnomP <- pgpd(q=Rquants,location=rev(quantiles)[1],shape = tails$shape_r,scale=tails$scale_r)
+    RnomP[length(RnomP)] <- 1
+    RnomP <- RnomP*(1-rev(Probs)[1])+rev(Probs)[1]
+    # plot(Rquants,RnomP)
+    
+    Lquants <- tails$tail_qs
+    LnomP <- rev(1-pgpd(q=Lquants,location=0,shape = tails$shape_l,scale=tails$scale_l))
+    LnomP[1] <- 0
+    LnomP <- LnomP*Probs[1]
+    Lquants <- Lquants-max(Lquants)+quantiles[1]
+    # plot(Lquants,LnomP)
+    
+    # plot(c(Lquants,quantiles,Rquants),c(LnomP,Probs,RnomP))
+    
+    
+  }else{stop("Tail specification not recognised.")}
   
   
   
@@ -129,5 +148,15 @@ contCDF <- function(quantiles,kfold=NULL,inverse=F,
                        method=method$splinemethod))
     }
   }else{stop("Interpolation method not recognised.")}
+}
+
+
+
+pgpd <- function(q,location=0,scale,shape){
+  if(shape!=0){
+    1-(1+shape*(q-location)/scale)^(-1/shape)
+  }else{
+    1-exp(-(q-location)/scale)
+  }
 }
 

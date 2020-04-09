@@ -4,10 +4,21 @@
 \alias{MQR_gbm}
 \title{Multiple Quantile Regression Using GBM}
 \usage{
-MQR_gbm(data, formula, quantiles = c(0.25, 0.5, 0.75), CVfolds = NULL,
-  gbm_params = list(...), perf.plot = F, parallel = F,
-  pred_ntree = NULL, cores = NULL, pckgs = NULL,
-  para_over_q = FALSE, Sort = T, SortLimits = NULL)
+MQR_gbm(
+  data,
+  formula,
+  quantiles = c(0.25, 0.5, 0.75),
+  CVfolds = NULL,
+  gbm_params = list(...),
+  perf.plot = F,
+  parallel = F,
+  pred_ntree = NULL,
+  cores = NULL,
+  pckgs = NULL,
+  para_over_q = FALSE,
+  Sort = T,
+  SortLimits = NULL
+)
 }
 \arguments{
 \item{data}{A \code{data.frame} containing target and explanatory variables. May optionally contain a collumn called "kfold" with numbered/labeled folds and "Test" for test data.}

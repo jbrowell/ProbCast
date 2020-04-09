@@ -4,8 +4,15 @@
 \alias{Para_gamboostLSS}
 \title{Fit a gamboostlss paramertirc forecast model}
 \usage{
-Para_gamboostLSS(data, formula, families = GaussianLSS(), parallel = F,
-  cores = NULL, pckgs = NULL, ...)
+Para_gamboostLSS(
+  data,
+  formula,
+  families = GaussianLSS(),
+  parallel = F,
+  cores = NULL,
+  pckgs = NULL,
+  ...
+)
 }
 \arguments{
 \item{data}{A \code{data.frame} containing target and explanatory variables. May optionally contain a collumn called "kfold" with numbered/labeled folds and "Test" for test data.}

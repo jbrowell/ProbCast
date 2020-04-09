@@ -4,10 +4,22 @@
 \alias{MQR_qreg_mboost}
 \title{Multiple Quantile Regression Using mboost}
 \usage{
-MQR_qreg_mboost(data, formula, quantiles = c(0.25, 0.5, 0.75),
-  CVfolds = NULL, ..., bc_mstop = 100, bc_nu = 0.1, w = rep(1,
-  nrow(data)), parallel = F, cores = NULL, pckgs = NULL, Sort = T,
-  SortLimits = NULL, save_models_path = NULL)
+MQR_qreg_mboost(
+  data,
+  formula,
+  quantiles = c(0.25, 0.5, 0.75),
+  CVfolds = NULL,
+  ...,
+  bc_mstop = 100,
+  bc_nu = 0.1,
+  w = rep(1, nrow(data)),
+  parallel = F,
+  cores = NULL,
+  pckgs = NULL,
+  Sort = T,
+  SortLimits = NULL,
+  save_models_path = NULL
+)
 }
 \arguments{
 \item{data}{A \code{data.frame} containing target and explanatory variables. May optionally contain a collumn called "kfold" with numbered/labeled folds and "Test" for test data.}

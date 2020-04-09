@@ -4,10 +4,16 @@
 \alias{plot.MultiQR}
 \title{Plot a Quantile Forecast}
 \usage{
-\method{plot}{MultiQR}(plotdata, targetTimes = NULL,
-  quantiles = colnames(plotdata), ylim = "auto", q50_line = F,
-  Legend = NULL, cols = colorRampPalette(c("dodgerblue1", "cyan")),
-  ...)
+\method{plot}{MultiQR}(
+  plotdata,
+  targetTimes = NULL,
+  quantiles = colnames(plotdata),
+  ylim = "auto",
+  q50_line = F,
+  Legend = NULL,
+  cols = colorRampPalette(c("dodgerblue1", "cyan")),
+  ...
+)
 }
 \arguments{
 \item{plotdata}{A \code{MultiQR} object to be plotted}

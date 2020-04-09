@@ -4,9 +4,18 @@
 \alias{Para_gamlss}
 \title{Fit a gamlss paramertirc forecast model}
 \usage{
-Para_gamlss(data, formula, sigma.formula = ~1, nu.formula = ~1,
-  tau.formula = ~1, family = NO(), parallel = F, cores = NULL,
-  pckgs = NULL, ...)
+Para_gamlss(
+  data,
+  formula,
+  sigma.formula = ~1,
+  nu.formula = ~1,
+  tau.formula = ~1,
+  family = NO(),
+  parallel = F,
+  cores = NULL,
+  pckgs = NULL,
+  ...
+)
 }
 \arguments{
 \item{data}{A \code{data.frame} containing target and explanatory variables. May optionally contain a collumn called "kfold" with numbered/labeled folds and "Test" for test data.}

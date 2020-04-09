@@ -4,9 +4,16 @@
 \alias{covcor_matrix}
 \title{Multivariate Gaussian covariance/correlation matrices}
 \usage{
-covcor_matrix(u_data, kfold = NULL, cov_cor = "covariance",
-  use = "pairwise.complete.obs", boundary_threshold = NA,
-  forcePD = F, scale = F, ...)
+covcor_matrix(
+  u_data,
+  kfold = NULL,
+  cov_cor = "covariance",
+  use = "pairwise.complete.obs",
+  boundary_threshold = NA,
+  forcePD = F,
+  scale = F,
+  ...
+)
 }
 \arguments{
 \item{u_data}{A dataframe of uniform distributed variables.}
