@@ -5,6 +5,9 @@
 #' @param realisations Vector of realisations corresponding to rows of \code{qrdata}. \code{NA} accepted.
 #' @param kfolds Optional vector of fold/test labels corresponding to rows of \code{qrdata}.
 #' @param plot.it \code{boolean}. Make a plot?
+#' @param subsets Covariate to subset evaluation metric by corresponding to rows of \code{qrdata}.
+#' @param breaks number of subsets to form.
+#' @param bootstrap Number of boostrap samples used to generate 95% confidence intervals.
 #' @param ... Additional arguments passed to \code{plot()}.
 #' @details Details go here...
 #' @return Quantile Score data and, if plot.it=T, a reliability diagram.
