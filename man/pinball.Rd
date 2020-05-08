@@ -24,6 +24,12 @@ pinball(
 
 \item{plot.it}{\code{boolean}. Make a plot?}
 
+\item{subsets}{Covariate to subset evaluation metric by corresponding to rows of \code{qrdata}.}
+
+\item{breaks}{number of subsets to form.}
+
+\item{bootstrap}{Number of boostrap samples used to generate 95% confidence intervals.}
+
 \item{...}{Additional arguments passed to \code{plot()}.}
 }
 \value{

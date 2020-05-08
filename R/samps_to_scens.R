@@ -8,6 +8,7 @@
 #' @param mean_kf a named list of the mean vectors with elements corresponding to each fold
 #' @param control a named list of with nested control parameters (named according to \code{marginals}). Each named list should contain \code{kfold}, \code{issue_ind}, and \code{horiz_ind} which are the kfold, issue time, and lead time vectors corresponding to the margins of the copula. If margins are MultiQR class also define \code{PIT_method} and list \code{CDFtails}, which are passed to the PIT function. If the margins are distribution parameter predictions then define \code{q_fun}, which transforms the columns of \code{marginals} through the quantile function --- see example for more details. 
 #' @param mcmapply_cores defaults to 1. Warning, only change if not using windows OS --- see the \code{parallel::mcmapply} help page for more info. Speed improvements possible when generating sptio-temporal scenarios, set to the number of locations if possible.
+#' @param mvnfast_cores defaults to 1. See \code{mvnfast::rmvn}
 #' @param ... other parameters to be passed to mvtnorm::rmvnorm
 #' @note For spatio-temporal scenarios, each site must have the same number of inputs to the governing covariance matrix.
 #' @note For multiple locations the ordering of the lists of the margins & control, and the structure of the covariance matrices is very important; if the columns/rows in each covariance matrix are ordered loc1_h1, loc1_h2,..., loc2_h1, loc2_h_2,..., loc_3_h1, loc_3_h2,... i.e. location_leadtime --- then the list of the marginals should be in the same order loc1, loc2, loc3,....
@@ -35,10 +36,10 @@
 #'                                      loc_2 = list(kfold = loc_2data$kfold, issue_ind = loc_2data$issue_time, horiz_ind = loc_2data$lead_time,
 #'                                                   PIT_method = "linear", CDFtails = list(method = "interpolate", L=0, U=1))))
 #' }
-#' @importFrom mvtnorm rmvnorm
+#' @importFrom mvnfast rmvn
 #' @importFrom parallel mcmapply
 #' @export
-samps_to_scens <- function(copulatype,no_samps,marginals,sigma_kf,mean_kf,control,mcmapply_cores = 1L,...){
+samps_to_scens <- function(copulatype,no_samps,marginals,sigma_kf,mean_kf,control,mcmapply_cores = 1L, mvnfast_cores = 1L,...){
   
   # no kfold capability?
   # improve ordering of lists cvm matrix...
@@ -71,13 +72,19 @@ samps_to_scens <- function(copulatype,no_samps,marginals,sigma_kf,mean_kf,contro
   
   if(copulatype=="spatial"){
     
+    
     # This function is for extracting spatial scenario samples
-    extr_kf_spatsamp <- function(kf_samp_df,uni_kfold,...){
+    extr_kf_spatsamp <- function(kf_samp_df,uni_kfold){
       
-      arg_list <- list(n=no_samps,sigma=sigma_kf[[uni_kfold]],mean=mean_kf[[uni_kfold]],...)
+      print(paste0("taking samples for --- ",uni_kfold))
+      
+      ## take cholesky decomp. so we only have to do it once for all issuetimes in fold
+      chol_mat <- chol(sigma_kf[[uni_kfold]])
+      
+      arg_list <- list(n=no_samps,sigma=chol_mat,mu=mean_kf[[uni_kfold]], isChol = TRUE, ncores = mvnfast_cores)
       
       # sample from multivariate gaussian, gives results in a list of matrices
-      kf_samps <- replicate(n=nrow(kf_samp_df),expr=do.call(eval(parse(text="rmvnorm")),args=arg_list),simplify = F)
+      kf_samps <- replicate(n=nrow(kf_samp_df),expr=do.call(eval(parse(text="rmvn")),args=arg_list),simplify = F)
       
       # transform sample rows ---> samples in cols and time_ind in rows
       kf_samps <- lapply(kf_samps,t)
@@ -112,19 +119,24 @@ samps_to_scens <- function(copulatype,no_samps,marginals,sigma_kf,mean_kf,contro
     }
     
     # extract samples calling etr_kf_spatsamp
-    clean_samps <- mcmapply(extr_kf_spatsamp,kf_samp_df=find_nsamp,uni_kfold = as.list(names(find_nsamp)),MoreArgs = list(...),SIMPLIFY = F,mc.cores = mcmapply_cores)
+    clean_samps <- mapply(extr_kf_spatsamp,kf_samp_df=find_nsamp,uni_kfold = as.list(names(find_nsamp)),SIMPLIFY = F)
     
     
     
   } else{ if (copulatype=="temporal"){
     
     # This function is for extracting temporal/spatio-temporal scenario samples
-    extr_kf_temposamp <- function(issuetimes,uni_kfold,...){
+    extr_kf_temposamp <- function(issuetimes,uni_kfold){
       
-      arg_list <- list(n=no_samps,sigma=sigma_kf[[uni_kfold]],mean=mean_kf[[uni_kfold]],...)
+      print(paste0("taking samples for --- ",uni_kfold))
+      
+      ## take cholesky decomp. so we only have to do it once for all issuetimes in fold
+      chol_mat <- chol(sigma_kf[[uni_kfold]])
+      
+      arg_list <- list(n=no_samps,sigma=chol_mat,mu=mean_kf[[uni_kfold]], isChol = TRUE, ncores = mvnfast_cores)
       
       # sample from multivariate gaussian, gives results in a list of matrices
-      kf_samps <- replicate(n=length(issuetimes),expr=do.call(eval(parse(text="rmvnorm")),args=arg_list),simplify = F)
+      kf_samps <- replicate(n=length(issuetimes),expr=do.call(eval(parse(text="rmvn")),args=arg_list),simplify = F)
       
       # transform sample rows ---> samples in cols and horizon in rows
       kf_samps <- lapply(kf_samps,t)
@@ -132,7 +144,7 @@ samps_to_scens <- function(copulatype,no_samps,marginals,sigma_kf,mean_kf,contro
       # convert to uniform domain
       kf_samps <- lapply(kf_samps,pnorm)
       
-      # add ID row column for split list later (will help margins length>1) --- poss imp, impose naming convention on cvms?
+      # add ID row column for split list later (will help margins length>1) --- poss imp, impose naming convention on cvms?(and kpnames from mvnfast)
       kf_samps <- lapply(kf_samps,function(x){cbind(x,sort(rep(1:length(marginals),nrow(x)/length(marginals))))})
       
       # bind the rows
@@ -165,8 +177,8 @@ samps_to_scens <- function(copulatype,no_samps,marginals,sigma_kf,mean_kf,contro
     }
     
     
-    # extract samples calling etr_kf_temposamp --- check mc.set.seed if users want to set the seed for each kfold --- https://stackoverflow.com/questions/30456481/controlling-seeds-with-mclapply
-    clean_samps <- mcmapply(extr_kf_temposamp,issuetimes=find_issue,uni_kfold = as.list(names(find_issue)),MoreArgs = list(...),SIMPLIFY = F,mc.cores = mcmapply_cores)
+    # extract samples calling etr_kf_temposamp for each fold
+    clean_samps <- mapply(extr_kf_temposamp,issuetimes=find_issue,uni_kfold = as.list(names(find_issue)),SIMPLIFY = F)
     
     
   }else{stop("copula type mis-specified")}}

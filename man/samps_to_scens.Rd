@@ -12,6 +12,7 @@ samps_to_scens(
   mean_kf,
   control,
   mcmapply_cores = 1L,
+  mvnfast_cores = 1L,
   ...
 )
 }
@@ -29,6 +30,8 @@ samps_to_scens(
 \item{control}{a named list of with nested control parameters (named according to \code{marginals}). Each named list should contain \code{kfold}, \code{issue_ind}, and \code{horiz_ind} which are the kfold, issue time, and lead time vectors corresponding to the margins of the copula. If margins are MultiQR class also define \code{PIT_method} and list \code{CDFtails}, which are passed to the PIT function. If the margins are distribution parameter predictions then define \code{q_fun}, which transforms the columns of \code{marginals} through the quantile function --- see example for more details.}
 
 \item{mcmapply_cores}{defaults to 1. Warning, only change if not using windows OS --- see the \code{parallel::mcmapply} help page for more info. Speed improvements possible when generating sptio-temporal scenarios, set to the number of locations if possible.}
+
+\item{mvnfast_cores}{defaults to 1. See \code{mvnfast::rmvn}}
 
 \item{...}{other parameters to be passed to mvtnorm::rmvnorm}
 }

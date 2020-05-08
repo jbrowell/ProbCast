@@ -20,8 +20,8 @@ contCDF(
 \item{tails}{Method for tails, this must be defined as a list with other control parameters. Default is linear interpolation of tails when \code{method="interpolate"} with boundaries at \code{L=0} and \code{U=1}. The number of interpolation points for the tail can be defined via \code{ntailpoints}. Alternative methods include:
 \itemize{
   \item Exponential tails can be specified through \code{method="exponential"}, the user can either supply user defined thickness parameters for the tail via \code{thicknessPL} and \code{thicknessPR}, otherwise a symetrical tail thickness can be defined data-driven by specifying: number of bins \code{nbins}, a MQR object \code{preds}, and the target variable, \code{targetvar}.  
-  \item Dynamic exponential tails can be specified through \code{method="dyn_exponential"}, where the tail depends on the values for the upper and lower quantile of \code{qrdata}, these are only valid for an input variable scale of \code{[0,1]}. 
-  \item Gamlss Gumbel tails can be specified through \code{method="ppd_GUtails"}, where the user can supply \code{rt} and \code{lt}  data.frames of the distribution parameter predictions for the right and left tail respecitevely, the CDF is blended between \code{quantiles} and the gumbel tails; these are also only valid for an input variable scale of \code{[0,1]}. For this method \code{ntailpoints} default is 100. 
+  \item Dynamic exponential tails can be specified through \code{method="dyn_exponential"}, where the tail depends on the values for the upper and lower quantile of \code{qrdata}, these are only valid for an input variable scale of \code{[0,1]}.
+  \item The Generalised Pareto Distribution may be chosen with \code{method="gpd"}, and additional arguments \code{scale_r,shape_r,scale_l,shape_l,tail_qs} specifying the right and left scale and shapre parameters and the incraments beyond the final quantiles to evaluate the gpd at, e.g. \code{tail_qs=seq(0.1,1,by=0.1)} to exctend into the tails by +/- 1 in steps of 0.1.
 }}
 
 \item{kfolds}{Fold/test label corresponding to \code{quantiles}.}

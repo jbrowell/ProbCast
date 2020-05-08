@@ -12,6 +12,8 @@ PPD_2_MultiQR(data, models, quantiles = seq(0.05, 0.95, by = 0.05), params = F)
 \item{models}{An \code{PPD} object.}
 
 \item{quantiles}{Vector of quantiles to be calculated}
+
+\item{params}{return distribution parameter predictions?}
 }
 \value{
 A \code{MultiQR} object derived from gamlss predictive distributions. Alternatively, a matrix condaining the parameters of the predictive  gamlss distributions.

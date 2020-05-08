@@ -24,9 +24,9 @@ Wind$WS100 <- sqrt(Wind$U100^2+Wind$V100^2)
 Wind$Power <- pmin(Wind$WS100,11)^3
 
 ## Set-up simple kfold CV. NB --- For scenario forecasting make sure the CV folds don't cross issue times
-Wind$kfold <- "Fold 1"
-Wind$kfold[Wind$ISSUEdtm>as.POSIXct("2012-06-30",tz="UTC")] <- "Fold 2"
-Wind$kfold[Wind$ISSUEdtm>as.POSIXct("2012-12-31",tz="UTC")] <- "Fold 3"
+Wind$kfold <- "Fold1"
+Wind$kfold[Wind$ISSUEdtm>as.POSIXct("2012-06-30",tz="UTC")] <- "Fold2"
+Wind$kfold[Wind$ISSUEdtm>as.POSIXct("2012-12-31",tz="UTC")] <- "Fold3"
 Wind$kfold[Wind$ISSUEdtm>as.POSIXct("2013-06-30",tz="UTC")] <- "Test"
 
 
@@ -139,7 +139,7 @@ lines(x,cdf(x),lty=2,col=2)
 cdf <- contCDF(quantiles = test1$gbm_mqr[index,],kfold = NA,method = "spline", tails=list(method="exponential",L=0,U=1,nBins=5,preds=test1$gbm_mqr,targetvar=test1$data$TARGETVAR,ntailpoints=25))
 lines(x,cdf(seq(0,1,by=0.001)),lty=3,col=4)
 cdf <- contCDF(quantiles = test1$gbm_mqr[index,],method = "spline", tails=list(method="dyn_exponential",ntailpoints=25))
-lines(quants,cdf(quants),lty=4,col=5)
+lines(x,cdf(x),lty=4,col=5)
 points(test1$gbm_mqr[index,],as.numeric(gsub("q","",colnames(test1$gbm_mqr[index,])))/100)
 legend(0.01,1,c("Predicted Quantiles","Linear","Spline","Spline with Exponential Tails"),
        pch=c(1,NA,NA,NA),lty=c(NA,2,1,3),col=c(1,2,1,4),bty="n")
@@ -161,8 +161,8 @@ test1$ppd <- Para_gamlss(data = test1$data,
                          method=mixed(20,10))
 
 
-summary(test1$ppd$fold1)
-plot(test1$ppd$fold1)
+summary(test1$ppd$Fold1)
+plot(test1$ppd$Fold1)
 
 test1$gamlssParams <- PPD_2_MultiQR(data=test1$data,
                                    models = test1$ppd,
@@ -221,11 +221,13 @@ for (i in levels(unique(u_obsind$kfold))){
 }
 ## method for parametric pred dist.
 
-
+set.seed(1)
+t1 <- Sys.time()
 scen_gbm <- samps_to_scens(copulatype = "temporal",no_samps = f_nsamp,marginals = list(loc_1 = test1$gbm_mqr),sigma_kf = cvm_gbm,mean_kf = mean_list,
                            control=list(loc_1 = list(kfold = u_obsind$kfold,issue_ind=u_obsind$i_time,horiz_ind=u_obsind$lead_time,
                                                      PIT_method="spline",
                                                      CDFtails = list(method="interpolate",L=0,U=1,ntailpoints=100))))
+print(Sys.time()-t1)
 
 
 matplot(scen_gbm$loc_1[which(test1$data$ISSUEdtm==i_ts),],type="l",ylim=c(0,1),lty=1,
@@ -255,6 +257,7 @@ lattice::levelplot(cvm_gamlss[["Test"]], xlab="lead time [hours]", ylab="lead ti
 
 # sample cvm and convert to power domain
 # method for parametric pred dist.
+set.seed(1)
 scen_gamlss <- samps_to_scens(copulatype = "temporal",no_samps = f_nsamp,marginals = list(loc_1 = test1$gamlssParams),sigma_kf = cvm_gamlss,mean_kf = mean_list,
                            control=list(loc_1 = list(kfold = u_obsind$kfold,issue_ind=u_obsind$i_time,horiz_ind=u_obsind$lead_time,
                                                      q_fun = gamlss.dist::qBEINF)))
