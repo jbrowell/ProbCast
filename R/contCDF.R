@@ -8,7 +8,6 @@
 #' \itemize{
 #'   \item Exponential tails can be specified through \code{method="exponential"}, the user can either supply user defined thickness parameters for the tail via \code{thicknessPL} and \code{thicknessPR}, otherwise a symetrical tail thickness can be defined data-driven by specifying: number of bins \code{nbins}, a MQR object \code{preds}, and the target variable, \code{targetvar}.  
 #'   \item Dynamic exponential tails can be specified through \code{method="dyn_exponential"}, where the tail depends on the values for the upper and lower quantile of \code{qrdata}, these are only valid for an input variable scale of \code{[0,1]}. 
-#'   \item Gamlss Gumbel tails can be specified through \code{method="ppd_GUtails"}, where the user can supply \code{rt} and \code{lt}  data.frames of the distribution parameter predictions for the right and left tail respecitevely, the CDF is blended between \code{quantiles} and the gumbel tails; these are also only valid for an input variable scale of \code{[0,1]}. For this method \code{ntailpoints} default is 100. 
 #' }
 #' @details Details go here...
 #' @return A cumulative density function
