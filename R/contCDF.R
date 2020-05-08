@@ -7,7 +7,8 @@
 #' @param tails Method for tails, this must be defined as a list with other control parameters. Default is linear interpolation of tails when \code{method="interpolate"} with boundaries at \code{L=0} and \code{U=1}. The number of interpolation points for the tail can be defined via \code{ntailpoints}. Alternative methods include:
 #' \itemize{
 #'   \item Exponential tails can be specified through \code{method="exponential"}, the user can either supply user defined thickness parameters for the tail via \code{thicknessPL} and \code{thicknessPR}, otherwise a symetrical tail thickness can be defined data-driven by specifying: number of bins \code{nbins}, a MQR object \code{preds}, and the target variable, \code{targetvar}.  
-#'   \item Dynamic exponential tails can be specified through \code{method="dyn_exponential"}, where the tail depends on the values for the upper and lower quantile of \code{qrdata}, these are only valid for an input variable scale of \code{[0,1]}. 
+#'   \item Dynamic exponential tails can be specified through \code{method="dyn_exponential"}, where the tail depends on the values for the upper and lower quantile of \code{qrdata}, these are only valid for an input variable scale of \code{[0,1]}.
+#'   \item The Generalised Pareto Distribution may be chosen with \code{method="gpd"}, and additional arguments \code{scale_r,shape_r,scale_l,shape_l,tail_qs} specifying the right and left scale and shapre parameters and the incraments beyond the final quantiles to evaluate the gpd at, e.g. \code{tail_qs=seq(0.1,1,by=0.1)} to exctend into the tails by +/- 1 in steps of 0.1.
 #' }
 #' @details Details go here...
 #' @return A cumulative density function
@@ -132,7 +133,25 @@ contCDF <- function(quantiles,kfold=NULL,inverse=F,
     Rquants <- rev(((1-Rquants[2:length(Rquants)])*(1-max(quantiles)))+max(quantiles))
     RnomP<-RnomP[2:length(RnomP)]
     
-  } else{stop("Tail specification not recognised.")}
+  } else if(tails$method=="gpd"){
+    
+    Rquants <- tails$tail_qs+rev(quantiles)[1]
+    RnomP <- pgpd(q=Rquants,location=rev(quantiles)[1],shape = tails$shape_r,scale=tails$scale_r)
+    RnomP[length(RnomP)] <- 1
+    RnomP <- RnomP*(1-rev(Probs)[1])+rev(Probs)[1]
+    # plot(Rquants,RnomP)
+    
+    Lquants <- tails$tail_qs
+    LnomP <- rev(1-pgpd(q=Lquants,location=0,shape = tails$shape_l,scale=tails$scale_l))
+    LnomP[1] <- 0
+    LnomP <- LnomP*Probs[1]
+    Lquants <- Lquants-max(Lquants)+quantiles[1]
+    # plot(Lquants,LnomP)
+    
+    # plot(c(Lquants,quantiles,Rquants),c(LnomP,Probs,RnomP))
+    
+    
+  }else{stop("Tail specification not recognised.")}
   
   
   
@@ -161,5 +180,15 @@ contCDF <- function(quantiles,kfold=NULL,inverse=F,
                        method=method$splinemethod))
     }
   }else{stop("Interpolation method not recognised.")}
+}
+
+
+
+pgpd <- function(q,location=0,scale,shape){
+  if(shape!=0){
+    1-(1+shape*(q-location)/scale)^(-1/shape)
+  }else{
+    1-exp(-(q-location)/scale)
+  }
 }
 
