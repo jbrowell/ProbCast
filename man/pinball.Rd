@@ -28,12 +28,12 @@ pinball(
 
 \item{breaks}{number of subsets to form.}
 
-\item{bootstrap}{Number of boostrap samples used to generate 95% confidence intervals.}
+\item{bootstrap}{Number of boostrap samples used to generate 95\% confidence intervals.}
 
 \item{...}{Additional arguments passed to \code{plot()}.}
 }
 \value{
-Quantile Score data and, if plot.it=T, a reliability diagram.
+Quantile Score data and, if \code{plot.it=TRUE}, a reliability diagram.
 }
 \description{
 This function calculates and plots the pinball loss for a MultiQR object and plots the result

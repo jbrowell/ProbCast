@@ -7,10 +7,10 @@
 #' @param plot.it \code{boolean}. Make a plot?
 #' @param subsets Covariate to subset evaluation metric by corresponding to rows of \code{qrdata}.
 #' @param breaks number of subsets to form.
-#' @param bootstrap Number of boostrap samples used to generate 95% confidence intervals.
+#' @param bootstrap Number of boostrap samples used to generate 95\% confidence intervals.
 #' @param ... Additional arguments passed to \code{plot()}.
 #' @details Details go here...
-#' @return Quantile Score data and, if plot.it=T, a reliability diagram.
+#' @return Quantile Score data and, if \code{plot.it=TRUE}, a reliability diagram.
 #' @export
 pinball <- function(qrdata,realisations,kfolds=NULL,plot.it=T,subsets=NULL,breaks=4,bootstrap=NULL,...){
   

@@ -26,14 +26,14 @@ reliability(
 
 \item{breaks}{Number of quantiles to divide subsets by, results in \code{breaks+1} bins.}
 
-\item{bootstrap}{Calculate this number of boostrap samples to estimate 95% confdence interval}
+\item{bootstrap}{Calculate this number of boostrap samples to estimate 95\% confdence interval}
 
 \item{plot.it}{\code{boolean}. Make a plot?}
 
 \item{...}{Additional arguments passed to \code{plot()}.}
 }
 \value{
-Reliability data and, if plot.it=T, a reliability diagram.
+Reliability data and, if \code{plot.it=TRUE}, a reliability diagram.
 }
 \description{
 This function plots a reliabiltiy diagram for a MultiQR object and returns the plotdata

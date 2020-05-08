@@ -6,11 +6,11 @@
 #' @param kfolds Optional vector of fold/test labels corresponding to rows of \code{qrdata}. Cannot be used with \code{subsets}.
 #' @param subsets Optional vector of covariates to bin data by. Breaks between bins are the empirical quantiles of \code{subsets}. Cannot be used with \code{kfold}.
 #' @param breaks Number of quantiles to divide subsets by, results in \code{breaks+1} bins.
-#' @param bootstrap Calculate this number of boostrap samples to estimate 95% confdence interval
+#' @param bootstrap Calculate this number of boostrap samples to estimate 95\% confdence interval
 #' @param plot.it \code{boolean}. Make a plot?
 #' @param ... Additional arguments passed to \code{plot()}.
 #' @details Details go here...
-#' @return Reliability data and, if plot.it=T, a reliability diagram.
+#' @return Reliability data and, if \code{plot.it=TRUE}, a reliability diagram.
 #' @export
 reliability <- function(qrdata,realisations,kfolds=NULL,subsets=NULL,breaks=4,bootstrap=NULL,plot.it=T,...){
   
