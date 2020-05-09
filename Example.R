@@ -94,8 +94,8 @@ reliability(qrdata = test1$gbm_mqr,
             kfolds = test1$data$kfold)
 
 pinball(qrdata = test1$gbm_mqr,
-         realisations = test1$data$TARGETVAR,
-         kfolds = test1$data$kfold)
+        realisations = test1$data$TARGETVAR,
+        kfolds = test1$data$kfold)
 
 
 reliability(qrdata = test1$gbm_mqr,
@@ -112,9 +112,9 @@ pinball(qrdata = test1$gbm_mqr,
         bootstrap = 100)
 
 pinball(qrdata = test1$gbm_mqr,
-            realisations = test1$data$TARGETVAR,
-            kfolds = test1$data$kfold,
-            bootstrap = 100,ylim=c(0,.08))
+        realisations = test1$data$TARGETVAR,
+        kfolds = test1$data$kfold,
+        bootstrap = 100,ylim=c(0,.08))
 
 pinball(qrdata = test1$gbm_mqr[test1$data$kfold=="Test",],
         realisations = test1$data$TARGETVAR[test1$data$kfold=="Test"],
@@ -165,8 +165,8 @@ summary(test1$ppd$Fold1)
 plot(test1$ppd$Fold1)
 
 test1$gamlssParams <- PPD_2_MultiQR(data=test1$data,
-                                   models = test1$ppd,
-                                   params = T)
+                                    models = test1$ppd,
+                                    params = T)
 
 
 
@@ -187,8 +187,8 @@ reliability(qrdata = test1$gamlss_mqr,
             kfolds = test1$data$kfold)
 
 pinball(qrdata = test1$gamlss_mqr,
-         realisations = test1$data$TARGETVAR,
-         kfolds = test1$data$kfold)
+        realisations = test1$data$TARGETVAR,
+        kfolds = test1$data$kfold)
 
 
 # test1$data[test1$data$TARGETVAR<0 | test1$data$TARGETVAR>1,]
@@ -238,6 +238,32 @@ matplot(scen_gbm$loc_1[which(test1$data$ISSUEdtm==i_ts),],type="l",ylim=c(0,1),l
 
 
 
+mean_list <- list()
+for (i in levels(unique(u_obsind$kfold))){
+  mean_list[[i]] <- rep(0, 48)
+}
+
+cvm_list <- list()
+for (i in levels(unique(u_obsind$kfold))){
+  cvm_list[[i]] <- diag(48)
+}
+
+
+set.seed(1)
+t1 <- Sys.time()
+scen_gbm2 <- samps_to_scens(copulatype = "temporal",no_samps = f_nsamp,marginals = list(loc_1 = test1$gbm_mqr, loc_2 = test1$gbm_mqr),
+                           sigma_kf = cvm_list,mean_kf = mean_list,
+                           control=list(loc_1 = list(kfold = u_obsind$kfold,issue_ind=u_obsind$i_time,horiz_ind=u_obsind$lead_time,
+                                                     PIT_method="spline",
+                                                     CDFtails = list(method="interpolate",L=0,U=1,ntailpoints=100)),
+                                        loc_2 = list(kfold = u_obsind$kfold,issue_ind=u_obsind$i_time,horiz_ind=u_obsind$lead_time,
+                                                     PIT_method="spline",
+                                                     CDFtails = list(method="interpolate",L=0,U=1,ntailpoints=100))))
+
+print(Sys.time()-t1)
+
+
+
 #######################
 #### generate temporal scenarios using the gaussion copula and PPD marginals
 #######################
@@ -255,12 +281,16 @@ lattice::levelplot(cvm_gamlss[["Test"]], xlab="lead time [hours]", ylab="lead ti
                    scales=list(x=list(at=seq(0,24,3),rot=90),y=list(at=seq(0,24,3)),tck=0.3,cex=1.1),
                    main="Test --- Covariance")
 
+mean_list <- list()
+for (i in levels(unique(u_obsind$kfold))){
+  mean_list[[i]] <- rep(0, 24)
+}
 # sample cvm and convert to power domain
 # method for parametric pred dist.
 set.seed(1)
 scen_gamlss <- samps_to_scens(copulatype = "temporal",no_samps = f_nsamp,marginals = list(loc_1 = test1$gamlssParams),sigma_kf = cvm_gamlss,mean_kf = mean_list,
-                           control=list(loc_1 = list(kfold = u_obsind$kfold,issue_ind=u_obsind$i_time,horiz_ind=u_obsind$lead_time,
-                                                     q_fun = gamlss.dist::qBEINF)))
+                              control=list(loc_1 = list(kfold = u_obsind$kfold,issue_ind=u_obsind$i_time,horiz_ind=u_obsind$lead_time,
+                                                        q_fun = gamlss.dist::qBEINF)))
 
 matplot(scen_gamlss$loc_1[which(test1$data$ISSUEdtm==i_ts),],type="l",ylim=c(0,1),lty=1,
         xlab="Lead Time [Hours]",ylab="Power [Capacity Factor]",
@@ -293,7 +323,7 @@ FCs[,horiz:=as.numeric(TARGETdtm - ISSUEdtm)]
 test1$mvscore_gbm <- FCs[,list(ES=es_sample(y=TARGETVAR,dat=(as.matrix(.SD))),
                                wVS1=vs_sample(y=TARGETVAR,dat=(as.matrix(.SD)),w=mat(d = .N,horizon = horiz),p=1),
                                wVS.5=vs_sample(y=TARGETVAR,dat=(as.matrix(.SD)),w=mat(d = .N,horizon = horiz),p=.5))
-                         ,.SDcols=paste0("X",1:f_nsamp),by=c("kfold","ISSUEdtm")]
+                         ,.SDcols=paste0("scen_",1:f_nsamp),by=c("kfold","ISSUEdtm")]
 
 
 ### gamlss
@@ -302,7 +332,7 @@ FCs[,horiz:=as.numeric(TARGETdtm - ISSUEdtm)]
 test1$mvscore_gamlss <- FCs[,list(ES=es_sample(y=TARGETVAR,dat=(as.matrix(.SD))),
                                   wVS1=vs_sample(y=TARGETVAR,dat=(as.matrix(.SD)),w=mat(d = .N,horizon = horiz),p=1),
                                   wVS.5=vs_sample(y=TARGETVAR,dat=(as.matrix(.SD)),w=mat(d = .N,horizon = horiz),p=.5))
-                         ,.SDcols=paste0("X",1:f_nsamp),by=c("kfold","ISSUEdtm")]
+                            ,.SDcols=paste0("scen_",1:f_nsamp),by=c("kfold","ISSUEdtm")]
 
 
 
@@ -325,11 +355,11 @@ evalplot_block <- function(data_table, block,nboot = 100, na.rm = TRUE,score = "
   
   boot <- NULL
   for(i in 1:nboot) {
-  bootind <- sample(unique(block), replace = TRUE)
-  data <- rbindlist(lapply(bootind,function(x){data_table[block==x]}))
-
-  boot <- rbind(boot, data[,as.list(colMeans(.SD,na.rm = na.rm)),.SDcols = score,by=.(marginal)])
-  rm(data)
+    bootind <- sample(unique(block), replace = TRUE)
+    data <- rbindlist(lapply(bootind,function(x){data_table[block==x]}))
+    
+    boot <- rbind(boot, data[,as.list(colMeans(.SD,na.rm = na.rm)),.SDcols = score,by=.(marginal)])
+    rm(data)
   }
   
   boxplot(data = boot, as.formula(paste0(score,"~ marginal")),ylab = score,xlab = "", ...)

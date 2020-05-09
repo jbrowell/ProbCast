@@ -14,7 +14,7 @@
 #' @note For multiple locations the ordering of the lists of the margins & control, and the structure of the covariance matrices is very important; if the columns/rows in each covariance matrix are ordered loc1_h1, loc1_h2,..., loc2_h1, loc2_h_2,..., loc_3_h1, loc_3_h2,... i.e. location_leadtime --- then the list of the marginals should be in the same order loc1, loc2, loc3,....
 #' @note Ensure kfold ids in the control list do not change within any issue time --- i.e. make sure the issue times are unique to each fold. 
 #' @details Details go here...
-#' @return A list or data frame of multivariate scenario forecasts
+#' @return A list of \code{data.table} objects containing multivariate scenario forecasts
 #' @examples
 #' \dontrun{
 #' # for parametric type marginals with a Generalized Beta type 2 family
@@ -38,11 +38,29 @@
 #' }
 #' @importFrom mvnfast rmvn
 #' @importFrom parallel mcmapply
+#' @import data.table
 #' @export
 samps_to_scens <- function(copulatype,no_samps,marginals,sigma_kf,mean_kf,control,mcmapply_cores = 1L, mvnfast_cores = 1L,...){
   
   # no kfold capability?
   # improve ordering of lists cvm matrix...
+  
+  # mean_list <- list()
+  # for (i in levels(unique(u_obsind$kfold))){
+  #   mean_list[[i]] <- rep(0, 24)
+  # }
+  # 
+  # 
+  # copulatype <- "temporal"
+  # no_samps <- 200
+  # marginals <- list(loc_1 = test1$gbm_mqr)
+  # sigma_kf <- cvm_gbm
+  # mean_kf <- mean_list
+  # control <- list(loc_1 = list(kfold = u_obsind$kfold,issue_ind=u_obsind$i_time,horiz_ind=u_obsind$lead_time,
+  #                           PIT_method="spline",
+  #                           CDFtails = list(method="interpolate",L=0,U=1,ntailpoints=100)))
+  # mcmapply_cores <- 1L
+  # mvnfast_cores <- 1L
   
   if(class(marginals)[1]!="list"){
     marginals <- list(loc_1 = marginals)
@@ -199,10 +217,8 @@ samps_to_scens <- function(copulatype,no_samps,marginals,sigma_kf,mean_kf,contro
   filtered_samps <- mapply(merge.data.frame,x=cont_ids,y=clean_fulldf,MoreArgs = list(all.x=T),SIMPLIFY = F)
   ## preserve order of merged scenario table with input control table
   filtered_samps <- lapply(filtered_samps,function(x){x[order(x$sort_ind),]})
-  # remove issuetime, horizon, and sorting column for passing through PIT-
-  filtered_samps <- lapply(filtered_samps,function(x){x[,-c(1:3)]})
   
-  
+  filtered_samps <- lapply(filtered_samps,function(x){data.table(x)})
   
   
   
@@ -213,25 +229,48 @@ samps_to_scens <- function(copulatype,no_samps,marginals,sigma_kf,mean_kf,contro
     method_list <- lapply(control,function(x){x$PIT_method})
     CDFtail_list <- lapply(control,function(x){x$CDFtails})
     
+    ## reduce memory usage in pass_invcdf by joining outside and try gc()
+    joined_dt <- mcmapply(cbind, marginals, filtered_samps, SIMPLIFY = F,mc.cores = mcmapply_cores)
+    marg_names <- lapply(marginals,colnames)
+    samp_names <- lapply(filtered_samps,function(x){colnames(x)[-c(1:3)]})
+    rm(marginals,filtered_samps)
+    invisible(gc())
+    
+    ### faster inverse pit using data.table (x7 in example.R)
+    pass_invcdf <- function(dt, s_nms, q_nms,...){
+      
+      ## using as.list here makes data.table return in 'wide format automatically & as numeric(.SD) prevents input samps from being a list..
+      dt <- dt[,as.list(contCDF(quantiles = t(mget(q_nms)),inverse = TRUE,...)(as.numeric(.SD))),by=.(sort_ind),.SDcols=s_nms]
+      setorder(dt,sort_ind)
+      dt[,sort_ind := NULL]
+      return(dt)
+      
+    }
+    
     print(paste0("Transforming samples into original domain"))
-    sampsfinal <- mcmapply(function(...){data.frame(PIT.MultiQR(...))},qrdata=marginals,obs=filtered_samps,method=method_list,tails = CDFtail_list, SIMPLIFY = F,MoreArgs = list(inverse=TRUE),mc.cores = mcmapply_cores)
+    sampsfinal <- mcmapply(function(...){pass_invcdf(...)},dt = joined_dt, s_nms = samp_names, q_nms = marg_names, method = method_list,
+                           tails = CDFtail_list, SIMPLIFY = F,mc.cores = mcmapply_cores)
     
     
   } else {
     
     ### make sure before as.list in do.call the object is a data.frame
     return_ppdsamps <- function(samps,margin,quant_f){
-      ppd_samps <- as.data.frame(lapply(samps,function(x){do.call(quant_f,as.list(data.frame(cbind(p=x,margin))))}))
+      ppd_samps <- as.data.table(lapply(samps,function(x){do.call(quant_f,as.list(data.table(cbind(p=x,margin))))}))
       return(ppd_samps)
     }
     
     q_list <- lapply(control,function(x){x$q_fun})
     
+    # remove issuetime, horizon, and sorting column for passing through PIT-
+    filtered_samps <- lapply(filtered_samps,function(x){x[,-c(1:3)]})
     print(paste0("Transforming samples into original domain"))
     sampsfinal <- mcmapply(return_ppdsamps,samps = filtered_samps, margin = marginals,quant_f = q_list,SIMPLIFY = F,mc.cores = mcmapply_cores)
     
     
   }
+  
+  sampsfinal <- lapply(sampsfinal,function(x){`colnames<-`(x,paste0("scen_",1:ncol(x)))})
   
   
   return(sampsfinal)

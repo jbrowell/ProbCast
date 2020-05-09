@@ -36,7 +36,7 @@ samps_to_scens(
 \item{...}{other parameters to be passed to mvtnorm::rmvnorm}
 }
 \value{
-A list or data frame of multivariate scenario forecasts
+A list of \code{data.table} objects containing multivariate scenario forecasts
 }
 \description{
 This function produces a list of multivariate scenario forecasts in the marginal domain from the spatial/tempral/spatiotemporal gaussian covariance matrices and marginal distributions
