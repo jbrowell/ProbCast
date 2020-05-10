@@ -114,10 +114,10 @@ samps_to_scens <- function(copulatype,no_samps,marginals,sigma_kf,mean_kf,contro
       kf_samps <- lapply(kf_samps,function(x){cbind(x,sort(rep(1:length(marginals),nrow(x)/length(marginals))))})
       
       #bind the rows
-      kf_samps <- data.frame(docall("rbind",kf_samps))
+      kf_samps <- data.table(docall("rbind",kf_samps))
       
-      # split the matrix up into a list of data.frames by the rowID column for different locations
-      kf_samps <- split(data.frame(kf_samps[,1:c(ncol(kf_samps)-1)]),f=kf_samps[,ncol(kf_samps)])
+      # split the data.table up into a list of data.tables by the rowID column for different locations
+      kf_samps <- split(kf_samps,by=tail(colnames(kf_samps),1),keep.by = FALSE)
       
       # bind with kf_samp_df time indices
       kf_samps <- lapply(kf_samps,function(x){cbind(kf_samp_df,x)})
@@ -132,12 +132,13 @@ samps_to_scens <- function(copulatype,no_samps,marginals,sigma_kf,mean_kf,contro
     # find the unique combinations of issue_time and horizon at per fold across all the locations
     find_nsamp <- list()
     for(i in names(sigma_kf)){
-      find_nsamp[[i]] <- unique(do.call(rbind,unname(lapply(control,function(x){data.frame(issue_ind=x$issue_ind[x$kfold==i],horiz_ind=x$horiz_ind[x$kfold==i])}))))
+      find_nsamp[[i]] <- unique(do.call(rbind,unname(lapply(control,function(x){data.table(issue_ind=x$issue_ind[x$kfold==i],horiz_ind=x$horiz_ind[x$kfold==i])}))))
       find_nsamp[[i]] <- find_nsamp[[i]][order(find_nsamp[[i]]$issue_ind, find_nsamp[[i]]$horiz_ind),]
     }
     
     # extract samples calling etr_kf_spatsamp
-    clean_samps <- mapply(extr_kf_spatsamp,kf_samp_df=find_nsamp,uni_kfold = as.list(names(find_nsamp)),SIMPLIFY = F)
+    samps <- mapply(extr_kf_spatsamp,kf_samp_df=find_nsamp,uni_kfold = as.list(names(find_nsamp)),SIMPLIFY = F)
+    rm(find_nsamp)
     
     
     
@@ -154,7 +155,7 @@ samps_to_scens <- function(copulatype,no_samps,marginals,sigma_kf,mean_kf,contro
       arg_list <- list(n=no_samps,sigma=chol_mat,mu=mean_kf[[uni_kfold]], isChol = TRUE, ncores = mvnfast_cores)
       
       # sample from multivariate gaussian, gives results in a list of matrices
-      kf_samps <- replicate(n=length(issuetimes),expr=do.call(eval(parse(text="rmvn")),args=arg_list),simplify = F)
+      kf_samps <- replicate(n=length(issuetimes$issue_ind),expr=do.call(eval(parse(text="rmvn")),args=arg_list),simplify = F)
       
       # transform sample rows ---> samples in cols and horizon in rows
       kf_samps <- lapply(kf_samps,t)
@@ -166,20 +167,21 @@ samps_to_scens <- function(copulatype,no_samps,marginals,sigma_kf,mean_kf,contro
       kf_samps <- lapply(kf_samps,function(x){cbind(x,sort(rep(1:length(marginals),nrow(x)/length(marginals))))})
       
       # bind the rows
-      kf_samps <- data.frame(docall("rbind",kf_samps))
+      kf_samps <- data.table(docall("rbind",kf_samps))
       
-      # add issueTime ID to each data.frame
-      issue_ind <- sort(rep(issuetimes,nrow(kf_samps)/length(issuetimes)))
+      # add issueTime ID to each data.table
+      issue_ind <- sort(rep(issuetimes$issue_ind,nrow(kf_samps)/length(issuetimes$issue_ind)))
       
-      # add horiz_ind to vector
+      # add horiz_ind to vector --- need to change this**** impose naming convention on cvms?(and kpnames from mvnfast)
       horiz_ind <- rep(sort(unique(control[[1]]$horiz_ind)),nrow(kf_samps)/length(sort(unique(control[[1]]$horiz_ind))))
       kf_samps <- cbind(issue_ind,horiz_ind,kf_samps)
       
-      # split the matrix up into a list of data.frames by the rowID column for different locations
-      kf_samps <- split(data.frame(kf_samps[,1:c(ncol(kf_samps)-1)]),f=kf_samps[,ncol(kf_samps)])
+      # split the data.table up into a list of data.tables by the rowID column for different locations
+      kf_samps <- split(kf_samps,by=tail(colnames(kf_samps),1),keep.by = FALSE)
       
       # name list
       names(kf_samps) <- names(marginals)
+      
       
       return(kf_samps)
       
@@ -190,35 +192,33 @@ samps_to_scens <- function(copulatype,no_samps,marginals,sigma_kf,mean_kf,contro
     # find number of unique issue_times per fold across all the locations (use data.frame to avoid losing posixct class if present)
     find_issue <- list()
     for(i in names(sigma_kf)){
-      find_issue[[i]] <- unique(do.call(rbind,unname(lapply(control,function(x){data.frame(issue_ind=unique(x$issue_ind[x$kfold==i]))}))))
+      find_issue[[i]] <- unique(do.call(rbind,unname(lapply(control,function(x){data.table(issue_ind=unique(x$issue_ind[x$kfold==i]))}))))
       find_issue[[i]] <- find_issue[[i]][order(find_issue[[i]]$issue_ind),]
     }
     
     
     # extract samples calling etr_kf_temposamp for each fold
-    clean_samps <- mapply(extr_kf_temposamp,issuetimes=find_issue,uni_kfold = as.list(names(find_issue)),SIMPLIFY = F)
+    samps <- mapply(extr_kf_temposamp,issuetimes=find_issue,uni_kfold = as.list(names(find_issue)),SIMPLIFY = F)
+    rm(find_issue)
     
     
   }else{stop("copula type mis-specified")}}
   
   
   
-  # merge samples with control data.frames to filter to the required samples for passing to the PIT
-  # return clean_samps in time order
-  clean_fulldf <- list()
-  for(i in names(marginals)){
-    clean_fulldf[[i]] <- docall(rbind,lapply(clean_samps,function(x){x[[i]]}))
-  }
+  # merge samples with control data to filter to the required samples for passing to the PIT
+  # output from above is samps$<<fold>>$<<loc>> need to rearrage into samps$<<loc>>
+  samps <- lapply(names(marginals),function(i){rbindlist(lapply(samps,function(x){x[[i]]}))})
+  names(samps) <- names(marginals)
+  
   # set order of df
-  clean_fulldf <- lapply(clean_fulldf,function(x){x[order(x$issue_ind, x$horiz_ind),]})
-  
-  # merge control cols and the samples to give the final data.frames
-  cont_ids <- lapply(control,function(x){data.frame(issue_ind=x$issue_ind,horiz_ind=x$horiz_ind,sort_ind=1:length(x$issue_ind))})
-  filtered_samps <- mapply(merge.data.frame,x=cont_ids,y=clean_fulldf,MoreArgs = list(all.x=T),SIMPLIFY = F)
+  samps <- lapply(samps,function(x){setorder(x,issue_ind,horiz_ind)})
+  # merge control cols and the samples to give the final samps for transormation through PIT
+  cont_ids <- lapply(control,function(x){data.table(issue_ind=x$issue_ind,horiz_ind=x$horiz_ind,sort_ind=1:length(x$issue_ind))})
+  samps <- mapply(merge.data.table,x = cont_ids,y = samps,MoreArgs = list(all.x=T),SIMPLIFY = F)
+  rm(cont_ids)
   ## preserve order of merged scenario table with input control table
-  filtered_samps <- lapply(filtered_samps,function(x){x[order(x$sort_ind),]})
-  
-  filtered_samps <- lapply(filtered_samps,function(x){data.table(x)})
+  samps <- lapply(samps,function(x){setorder(x,sort_ind)})
   
   
   print(paste0("Transforming samples into original domain"))
@@ -230,10 +230,10 @@ samps_to_scens <- function(copulatype,no_samps,marginals,sigma_kf,mean_kf,contro
     CDFtail_list <- lapply(control,function(x){x$CDFtails})
     
     marg_names <- lapply(marginals,colnames)
-    samp_names <- lapply(filtered_samps,function(x){colnames(x)[-c(1:3)]})
+    samp_names <- lapply(samps,function(x){colnames(x)[-c(1:3)]})
     
-    ## reduce memory usage in pass_invcdf by joining outside and try gc()
-    filtered_samps <- mapply(cbind, filtered_samps, marginals, SIMPLIFY = F)
+    ## reduce memory usage in parallel pass_invcdf by joining outside and try gc()
+    samps <- mapply(cbind, samps, marginals, SIMPLIFY = F)
     rm(marginals)
     invisible(gc())
     
@@ -248,7 +248,7 @@ samps_to_scens <- function(copulatype,no_samps,marginals,sigma_kf,mean_kf,contro
       
     }
     
-    sampsfinal <- mcmapply(function(...){pass_invcdf(...)},dt = filtered_samps, s_nms = samp_names, q_nms = marg_names, method = method_list,
+    samps <- mcmapply(function(...){pass_invcdf(...)},dt = samps, s_nms = samp_names, q_nms = marg_names, method = method_list,
                            tails = CDFtail_list, SIMPLIFY = F,mc.cores = mcmapply_cores)
     
     
@@ -263,16 +263,16 @@ samps_to_scens <- function(copulatype,no_samps,marginals,sigma_kf,mean_kf,contro
     q_list <- lapply(control,function(x){x$q_fun})
     
     # remove issuetime, horizon, and sorting column for passing through PIT-
-    filtered_samps <- lapply(filtered_samps,function(x){x[,-c(1:3)]})
-    sampsfinal <- mcmapply(return_ppdsamps,samps = filtered_samps, margin = marginals,quant_f = q_list,SIMPLIFY = F,mc.cores = mcmapply_cores)
+    samps <- lapply(samps,function(x){x[,-c(1:3)]})
+    samps <- mcmapply(return_ppdsamps,samps = samps, margin = marginals,quant_f = q_list,SIMPLIFY = F,mc.cores = mcmapply_cores)
     
     
   }
   
-  sampsfinal <- lapply(sampsfinal,function(x){`colnames<-`(x,paste0("scen_",1:ncol(x)))})
+  samps <- lapply(samps,function(x){`colnames<-`(x,paste0("scen_",1:ncol(x)))})
   
   
-  return(sampsfinal)
+  return(samps)
   
   
 }
