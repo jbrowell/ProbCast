@@ -221,7 +221,7 @@ samps_to_scens <- function(copulatype,no_samps,marginals,sigma_kf,mean_kf,contro
   filtered_samps <- lapply(filtered_samps,function(x){data.table(x)})
   
   
-  
+  print(paste0("Transforming samples into original domain"))
   ### transform Unifrom Variable into original domain
   ### add S3 support for PPD...
   if (class(marginals[[1]])[1]%in%c("MultiQR")){
@@ -229,11 +229,12 @@ samps_to_scens <- function(copulatype,no_samps,marginals,sigma_kf,mean_kf,contro
     method_list <- lapply(control,function(x){x$PIT_method})
     CDFtail_list <- lapply(control,function(x){x$CDFtails})
     
-    ## reduce memory usage in pass_invcdf by joining outside and try gc()
-    joined_dt <- mcmapply(cbind, marginals, filtered_samps, SIMPLIFY = F,mc.cores = mcmapply_cores)
     marg_names <- lapply(marginals,colnames)
     samp_names <- lapply(filtered_samps,function(x){colnames(x)[-c(1:3)]})
-    rm(marginals,filtered_samps)
+    
+    ## reduce memory usage in pass_invcdf by joining outside and try gc()
+    filtered_samps <- mapply(cbind, filtered_samps, marginals, SIMPLIFY = F)
+    rm(marginals)
     invisible(gc())
     
     ### faster inverse pit using data.table (x7 in example.R)
@@ -247,8 +248,7 @@ samps_to_scens <- function(copulatype,no_samps,marginals,sigma_kf,mean_kf,contro
       
     }
     
-    print(paste0("Transforming samples into original domain"))
-    sampsfinal <- mcmapply(function(...){pass_invcdf(...)},dt = joined_dt, s_nms = samp_names, q_nms = marg_names, method = method_list,
+    sampsfinal <- mcmapply(function(...){pass_invcdf(...)},dt = filtered_samps, s_nms = samp_names, q_nms = marg_names, method = method_list,
                            tails = CDFtail_list, SIMPLIFY = F,mc.cores = mcmapply_cores)
     
     
@@ -264,7 +264,6 @@ samps_to_scens <- function(copulatype,no_samps,marginals,sigma_kf,mean_kf,contro
     
     # remove issuetime, horizon, and sorting column for passing through PIT-
     filtered_samps <- lapply(filtered_samps,function(x){x[,-c(1:3)]})
-    print(paste0("Transforming samples into original domain"))
     sampsfinal <- mcmapply(return_ppdsamps,samps = filtered_samps, margin = marginals,quant_f = q_list,SIMPLIFY = F,mc.cores = mcmapply_cores)
     
     
