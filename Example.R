@@ -29,6 +29,9 @@ Wind$kfold[Wind$ISSUEdtm>as.POSIXct("2012-06-30",tz="UTC")] <- "Fold2"
 Wind$kfold[Wind$ISSUEdtm>as.POSIXct("2012-12-31",tz="UTC")] <- "Fold3"
 Wind$kfold[Wind$ISSUEdtm>as.POSIXct("2013-06-30",tz="UTC")] <- "Test"
 
+Wind <- na.omit(Wind)
+
+Wind$TARGETVAR[Wind$TARGETVAR==0] <- runif(sum(Wind$TARGETVAR==0,na.rm = TRUE),min=0.001,max = 0.005)
 
 ### Multiple Quantile Regression using GBM ####
 test1<-list(data=Wind)
@@ -64,15 +67,15 @@ test1<-list(data=Wind)
 
 test1$gbm_mqr <- MQR_gbm(data = test1$data,
                          formula = TARGETVAR~U100+V100+U10+V10+(sqrt((U100^2+V100^2))),
-                         gbm_params = list(interaction.depth = 3,
+                         gbm_params = list(interaction.depth = 2,
                                            n.trees = 1000,
-                                           shrinkage = 0.05,
-                                           n.minobsinnode = 20,
-                                           bag.fraction = 0.5,
+                                           shrinkage = 0.01,
+                                           n.minobsinnode = 30,
+                                           bag.fraction = 0.9,
                                            keep.data = F),
                          parallel = T,
                          cores = detectCores(),
-                         quantiles = seq(0.05,0.95,by=0.05),
+                         quantiles = c(0.01,0.03,seq(0.05,0.95,by=0.05),0.97,0.99),
                          Sort = T,
                          SortLimits = list(U=1,L=0),
                          pred_ntree = 1000,
@@ -84,7 +87,7 @@ par(tcl=0.35)  # Switch tick marks to insides of axes
 par(mgp=c(1.5,0.2,0))  # Set margin lines; default c(3,1,0) [title,labels,line]
 par(xaxs="r",yaxs="r")  # Extend axis limits by 4% ("i" does no extension)
 
-i_ts <- unique(test1$data$ISSUEdtm)[3]
+i_ts <- unique(test1$data$ISSUEdtm)[100]
 
 plot(test1$gbm_mqr[which(test1$data$ISSUEdtm==i_ts),],xlab="Time Index [Hours]",ylab="Power [Capacity Factor]",axes=F,Legend = 1,ylim=c(0,1)); axis(1,1:24,pos=-0.07); axis(2,las=1)
 # lines(test1$data$TARGETVAR[which(test1$data$ISSUEdtm==i_ts)],lwd=3)
@@ -146,7 +149,9 @@ legend(0.01,1,c("Predicted Quantiles","Linear","Spline","Spline with Exponential
 
 # test1$X_gbm <- PIT(test1$gbm_mqr,test1$data$TARGETVAR,method = "spline",tails=list(method="exponential",L=0,U=1,nBins=5,preds=test1$gbm_mqr,targetvar=test1$data$TARGETVAR,ntailpoints=25))
 test1$X_gbm <- PIT(test1$gbm_mqr,test1$data$TARGETVAR,method = "spline",tails=list(method="interpolate",L=0,U=1))
+test1$X_gbmdyn <- PIT(test1$gbm_mqr,test1$data$TARGETVAR,method = "spline",tails=list(method="dyn_exponential", ntailpoints=100))
 hist(test1$X_gbm,breaks = 50,freq=F,ylim = c(0,3)); lines(c(0,1),c(1,1),lty=2)
+hist(test1$X_gbmdyn,breaks = 50,freq=F,ylim = c(0,3)); lines(c(0,1),c(1,1),lty=2)
 
 ### Parametric PredDist Using GAMLSS ####
 
@@ -226,8 +231,26 @@ t1 <- Sys.time()
 scen_gbm <- ProbCast::samps_to_scens(copulatype = "temporal",no_samps = f_nsamp,marginals = list(loc_1 = test1$gbm_mqr),sigma_kf = cvm_gbm,mean_kf = mean_list,
                            control=list(loc_1 = list(kfold = u_obsind$kfold,issue_ind=u_obsind$i_time,horiz_ind=u_obsind$lead_time,
                                                      PIT_method="spline",
-                                                     CDFtails = list(method="interpolate",L=0,U=1,ntailpoints=100))))
+                                                     CDFtails = list(method="dyn_exponential",ntailpoints=100))))
 print(Sys.time()-t1)
+
+
+matplot(scen_gbm$loc_1[which(test1$data$ISSUEdtm==i_ts),],type="l",ylim=c(0,1),lty=1,
+        xlab="Lead Time [Hours]",ylab="Power [Capacity Factor]",
+        col=gray(0.1,alpha = 0.1),axes = F); axis(1,1:24,pos=-0.07); axis(2,las=1)
+
+set.seed(1)
+t1 <- Sys.time()
+scen_gbm <- ProbCast::samps_to_scens(copulatype = "temporal",no_samps = f_nsamp,marginals = list(loc_1 = test1$gbm_mqr),sigma_kf = cvm_gbm,mean_kf = mean_list,
+                                     control=list(loc_1 = list(kfold = u_obsind$kfold,issue_ind=u_obsind$i_time,horiz_ind=u_obsind$lead_time,
+                                                               PIT_method="spline",
+                                                               CDFtails = list(method="interpolate",L=0,U=1,ntailpoints=100))))
+print(Sys.time()-t1)
+
+
+matplot(scen_gbm$loc_1[which(test1$data$ISSUEdtm==i_ts),],type="l",ylim=c(0,1),lty=1,
+        xlab="Lead Time [Hours]",ylab="Power [Capacity Factor]",
+        col=gray(0.1,alpha = 0.1),axes = F); axis(1,1:24,pos=-0.07); axis(2,las=1)
 
 
 # set.seed(1)
