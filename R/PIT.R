@@ -34,6 +34,11 @@ PIT.MultiQR <- function(qrdata,obs,tails,inverse=FALSE,...){
     
   }
   
+  if(tails$method=="dyn_exponential"){
+    print(paste0(tails$method," method valid for [0,1] target variable scale at the moment..."))
+  }
+  
+  
   if (inverse){
     
     X <- matrix(NA,nrow(qrdata),ncol = ncol(obs))
