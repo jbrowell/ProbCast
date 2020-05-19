@@ -1,10 +1,15 @@
-#' Sort multiple quantiles stored in a data.frame/MultiQR object
+#' Sort multiple quantiles to remove quantile crossing
 #'
-#' This function sorts quantiles so that q1<q2<q3<... is satisfied.
-#' @param data A \code{MultiQR, data.frame} containing quantile forecasts
-#' @param Limits List Upper and lower limits to apply to quantiles. E.g. list(U=0.999,L=0.001)
-#' @details Details go here...
-#' @return A \code{MultiQR, data.frame} object with ordered quanitles.
+#' This function sorts quantiles so that q1<q2<q3<...
+#' @param data A \code{MultiQR, data.frame} containing multiple quantiles
+#' @param Limits A \code{list} of the upper (\code{U}) and lower (\code{L}) limits to apply
+#' to quantiles if the output should be bounded. E.g. \code{list(U=0.999,L=0.001)}/
+#' @details The method use in the produciton of multiple quantiles may not gaurantee
+#' that quantiles are (nonstrictly) increasing, which is necseary if combining quantiles
+#' to form a cumulative distribution function. Similarly, the quantiles may not
+#' respect the boundaries of the target variable. This function re-orders quantiles and 
+#' constrains them to the user-specified limits.
+#' @return A \code{MultiQR, data.frame} object with (nonstrictly) increasing quanitles.
 #' @keywords Quantile Regression
 #' @export
 SortQuantiles <- function(data,Limits=NULL){

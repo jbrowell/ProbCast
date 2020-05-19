@@ -2,8 +2,10 @@
 #'
 #' @param distdata An object defining cumulative distributions functions. Currently supported: \code{MultiQR} and \code{PPD}.
 #' @param ... Additional arguments.
-#' @details This is an S3 method, see spcific methods for details on functionality.
-#' @return The Probability integral transform (or its invers) of data through distributions specified by \code{distdata}.
+#' @details This is an S3 method, see spcific methods \code{\link{PIT.MultiQR}}
+#' and \code{\link{PIT.PPD}} for details on functionality.
+#' @return The Probability integral transform (or its invers) of
+#' data through distributions specified by \code{distdata}.
 #' @export
 PIT <- function(distdata,...) {
   UseMethod("PIT",distdata)
@@ -11,13 +13,19 @@ PIT <- function(distdata,...) {
 
 #' Probability integral transform: S3 Method for for MultiQR
 #'
-#' This function produces a fan plot of a MultiQR object.
+#' Transforms data (random variables) through their corresponding cumulative
+#' distribution function (specified by a \code{MultiQR} object and tail parameters) in 
+#' order to produce variables with a standard uniform distribution.
 #' @param qrdata A \code{MultiQR} object.
-#' @param obs A vector of observations corresponding to \code{qrdata}.
-#' @param tails A list of arguments passed to \code{condCDF} defining the tails of the CDF
+#' @param obs A vector of observations corresponding to the rows of \code{qrdata}.
+#' @param tails A list of arguments passed to \code{condCDF} defining the tails of the CDFs.
+#' @param inverse A \code{boolean}. If true, the inverse transformation is appiled, i.e. uniform variable
+#' to random variable from original distribution.
 #' @param ... Additional arguments passed to \code{condCDF}.
-#' @details Details go here...
-#' @return The probability integral transform of \code{obs} through the predictive distribution defined by \code{qrdata} and interpolation scheme in \code{contCDF}.
+#' @details Boundary imposed throwing a warning to ensure that output is in [0,1].
+#' @return The probability integral transform of \code{obs} through the
+#' predictive distribution defined by \code{qrdata} and
+#' interpolation scheme in \code{contCDF} with \code{tails}.
 #' @export
 PIT.MultiQR <- function(qrdata,obs,tails,inverse=FALSE,...){
   
@@ -66,14 +74,19 @@ PIT.MultiQR <- function(qrdata,obs,tails,inverse=FALSE,...){
 
 #' Probability integral transform: S3 Method for for PPD
 #'
-#' This function produces a fan plot of a MultiQR object.
-#' @param ppd A \code{PPD} object.
-#' @param data Input data corresponding to \code{qrdata}.
-#' @param ... Additional arguments passed to \code{condCDF}.
-#' @details Details go here...
-#' @return The probability integral transform of \code{data} through the predictive distribution defined by \code{ppd}, a list of gamlss objects.
+#' Transforms data (random variables) through their corresponding cumulative
+#' distribution function (specified by a \code{PPD} object) in 
+#' order to produce variables with a standard uniform distribution.
+#' @param ppd A \code{PPD} object (a list of \code{gamlss} objects).
+#' @param data Input data corresponding to \code{ppd}.
+#' @param inverse A \code{boolean}. If true, the inverse transformation is appiled,
+#' i.e. uniform variable.
+#' @param inv_probs If \code{inverse}, vector of uniform-distributed variable
+#' to be transformed.
+#' @return The probability integral transform of \code{data} through
+#' the predictive distribution defined by \code{PPD}.
 #' @export
-PIT.PPD <- function(ppd,data,inverse=FALSE,inv_probs,...){
+PIT.PPD <- function(ppd,data,inverse=FALSE,inv_probs=NULL){
   
   # Arrange kfold cross-validation
   if(is.null(data$kfold)){
@@ -109,6 +122,9 @@ PIT.PPD <- function(ppd,data,inverse=FALSE,inv_probs,...){
   }
   
   if (inverse){
+    
+    ## Test?: length(inv_probs)==nrow(data)
+    
     X <- matrix(NA,nrow(data),ncol = ncol(inv_probs))
     input$q <- NULL
     input$p <- inv_probs[keepRows,]

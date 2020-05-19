@@ -1,6 +1,8 @@
 #' Pinball Loss for MultiQR
 #'
-#' This function calculates and plots the pinball loss for a MultiQR object and plots the result
+#' This function calculates and plots the pinball loss for a 
+#' \code{MultiQR} object and, optioally, plots the result.
+#' 
 #' @param qrdata \code{MultiQR} object.
 #' @param realisations Vector of realisations corresponding to rows of \code{qrdata}. \code{NA} accepted.
 #' @param kfolds Optional vector of fold/test labels corresponding to rows of \code{qrdata}.

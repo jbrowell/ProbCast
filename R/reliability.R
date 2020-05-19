@@ -1,16 +1,27 @@
 #' Reliability Diagram for MultiQR
 #'
-#' This function plots a reliabiltiy diagram for a MultiQR object and returns the plotdata
+#' @description Calculated empirical exceedence of each quantile and 
+#' plots a reliabiltiy diagram for a \code{MultiQR} object.
+#' 
+#' Optionally, results may be split by cross-validation fold or covariate and/or
+#' confidence intervals may be estimated.
 #' @param qrdata \code{MultiQR} object.
-#' @param realisations Vector of realisations corresponding to rows of \code{qrdata}. \code{NA} accepted.
-#' @param kfolds Optional vector of fold/test labels corresponding to rows of \code{qrdata}. Cannot be used with \code{subsets}.
-#' @param subsets Optional vector of covariates to bin data by. Breaks between bins are the empirical quantiles of \code{subsets}. Cannot be used with \code{kfold}.
-#' @param breaks Number of quantiles to divide subsets by, results in \code{breaks+1} bins.
-#' @param bootstrap Calculate this number of boostrap samples to estimate 95% confdence interval
+#' @param realisations Vector of realisations corresponding to
+#' rows of \code{qrdata}. Missing data as \code{NA}s accepted.
+#' @param kfolds Optional vector of cross-validation fold labels corresponding
+#' to rows of \code{qrdata}. Cannot be used with \code{subsets}.
+#' @param subsets Optional vector of covariates to bin data by.
+#' Breaks between bins are the empirical quantiles of
+#' \code{subsets}. Cannot be used with \code{kfolds}.
+#' @param breaks Number of quantiles to divide subsets by, results
+#' in \code{breaks+1} bins.
+#' @param bootstrap Calculate this number of boostrap samples
+#' to estimate 95\% confdence interval
 #' @param plot.it \code{boolean}. Make a plot?
 #' @param ... Additional arguments passed to \code{plot()}.
-#' @details Details go here...
-#' @return Reliability data and, if plot.it=T, a reliability diagram.
+#' @details Missing values in \code{realisations} are handled by \code{na.rm=T} when
+#' calculating average exceedence of a given quantile.
+#' @return Reliability data and, if \code{plot.it=TRUE}, a reliability diagram.
 #' @export
 reliability <- function(qrdata,realisations,kfolds=NULL,subsets=NULL,breaks=4,bootstrap=NULL,plot.it=T,...){
   

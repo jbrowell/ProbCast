@@ -1,19 +1,48 @@
 #' Generate multivariate forecasts
 #'
 #' This function produces a list of multivariate scenario forecasts in the marginal domain from the spatial/tempral/spatiotemporal gaussian covariance matrices and marginal distributions
-#' @param copulatype Either "spatial" of "temporal", note that spatio-temporal can be generated via "temporal" setting
-#' @param no_samps Number of scenarios required
-#' @param marginals a named list of the margins of the copula - e.g. if class is MultiQR --> list(<<name>> = <<MultiQR object>>). Multiple margins are possible for multiple locations (see examples) although they must be the same class (MQR or distribution parameters). If parametric class supply a list of the distribution parameters here and the corresponding quantile function in \code{control} (see below). The ordering of this list is important for multiple locations --- it should be ordered according to the row/columns in each member of \code{sigma_kf}
-#' @param sigma_kf a named list of the covariance matrices with elements corresponding to each fold.
-#' @param mean_kf a named list of the mean vectors with elements corresponding to each fold
-#' @param control a named list of with nested control parameters (named according to \code{marginals}). Each named list should contain \code{kfold}, \code{issue_ind}, and \code{horiz_ind} which are the kfold, issue time, and lead time vectors corresponding to the margins of the copula. If margins are MultiQR class also define \code{PIT_method} and list \code{CDFtails}, which are passed to the PIT function. If the margins are distribution parameter predictions then define \code{q_fun}, which transforms the columns of \code{marginals} through the quantile function --- see example for more details. 
-#' @param mcmapply_cores defaults to 1. Warning, only change if not using windows OS --- see the \code{parallel::mcmapply} help page for more info. Speed improvements possible when generating sptio-temporal scenarios, set to the number of locations if possible.
-#' @param ... other parameters to be passed to mvtnorm::rmvnorm
-#' @note For spatio-temporal scenarios, each site must have the same number of inputs to the governing covariance matrix.
-#' @note For multiple locations the ordering of the lists of the margins & control, and the structure of the covariance matrices is very important; if the columns/rows in each covariance matrix are ordered loc1_h1, loc1_h2,..., loc2_h1, loc2_h_2,..., loc_3_h1, loc_3_h2,... i.e. location_leadtime --- then the list of the marginals should be in the same order loc1, loc2, loc3,....
-#' @note Ensure kfold ids in the control list do not change within any issue time --- i.e. make sure the issue times are unique to each fold. 
-#' @details Details go here...
-#' @return A list or data frame of multivariate scenario forecasts
+#' @param copulatype As \code{string}, either \code{"spatial"} or \code{"temporal"},
+#' note that spatio-temporal can be generated via \code{"temporal"} setting.
+#' @param no_samps Number of scenarios to sample
+#' @param marginals a named list of marginal distibutions,
+#'  e.g. if class is \code{MultiQR}, \code{list(<<name>> = <<MultiQR object>>)}.
+#'  Multiple margins are possible for multiple locations (see examples) although
+#'  they must be the same class (\code{MultiQR} or \code{PPD}).
+#'  If parametric class supply a list of the distribution parameters here
+#'  and the corresponding quantile function in \code{control} (see below).
+#'  The ordering of this list is important for multiple locations ---
+#'  it should be ordered according to the row/columns in each member of \code{sigma_kf}.
+#' @param sigma_kf a named list of the covariance matrices with elements corresponding
+#' to cross-validation folds.
+#' @param mean_kf a named list of the mean vectors with elements corresponding to
+#' cross-validation folds.
+#' @param control a named list of with nested control parameters
+#' (named according to \code{marginals}). Each named list should contain
+#' \code{kfold}, \code{issue_ind}, and \code{horiz_ind} which are the cross-validation folds,
+#' issue time, and lead time vectors corresponding to the margins of the copula, respectively.
+#' If margins are MultiQR class also define \code{PIT_method} and list \code{CDFtails},
+#' which are passed to the \code{PIT} function. If the margins are distribution parameter
+#' predictions then define \code{q_fun}, which transforms the columns of \code{marginals}
+#' through the quantile function --- see example for more details. 
+#' @param mcmapply_cores Defaults to 1. Warning, only change if not using
+#' Windows OS --- see the \code{parallel::mcmapply} help page for more info.
+#' Speed improvements possible when generating sptio-temporal scenarios, set to
+#' the number of locations if possible.
+#' @param ... other parameters to be passed to \code{mvtnorm::rmvnorm}.
+#' @note For spatio-temporal scenarios, each site must have the same number
+#' of inputs to the governing covariance matrix.
+#' @note For multiple locations the ordering of the lists
+#' of the margins & control, and the structure of the covariance
+#' matrices is very important: if the columns/rows in each covariance
+#' matrix are ordered \code{loc1_h1, loc1_h2,..., loc2_h1, loc2_h_2,...,
+#' loc_3_h1, loc_3_h2,...} i.e. location_leadtime --- then the list of
+#' the marginals should be in the same order loc1, loc2, loc3,....
+#' @note Ensure cross-validation fold names in the control list do not change
+#' within any issue time --- i.e. make sure the issue times are unique to each fold. 
+#' @details This is a sampling function for Gaussian couplas with marginals
+#' specificed by \code{MultiQR} or \code{PPD} objects and user-specified covariance
+#' matrix.
+#' @return A \code{list} or \code{data.frame} of multivariate/scenario/trajectroy forecasts.
 #' @examples
 #' \dontrun{
 #' # for parametric type marginals with a Generalized Beta type 2 family

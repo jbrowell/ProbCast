@@ -2,11 +2,16 @@
 #'
 #' This function re-scales MultiQR object.
 #' @param mqr A \code{MultiQR} object to be re-scaled
-#' @param mult Multiplicative adjustment of length 1 or with length equal to the number of rows in mqr
-#' @param add Additive adjustment of length 1 or with length equal to the number of rows in mqr
-#' @param order Order in which to perform adjustment
-#' @details Details go here...
-#' @return A \code{MultiQR} object
+#' @param mult Multiplicative adjustment of length 1 or with length equal
+#' to the number of rows in mqr.
+#' @param add Additive adjustment of length 1 or with
+#' length equal to the number of rows in mqr.
+#' @param order Order in which to perform adjustment, either
+#' \code{"ma"} (multiple-then-add) or vice versa.
+#' @details This function re-scales \code{MultiQR} objects. Typical usage
+#' is to return forecasts in the domain of the original target variable if modelling
+#' and forecasting has been performed after normalisation/standardisation.  
+#' @return A \code{MultiQR} object.
 #' @keywords Quantile Regression, plot
 #' @export
 rescaleMQR <- function(mqr,mult=1,add=0,Order="ma"){

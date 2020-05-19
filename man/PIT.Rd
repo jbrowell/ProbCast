@@ -7,10 +7,17 @@
 PIT(distdata, ...)
 }
 \arguments{
-\item{distdata}{An object defining cumulative distributions functions. Currently supported: \code{MultiQR}.}
+\item{distdata}{An object defining cumulative distributions functions. Currently supported: \code{MultiQR} and \code{PPD}.}
 
 \item{...}{Additional arguments.}
 }
+\value{
+The Probability integral transform (or its invers) of
+data through distributions specified by \code{distdata}.
+}
 \description{
 Probability integral transform: S3 Generic Method
+}
+\details{
+This is an S3 method, see spcific methods \code{\link{PIT.MultiQR}} for details on functionality.
 }

@@ -1,10 +1,17 @@
-#' Convert PPD to MultiQR, or alternatively return predicted parameters of predictive distribution.
+#' Produce a MultiQR ojbect from a Parametric Predictive Distribution
+#' 
+#' Produce multiple predictive quantiles as a \code{MultiQR} ojbect
+#' from a \code{PPD} object. Alternatively
+#' return predicted parameters from the \code{PPD} models.
 #'
-#' @param data A \code{data.frame} containing explanatory variables.
-#' @param models An \code{PPD} object.
-#' @param quantiles Vector of quantiles to be calculated
+#' @param data A \code{data.frame} containing explanatory variables required by \code{models}.
+#' @param models A \code{PPD} object.
+#' @param quantiles Vector of quantiles to be included in the returned \code{MultiQR} object.
 #'
-#' @details Details go here...
+#' @details Exact quantiles of the (semi-) parametric models (predictive distributions)
+#' are calculated and output as a \code{MultiQR} object. Warnings are thrown if the
+#' input \code{data} result in \code{NA} estimates of quantiles, likely as a result of inputs
+#' being ourside the allowable range for the \code{PPD} model.
 #' @return A \code{MultiQR} object derived from gamlss predictive distributions. Alternatively, a matrix condaining the parameters of the predictive  gamlss distributions.
 #' @export
 

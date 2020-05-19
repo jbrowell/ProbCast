@@ -4,8 +4,16 @@
 \alias{pinball}
 \title{Pinball Loss for MultiQR}
 \usage{
-pinball(qrdata, realisations, kfolds = NULL, plot.it = T,
-  subsets = NULL, breaks = 4, bootstrap = NULL, ...)
+pinball(
+  qrdata,
+  realisations,
+  kfolds = NULL,
+  plot.it = T,
+  subsets = NULL,
+  breaks = 4,
+  bootstrap = NULL,
+  ...
+)
 }
 \arguments{
 \item{qrdata}{\code{MultiQR} object.}

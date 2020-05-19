@@ -1,14 +1,22 @@
-#' Plot a Quantile Forecast
+#' Fan plot for \code{MultiQR} objects
 #'
-#' This function produces a fan plot of a MultiQR object.
-#' @param plotdata A \code{MultiQR} object to be plotted
+#' This S3 method for \code{plot} produces a fan plot of a MultiQR object.
+#' 
+#' @param plotdata A \code{MultiQR} object to be plotted.
 #' @param targetTimes A vector of forecast target times corresponding to \code{plotdata}.
-#' @param quantiles A charater vector. By default the column names from MultiQR object, i.e. all available quantiles. Alternatively, a subset may be specified here.
-#' @param q50_line Should the q50 be plotted as a line? This can mis-lead users who may interpret it as the most likely temporal trajectory.
-#' @param Legens Location of legend to be produced. E.g. "topleft"
-#' @param cols Color scheme. May be a list of colors with length >= \code{floor(length(qunatiles)/2)} or function that returns a vector of colors.
+#' @param quantiles A charater vector. By default \code{colnames(plotdata)},
+#' i.e. all available quantiles. Alternatively, a subset may be specified here.
+#' @param ylim Passed to \code{plot}. Defaults to \code{"auto"} which set
+#' ylim equal to the range of \code{plotdata} expanded by 20\%.
+#' @param q50_line Should \code{q50} be plotted as a distinct line?
+#' Not advised. This can mis-lead users who may interpret it as the
+#' most likely temporal trajectory.
+#' @param Legend Location of legend to be produced. E.g. "topleft"
+#' @param cols Color scheme. May be a list of colors with length
+#' \code{>=floor(length(qunatiles)/2)} or function that returns a vector of colors, e.g.
+#' \code{colorRampPalette()}.
 #' @param ... Additional arguments passed to \code{plot()}.
-#' @details Details go here...
+#' @details If \code{is.null(targetTimes)} row indexes of \code{plotdata} are used.
 #' @return A plot of a \code{MQR}.
 #' @keywords Quantile Regression, plot
 #' @export
