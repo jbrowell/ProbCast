@@ -1,12 +1,24 @@
-#' Fit a gamboostlss paramertirc forecast model
+#' Fit boosted \code{gamlss}-type semi-paramertirc models
 #'
-#' @param data A \code{data.frame} containing target and explanatory variables. May optionally contain a collumn called "kfold" with numbered/labeled folds and "Test" for test data.
-#' @param formula A formula or list of formulas for differences between formulas for location, scale, shape etc..(see \code{gamboostLSS})
-#' @param families A gamboosLSS family object, which is used to define the distribution and the link functions of the various parameters.
+#' @description This function is a wrapper for the function \code{gamboostLSS}, which
+#' fits semi-parametric regression models for predictive disributions with up to
+#' four parameters (location, scale, shape1, shape2) via gradient boosting.
+#'
+#' @param data A \code{data.frame} containing target and explanatory variables.
+#' May optionally contain a collumn called "kfold" with numbered/labeled
+#' folds and "Test" for test data.
+#' @param formula A formula or list of formulas for differences
+#' between formulas for location, scale, shape etc..(see \code{?gamboostLSS})
+#' @param families A gamboosLSS family object, which is used to define the
+#' distribution and the link functions of the various parameters.
 #' @param parallel \code{boolean} parallelize cross-validation process?
-#' @param pckgs if parallel is TRUE then  specify packages required for each worker (e.g. c("data.table) if data stored as such)
+#' Parallelisation is over cross-validatoin folds.
+#' @param pckgs if parallel is TRUE then  specify packages required for
+#' each worker (e.g. c("data.table) if data stored as such)
 #' @param ... Additonal arguments passed to \code{gamboostLSS()}.
-#' @return A list of gamboostlss objects corresponsing to kfolds
+#' @return A list of \code{gamboostlss} objects. Each list element
+#' corresponsds to a cross-validation fold and contains a \code{gamlss} model
+#' trained on all other folds.
 #' @export
 Para_gamboostLSS <- function(data,formula,families=GaussianLSS(),parallel = F,cores = NULL,pckgs = NULL,...){
   

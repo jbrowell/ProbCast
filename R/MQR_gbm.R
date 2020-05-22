@@ -1,20 +1,33 @@
-#' Multiple Quantile Regression Using GBM
+#' Multiple Quantile Regression Using Gradient Boosted Decision Trees
 #'
-#' This function fits multiple quantile regreesion GBMs with facilities for cross-validation.
-#' @param data A \code{data.frame} containing target and explanatory variables. May optionally contain a collumn called "kfold" with numbered/labeled folds and "Test" for test data.
-#' @param formala A \code{formula} object with the response on the left of an ~ operator, and the terms, separated by + operators, on the right
+#' This function fits multiple boosted quantile regreesion trees 
+#' using \code{gbm} with facilities for cross-validation.
+#' @param data A \code{data.frame} containing target and explanatory
+#' variables. May optionally contain a collumn called "kfold" with
+#' numbered/labeled folds and "Test" for test data.
+#' @param formala A \code{formula} object with the response on the left
+#' of an ~ operator, and the terms, separated by + operators, on the right
 #' @param quantiles The quantiles to fit models for.
 #' @param gbm_params List of parameters to be passed to \code{fit.gbm()}.
 #' @param CVfolds Control for cross-validation if not supplied in \code{data}.
 #' @param perf.plot Plot GBM performance?
-#' @param pred_ntree predict using a user-specified tree. If unspecified an out-of-the bag estimate will be used unless interval gbm cv folds are specified in \code{gbm_params}
+#' @param pred_ntree predict using a user-specified tree.
+#' If unspecified an out-of-the bag estimate will be used unless interval
+#' gbm cross-validation folds are specified in \code{gbm_params}.
 #' @param parallel \code{boolean} parallelize cross-validation process?
-#' @param pckgs if \code{parallel} is TRUE then  specify packages required for each worker (e.g. c("data.table) if data stored as such)
+#' Parallelisation is over cross-validation folds by default, optionally over
+#' quantiles by setting code{para_over_q=T}.
+#' @param pckgs if \code{parallel} is TRUE then  specify packages required for
+#' each worker (e.g. c("data.table) if data stored as such).
 #' @param cores if \code{parallel} is TRUE then number of available cores
-#' @param para_over_q if \code{parallel} is TRUE then paralellize over quantiles? Defalts to FALSE i.e."kfold"
+#' @param para_over_q if \code{parallel} is TRUE then paralellize over quantiles?
+#' Defalts to FALSE i.e."kfold".
 #' @param Sort \code{boolean} Sort quantiles using \code{SortQuantiles()}?
 #' @param SortLimits \code{Limits} argument to be passed to \code{SortQuantiles()}. Constrains quantiles to upper and lower limits given by \code{list(U=upperlim,L=lowerlim)}.
-#' @details Details go here...
+#' @details The returned predictive quantiles are those produced out-of-sample for each
+#' cross-validation fold (using models trained on the remaining folds but not "Test" data).
+#' Predictive quantiles corresponding to "Test" data are produced using models trained on all
+#' non-test data.
 #' @return Quantile forecasts in a \code{MultiQR} object.
 #' @keywords Quantile Regression
 #' @export

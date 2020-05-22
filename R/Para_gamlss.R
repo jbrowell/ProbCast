@@ -1,17 +1,32 @@
-#' Fit a gamlss paramertirc forecast model
+#' Fit \code{gamlss}-type semi-paramertirc models
 #'
-#' @param data A \code{data.frame} containing target and explanatory variables. May optionally contain a collumn called "kfold" with numbered/labeled folds and "Test" for test data.
-#' @param formula A formula object with the response on the left of an ~ operator, and the terms, separated by + operators, on the right.
-#' @param sigma.formula A formula object for fitting a model to the sigma parameter, as in the formula above.
-#' @param nu.formula A formula object for fitting a model to the nu parameter, as in the formula above.
-#' @param tau.formula A formula object for fitting a model to the tau parameter, as in the formula above.
-#' @param family A gamlss.family object, which is used to define the distribution and the link functions of the various parameters.
-#' @param parallel \code{boolean} parallelize model fitting process?
-#' @param pckgs if parallel is TRUE then  specify packages required for each worker (e.g. c("data.table) if data stored as such)
+#' @description This function is a wrapper for the function \code{gamlss}, which
+#' fits semi-parametric regression models for predictive disributions with up to
+#' four parameters (location, scale, shape1, shape2). 
+#'
+#' @param data A \code{data.frame} containing target and explanatory variables.
+#' May optionally contain a collumn called "\code{kfold}" with numbered/labeled folds
+#' and "\code{Test}" for test data.
+#' @param formula A formula object with the response on the left of an ~ operator,
+#' and the terms, separated by + operators, on the right.
+#' @param sigma.formula A formula object for fitting a model to the
+#' sigma parameter, as in the formula above.
+#' @param nu.formula A formula object for fitting a model to the
+#' nu parameter, as in the formula above.
+#' @param tau.formula A formula object for fitting a model to the
+#' tau parameter, as in the formula above.
+#' @param family A gamlss.family object, which is used to define the
+#' distribution and the link functions of the various parameters.
+#' @param parallel \code{boolean} parallelize model fitting process? Parallelisation is
+#' over cross-validation folds.
+#' @param pckgs if parallel is TRUE then  specify packages required
+#' for each worker (e.g. c("data.table) if data stored as such)
 #' @param cores if parallel is TRUE then number of available cores
 #' @param ... Additonal arguments passed to \code{gamlss()}.
-#' @details Details go here...
-#' @return A cumulative density function
+#' @details See \code{?gamlss} for additional details and options.
+#' @return A list of \code{gamlss} models with class \code{PPD}. Each list element
+#' corresponsds to a cross-validation fold and contains a \code{gamlss} model
+#' trained on all other folds.
 #' @export
 Para_gamlss <- function(data,formula,
                         sigma.formula= ~1,
