@@ -18,11 +18,23 @@ pinball(
 \arguments{
 \item{qrdata}{\code{MultiQR} object.}
 
-\item{realisations}{Vector of realisations corresponding to rows of \code{qrdata}. \code{NA} accepted.}
+\item{realisations}{Vector of realisations corresponding to rows of \code{qrdata}.
+\code{NA} accepted where realisations are missing.}
 
-\item{kfolds}{Optional vector of fold/test labels corresponding to rows of \code{qrdata}.}
+\item{kfolds}{Optional vector of fold/test labels corresponding to rows of \code{qrdata}.
+Cannot be used with \code{subsets}.}
 
 \item{plot.it}{\code{boolean}. Make a plot?}
+
+\item{subsets}{Optional vector of covariates to bin data by.
+Breaks between bins are the empirical quantiles of
+\code{subsets}. Cannot be used with \code{kfolds}.}
+
+\item{breaks}{Number of quantiles to divide subsets by, results
+in \code{breaks+1} bins.}
+
+\item{bootstrap}{Calculate this number of boostrap samples
+to estimate 95\% confdence interval.}
 
 \item{...}{Additional arguments passed to \code{plot()}.}
 }
@@ -30,8 +42,14 @@ pinball(
 Quantile Score data and, if plot.it=T, a reliability diagram.
 }
 \description{
-This function calculates and plots the pinball loss for a MultiQR object and plots the result
+This function calculates the pinball loss for each quantile in a \code{MultiQR}
+object. Optionally, results are produced by cross-validation fold or covariate,
+95\% confidence intervals are estimated via bootstrap, and results are plotted.
 }
 \details{
-Details go here...
+Missing values in \code{realisations} are handled by \code{na.rm=T} when
+calculating average exceedence of a given quantile.
+}
+\author{
+Jethro Browell, \email{jethro.browell@strath.ac.uk}
 }

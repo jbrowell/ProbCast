@@ -87,7 +87,7 @@ par(xaxs="r",yaxs="r")  # Extend axis limits by 4% ("i" does no extension)
 i_ts <- unique(test1$data$ISSUEdtm)[3]
 
 plot(test1$gbm_mqr[which(test1$data$ISSUEdtm==i_ts),],xlab="Time Index [Hours]",ylab="Power [Capacity Factor]",axes=F,Legend = 1,ylim=c(0,1)); axis(1,1:24,pos=-0.07); axis(2,las=1)
-# lines(test1$data$TARGETVAR[which(test1$data$ISSUEdtm==i_ts)],lwd=3)
+lines(test1$data$TARGETVAR[which(test1$data$ISSUEdtm==i_ts)],lwd=3)
 
 reliability(qrdata = test1$gbm_mqr,
             realisations = test1$data$TARGETVAR,
@@ -149,20 +149,18 @@ test1$X_gbm <- PIT(test1$gbm_mqr,test1$data$TARGETVAR,method = "spline",tails=li
 hist(test1$X_gbm,breaks = 50,freq=F,ylim = c(0,3)); lines(c(0,1),c(1,1),lty=2)
 
 ### Parametric PredDist Using GAMLSS ####
-
-
 test1$ppd <- Para_gamlss(data = test1$data,
                          formula = TARGETVAR~bs(WS100,df=3),
                          sigma.formula = ~WS100,
                          sigma.start = 0.05,
                          nu.formula = ~WS100,
                          tau.formula = ~WS100,
-                         family = BEINF, # NO
+                         family =  BEINF, #NO,  #
                          method=mixed(20,10))
 
 
-summary(test1$ppd$fold1)
-plot(test1$ppd$fold1)
+summary(test1$ppd$`Fold 1`)
+plot(test1$ppd$`Fold 1`)
 
 test1$gamlssParams <- PPD_2_MultiQR(data=test1$data,
                                    models = test1$ppd,
@@ -219,9 +217,9 @@ mean_list <- list()
 for (i in levels(unique(u_obsind$kfold))){
   mean_list[[i]] <- rep(0, 24)
 }
+
+
 ## method for parametric pred dist.
-
-
 scen_gbm <- samps_to_scens(copulatype = "temporal",no_samps = f_nsamp,marginals = list(loc_1 = test1$gbm_mqr),sigma_kf = cvm_gbm,mean_kf = mean_list,
                            control=list(loc_1 = list(kfold = u_obsind$kfold,issue_ind=u_obsind$i_time,horiz_ind=u_obsind$lead_time,
                                                      PIT_method="spline",
@@ -264,9 +262,6 @@ matplot(scen_gamlss$loc_1[which(test1$data$ISSUEdtm==i_ts),],type="l",ylim=c(0,1
         col=gray(0.1,alpha = 0.1),axes = F); axis(1,1:24,pos=-0.07); axis(2,las=1)
 # lines(test1$data$TARGETVAR[which(test1$data$ISSUEdtm==i_ts)],lwd=2)
 # legend("topleft",c("scenarios","measured"),col = c("grey75","black"),pch=c(NA,NA,NA),bty="n",lty=1)
-
-
-
 
 
 

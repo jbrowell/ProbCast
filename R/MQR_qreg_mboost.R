@@ -1,18 +1,32 @@
-#' Multiple Quantile Regression Using mboost
+#' Multiple Quantile Regression using \code{mboost}
 #'
-#' This function fits multiple quantile regreesion GBMs with facilities for cross-validation.
-#' @param data A \code{data.frame} containing target and explanatory variables. May optionally contain a collumn called "kfold" with numbered/labeled folds and "Test" for test data.
-#' @param formaul A \code{formula} object with the response on the left of an ~ operator, and the terms, separated by + operators, on the right
-#' @param quantiles The quantiles to fit models for.
+#' This function fits multiple quantile regreesion models using \mboost{mboost}, with
+#' facilities for cross-validation. \code{mboost} accommodates both generalised
+#' additive models, decision trees and other learners. See \code{?mboost} for more
+#' details.
+#' 
+#' Jethro Browell, \email{jethro.browell@@strath.ac.uk}
+#' 
+#' @param data A \code{data.frame} containing target and explanatory variables.
+#' May optionally contain a collumn called "kfold" with numbered/labeled folds
+#' and "Test" for test data.
+#' @param formaul A \code{formula} object with the response on the left
+#' of an ~ operator, and the terms, separated by + operators, on the right.
+#' @param quantiles A vector with length>=2 containing the quantiles to fit models for.
 #' @param model_params List of parameters to be passed to \code{fit.gbm()}.
 #' @param CVfolds Control for cross-validation if not supplied in \code{data}.
 #' @param parallel \code{boolean} parallelize cross-validation process?
-#' @param pckgs if parallel is TRUE then  specify packages required for each worker (e.g. c("data.table) if data stored as such)
+#' Parallelisation is over cross-validation folds.
+#' @param pckgs if parallel is TRUE then  specify packages required for
+#' each worker (e.g. c("data.table) if data stored as such)
 #' @param cores if parallel is TRUE then number of available cores
 #' @param Sort \code{boolean} Sort quantiles using \code{SortQuantiles()}?
 #' @param SortLimits \code{Limits} argument to be passed to \code{SortQuantiles()}. Constrains quantiles to upper and lower limits given by \code{list(U=upperlim,L=lowerlim)}.
 #' @param save_models_path Path to save models. Model details and file extension pasted onto this string.
-#' @details Details go here...
+#' @details The returned predictive quantiles are those produced out-of-sample for each
+#' cross-validation fold (using models trained on the remaining folds but not "Test" data).
+#' Predictive quantiles corresponding to "Test" data are produced using models trained on all
+#' non-test data.
 #' @return Quantile forecasts in a \code{MultiQR} object.
 #' @keywords Quantile Regression
 #' @import mboost
@@ -32,6 +46,10 @@ MQR_qreg_mboost <-
            Sort=T,SortLimits=NULL,
            save_models_path=NULL){
              
+    if(length(quantiles)<2){
+      stop("length(quantiles)<2. This function takes issue with single quantiles.")
+    }
+    
              ### Set-up Cross-validation
              TEST<-F # Flag for Training (with CV) AND Test output
              if("kfold" %in% colnames(data)){

@@ -9,18 +9,28 @@
 \arguments{
 \item{qrdata}{A \code{MultiQR} object.}
 
-\item{obs}{A vector of observations corresponding to \code{qrdata}.}
+\item{obs}{A vector of observations corresponding to the rows of \code{qrdata}.}
 
-\item{tails}{A list of arguments passed to \code{condCDF} defining the tails of the CDF}
+\item{tails}{A list of arguments passed to \code{condCDF} defining the tails of the CDFs.}
+
+\item{inverse}{A \code{boolean}. If true, the inverse transformation is appiled, i.e. uniform variable
+to random variable from original distribution.}
 
 \item{...}{Additional arguments passed to \code{condCDF}.}
 }
 \value{
-The probability integral transform of \code{obs} through the predictive distribution defined by \code{qrdata} and interpolation scheme in \code{contCDF}.
+The probability integral transform of \code{obs} through the
+predictive distribution defined by \code{qrdata} and
+interpolation scheme in \code{contCDF} with \code{tails}.
 }
 \description{
-This function produces a fan plot of a MultiQR object.
+Transforms data (random variables) through their corresponding cumulative
+distribution function (specified by a \code{MultiQR} object and tail parameters) in 
+order to produce variables with a standard uniform distribution.
 }
 \details{
-Details go here...
+Boundary imposed throwing a warning to ensure that output is in [0,1].
+}
+\author{
+Jethro Browell, \email{jethro.browell@strath.ac.uk}
 }

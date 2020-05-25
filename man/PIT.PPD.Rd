@@ -4,21 +4,28 @@
 \alias{PIT.PPD}
 \title{Probability integral transform: S3 Method for for PPD}
 \usage{
-\method{PIT}{PPD}(ppd, data, inverse = FALSE, inv_probs, ...)
+\method{PIT}{PPD}(ppd, data, inverse = FALSE, inv_probs = NULL)
 }
 \arguments{
-\item{ppd}{A \code{PPD} object.}
+\item{ppd}{A \code{PPD} object (a list of \code{gamlss} objects).}
 
-\item{data}{Input data corresponding to \code{qrdata}.}
+\item{data}{Input data corresponding to \code{ppd}.}
 
-\item{...}{Additional arguments passed to \code{condCDF}.}
+\item{inverse}{A \code{boolean}. If true, the inverse transformation is appiled,
+i.e. uniform variable.}
+
+\item{inv_probs}{If \code{inverse}, vector of uniform-distributed variable
+to be transformed.}
 }
 \value{
-The probability integral transform of \code{data} through the predictive distribution defined by \code{ppd}, a list of gamlss objects.
+The probability integral transform of \code{data} through
+the predictive distribution defined by \code{PPD}.
 }
 \description{
-This function produces a fan plot of a MultiQR object.
+Transforms data (random variables) through their corresponding cumulative
+distribution function (specified by a \code{PPD} object) in 
+order to produce variables with a standard uniform distribution.
 }
-\details{
-Details go here...
+\author{
+Jethro Browell, \email{jethro.browell@strath.ac.uk}
 }

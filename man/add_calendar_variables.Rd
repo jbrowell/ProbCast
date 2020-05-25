@@ -17,10 +17,11 @@ add_calendar_variables(dt, datetimecol, UKHolidays = NULL)
 Table of UK Holidays
 }
 \description{
-Add Calendar Features
+Add calendar-based columns to a \code{data.table} with a date/time
+column, e.g. "hour-of-day" or holidays (based on \code{read_holiday_ics()}).
 }
-\details{
-Details go here...
+\author{
+Jethro Browell, \email{jethro.browell@strath.ac.uk}
 }
 \keyword{Date}
 \keyword{Features}

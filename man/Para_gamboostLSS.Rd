@@ -2,7 +2,7 @@
 % Please edit documentation in R/Para_gamboostLSS.R
 \name{Para_gamboostLSS}
 \alias{Para_gamboostLSS}
-\title{Fit a gamboostlss paramertirc forecast model}
+\title{Fit boosted \code{gamlss}-type semi-paramertirc models}
 \usage{
 Para_gamboostLSS(
   data,
@@ -15,21 +15,34 @@ Para_gamboostLSS(
 )
 }
 \arguments{
-\item{data}{A \code{data.frame} containing target and explanatory variables. May optionally contain a collumn called "kfold" with numbered/labeled folds and "Test" for test data.}
+\item{data}{A \code{data.frame} containing target and explanatory variables.
+May optionally contain a collumn called "kfold" with numbered/labeled
+folds and "Test" for test data.}
 
-\item{formula}{A formula or list of formulas for differences between formulas for location, scale, shape etc..(see \code{gamboostLSS})}
+\item{formula}{A formula or list of formulas for differences
+between formulas for location, scale, shape etc..(see \code{?gamboostLSS})}
 
-\item{families}{A gamboosLSS family object, which is used to define the distribution and the link functions of the various parameters.}
+\item{families}{A gamboosLSS family object, which is used to define the
+distribution and the link functions of the various parameters.}
 
-\item{parallel}{\code{boolean} parallelize cross-validation process?}
+\item{parallel}{\code{boolean} parallelize cross-validation process?
+Parallelisation is over cross-validatoin folds.}
 
-\item{pckgs}{if parallel is TRUE then  specify packages required for each worker (e.g. c("data.table) if data stored as such)}
+\item{pckgs}{if parallel is TRUE then  specify packages required for
+each worker (e.g. c("data.table) if data stored as such)}
 
 \item{...}{Additonal arguments passed to \code{gamboostLSS()}.}
 }
 \value{
-A list of gamboostlss objects corresponsing to kfolds
+A list of \code{gamboostlss} objects. Each list element
+corresponsds to a cross-validation fold and contains a \code{gamlss} model
+trained on all other folds.
 }
 \description{
-Fit a gamboostlss paramertirc forecast model
+This function is a wrapper for the function \code{gamboostLSS}, which
+fits semi-parametric regression models for predictive disributions with up to
+four parameters (location, scale, shape1, shape2) via gradient boosting.
+}
+\author{
+Ciaran Gilbert, \email{ciaran.gilbert@strath.ac.uk}
 }

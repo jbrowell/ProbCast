@@ -2,7 +2,7 @@
 % Please edit documentation in R/MQR_qreg_mboost.R
 \name{MQR_qreg_mboost}
 \alias{MQR_qreg_mboost}
-\title{Multiple Quantile Regression Using mboost}
+\title{Multiple Quantile Regression using \code{mboost}}
 \usage{
 MQR_qreg_mboost(
   data,
@@ -22,17 +22,21 @@ MQR_qreg_mboost(
 )
 }
 \arguments{
-\item{data}{A \code{data.frame} containing target and explanatory variables. May optionally contain a collumn called "kfold" with numbered/labeled folds and "Test" for test data.}
+\item{data}{A \code{data.frame} containing target and explanatory variables.
+May optionally contain a collumn called "kfold" with numbered/labeled folds
+and "Test" for test data.}
 
-\item{quantiles}{The quantiles to fit models for.}
+\item{quantiles}{A vector with length>=2 containing the quantiles to fit models for.}
 
 \item{CVfolds}{Control for cross-validation if not supplied in \code{data}.}
 
-\item{parallel}{\code{boolean} parallelize cross-validation process?}
+\item{parallel}{\code{boolean} parallelize cross-validation process?
+Parallelisation is over cross-validation folds.}
 
 \item{cores}{if parallel is TRUE then number of available cores}
 
-\item{pckgs}{if parallel is TRUE then  specify packages required for each worker (e.g. c("data.table) if data stored as such)}
+\item{pckgs}{if parallel is TRUE then  specify packages required for
+each worker (e.g. c("data.table) if data stored as such)}
 
 \item{Sort}{\code{boolean} Sort quantiles using \code{SortQuantiles()}?}
 
@@ -40,7 +44,8 @@ MQR_qreg_mboost(
 
 \item{save_models_path}{Path to save models. Model details and file extension pasted onto this string.}
 
-\item{formaul}{A \code{formula} object with the response on the left of an ~ operator, and the terms, separated by + operators, on the right}
+\item{formaul}{A \code{formula} object with the response on the left
+of an ~ operator, and the terms, separated by + operators, on the right.}
 
 \item{model_params}{List of parameters to be passed to \code{fit.gbm()}.}
 }
@@ -48,10 +53,18 @@ MQR_qreg_mboost(
 Quantile forecasts in a \code{MultiQR} object.
 }
 \description{
-This function fits multiple quantile regreesion GBMs with facilities for cross-validation.
+This function fits multiple quantile regreesion models using \mboost{mboost}, with
+facilities for cross-validation. \code{mboost} accommodates both generalised
+additive models, decision trees and other learners. See \code{?mboost} for more
+details.
 }
 \details{
-Details go here...
+Jethro Browell, \email{jethro.browell@strath.ac.uk}
+
+The returned predictive quantiles are those produced out-of-sample for each
+cross-validation fold (using models trained on the remaining folds but not "Test" data).
+Predictive quantiles corresponding to "Test" data are produced using models trained on all
+non-test data.
 }
 \keyword{Quantile}
 \keyword{Regression}
