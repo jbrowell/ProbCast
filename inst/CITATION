@@ -6,7 +6,7 @@ bibentry(
  booktitle="16th Probabilistic Methods Applied to Power Systems Conference",
  year="2020",
  author="Jethro Browell and Ciaran Gilbert",
- textVersion="J. Browell and C. GIlbert (2020), {ProbCast}: Open-source  Production, Evaluation and Visualisation of Probabilistic Forecasts, 16th Probabilistic Methods Applied to Power Systems Conference.")
+ textVersion="J. Browell and C. GIlbert (2020), ProbCast: Open-source  Production, Evaluation and Visualisation of Probabilistic Forecasts, 16th Probabilistic Methods Applied to Power Systems Conference.")
  
 
 citHeader(Publications using ProbCast:)
@@ -19,5 +19,22 @@ bibentry(
   journal   = {International Journal of Forecasting},
   month     = {may},
   publisher = {Elsevier {BV}},
-  year      = {2020},
-}
+  year      = {2020}
+)
+
+
+citHeader(Wind power data first publised as part of:)
+
+bibentry(
+	bibtype=Article,
+  author    = {Tao Hong and Pierre Pinson and Shu Fan and Hamidreza Zareipour and Alberto Troccoli and Rob J. Hyndman},
+  title     = {Probabilistic energy forecasting: Global Energy Forecasting Competition 2014 and beyond},
+  doi       = {10.1016/j.ijforecast.2016.02.001},
+  number    = {3},
+  pages     = {896--913},
+  volume    = {32},
+  journal   = {International Journal of Forecasting},
+  month     = {jul},
+  publisher = {Elsevier {BV}},
+  year      = {2016}
+)
