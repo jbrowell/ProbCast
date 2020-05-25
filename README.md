@@ -8,8 +8,12 @@ You can install the latest version of ProbCast using:
 
     # install.packages("devtools")
     library(devtools)
-    install_github("jbrowell/ProbCast") 
+    install_github("jbrowell/ProbCast")
+    
+The latest release is:
 
+[![DOI](https://zenodo.org/badge/143147931.svg)](https://zenodo.org/badge/latestdoi/143147931)
+    
 ## Usage
 
 The package includes a script `Example.R` which demonstrates much of ProbCast's functionallity.
