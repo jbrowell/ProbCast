@@ -6,7 +6,7 @@
 #' Optionally, results may be split by cross-validation fold or covariate and/or
 #' confidence intervals may be estimated.
 #' 
-#' @authro Jethro Browell, \email{jethro.browell@@strath.ac.uk}
+#' @author Jethro Browell, \email{jethro.browell@@strath.ac.uk}
 #' @param qrdata \code{MultiQR} object.
 #' @param realisations Vector of realisations corresponding to
 #' rows of \code{qrdata}. Missing data as \code{NA}s accepted.

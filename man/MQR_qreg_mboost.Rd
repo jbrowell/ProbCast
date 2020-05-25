@@ -53,7 +53,7 @@ of an ~ operator, and the terms, separated by + operators, on the right.}
 Quantile forecasts in a \code{MultiQR} object.
 }
 \description{
-This function fits multiple quantile regreesion models using \mboost{mboost}, with
+This function fits multiple quantile regreesion models using \code{mboost}, with
 facilities for cross-validation. \code{mboost} accommodates both generalised
 additive models, decision trees and other learners. See \code{?mboost} for more
 details.

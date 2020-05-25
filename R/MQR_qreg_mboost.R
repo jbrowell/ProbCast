@@ -1,6 +1,6 @@
 #' Multiple Quantile Regression using \code{mboost}
 #'
-#' This function fits multiple quantile regreesion models using \mboost{mboost}, with
+#' This function fits multiple quantile regreesion models using \code{mboost}, with
 #' facilities for cross-validation. \code{mboost} accommodates both generalised
 #' additive models, decision trees and other learners. See \code{?mboost} for more
 #' details.

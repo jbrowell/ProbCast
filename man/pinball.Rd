@@ -2,7 +2,7 @@
 % Please edit documentation in R/pinball.R
 \name{pinball}
 \alias{pinball}
-\title{Pinball Loss for MultiQR}
+\title{Pinball Score for \code{MultiQR} Objects}
 \usage{
 pinball(
   qrdata,
@@ -26,23 +26,19 @@ Cannot be used with \code{subsets}.}
 
 \item{plot.it}{\code{boolean}. Make a plot?}
 
-\item{subsets}{Optional vector of covariates to bin data by.
-Breaks between bins are the empirical quantiles of
-\code{subsets}. Cannot be used with \code{kfolds}.}
+\item{subsets}{Covariate to subset evaluation metric by corresponding to rows of \code{qrdata}.}
 
-\item{breaks}{Number of quantiles to divide subsets by, results
-in \code{breaks+1} bins.}
+\item{breaks}{number of subsets to form.}
 
-\item{bootstrap}{Calculate this number of boostrap samples
-to estimate 95\% confdence interval.}
+\item{bootstrap}{Number of boostrap samples used to generate 95\% confidence intervals.}
 
 \item{...}{Additional arguments passed to \code{plot()}.}
 }
 \value{
-Quantile Score data and, if plot.it=T, a reliability diagram.
+Quantile Score data and, if \code{plot.it=T}, a plot.
 }
 \description{
-This function calculates the pinball loss for each quantile in a \code{MultiQR}
+This function calculates the pinball score for each quantile in a \code{MultiQR}
 object. Optionally, results are produced by cross-validation fold or covariate,
 95\% confidence intervals are estimated via bootstrap, and results are plotted.
 }

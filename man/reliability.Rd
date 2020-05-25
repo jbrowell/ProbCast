@@ -52,3 +52,6 @@ confidence intervals may be estimated.
 Missing values in \code{realisations} are handled by \code{na.rm=T} when
 calculating average exceedence of a given quantile.
 }
+\author{
+Jethro Browell, \email{jethro.browell@strath.ac.uk}
+}

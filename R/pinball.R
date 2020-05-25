@@ -1,9 +1,9 @@
-#' Pinball Loss for MultiQR
-#'
-#' This function calculates the pinball loss for each quantile in a \code{MultiQR}
+#' Pinball Score for \code{MultiQR} Objects
+#' 
+#' @description This function calculates the pinball score for each quantile in a \code{MultiQR}
 #' object. Optionally, results are produced by cross-validation fold or covariate,
 #' 95\% confidence intervals are estimated via bootstrap, and results are plotted.
-#'  
+#' 
 #' @author Jethro Browell, \email{jethro.browell@@strath.ac.uk}
 #' @param qrdata \code{MultiQR} object.
 #' @param realisations Vector of realisations corresponding to rows of \code{qrdata}.
@@ -20,11 +20,11 @@
 #' @param plot.it \code{boolean}. Make a plot?
 #' @param subsets Covariate to subset evaluation metric by corresponding to rows of \code{qrdata}.
 #' @param breaks number of subsets to form.
-#' @param bootstrap Number of boostrap samples used to generate 95% confidence intervals.
+#' @param bootstrap Number of boostrap samples used to generate 95\% confidence intervals.
 #' @param ... Additional arguments passed to \code{plot()}.
 #' @details Missing values in \code{realisations} are handled by \code{na.rm=T} when
 #' calculating average exceedence of a given quantile.
-#' @return Quantile Score data and, if plot.it=T, a reliability diagram.
+#' @return Quantile Score data and, if \code{plot.it=T}, a plot.
 #' @export
 pinball <- function(qrdata,realisations,kfolds=NULL,plot.it=T,subsets=NULL,breaks=4,bootstrap=NULL,...){
   
