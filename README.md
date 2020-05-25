@@ -3,6 +3,18 @@ ProbCast is an R Package (under continuous development) by researchers at the Un
 
 See package documentation for details and the script "Example.R" to see ProbCast in action.
 
+## Set-up
+
+You can install the latest version of ProbCast using:
+
+    # install.packages("devtools")
+    library(devtools)
+    install_github("jbrowell/ProbCast") 
+
+## Usage
+
+The package includes a script `Example.R` which demonstrates much of ProbCast's functionallity.
+
 ## Guide for Contributors
 Contributors should follow the following guidelines:
 - Open new branches when adding new functinoality, or making changes to exisig functions
