@@ -18,6 +18,9 @@
 #' @param bootstrap Calculate this number of boostrap samples
 #' to estimate 95\% confdence interval.
 #' @param plot.it \code{boolean}. Make a plot?
+#' @param subsets Covariate to subset evaluation metric by corresponding to rows of \code{qrdata}.
+#' @param breaks number of subsets to form.
+#' @param bootstrap Number of boostrap samples used to generate 95% confidence intervals.
 #' @param ... Additional arguments passed to \code{plot()}.
 #' @details Missing values in \code{realisations} are handled by \code{na.rm=T} when
 #' calculating average exceedence of a given quantile.
