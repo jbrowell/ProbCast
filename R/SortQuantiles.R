@@ -1,6 +1,8 @@
 #' Sort multiple quantiles to remove quantile crossing
 #'
 #' This function sorts quantiles so that q1<q2<q3<...
+#' 
+#' @author Jethro Browell, \email{jethro.browell@@strath.ac.uk}
 #' @param data A \code{MultiQR, data.frame} containing multiple quantiles
 #' @param Limits A \code{list} of the upper (\code{U}) and lower (\code{L}) limits to apply
 #' to quantiles if the output should be bounded. E.g. \code{list(U=0.999,L=0.001)}/

@@ -99,3 +99,6 @@ scens <- samps_to_scens(copulatype = "temporal", no_samps = 100,marginals = list
                                                   PIT_method = "linear", CDFtails = list(method = "interpolate", L=0, U=1))))
 }
 }
+\author{
+Ciaran Gilbert, \email{ciaran.gilbert@strath.ac.uk}
+}

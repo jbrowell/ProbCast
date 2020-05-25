@@ -25,5 +25,8 @@ to form a cumulative distribution function. Similarly, the quantiles may not
 respect the boundaries of the target variable. This function re-orders quantiles and 
 constrains them to the user-specified limits.
 }
+\author{
+Jethro Browell, \email{jethro.browell@strath.ac.uk}
+}
 \keyword{Quantile}
 \keyword{Regression}

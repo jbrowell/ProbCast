@@ -5,6 +5,8 @@
 #' additive models, decision trees and other learners. See \code{?mboost} for more
 #' details.
 #' 
+#' Jethro Browell, \email{jethro.browell@@strath.ac.uk}
+#' 
 #' @param data A \code{data.frame} containing target and explanatory variables.
 #' May optionally contain a collumn called "kfold" with numbered/labeled folds
 #' and "Test" for test data.

@@ -29,6 +29,9 @@ This function re-scales \code{MultiQR} objects. Typical usage
 is to return forecasts in the domain of the original target variable if modelling
 and forecasting has been performed after normalisation/standardisation.
 }
+\author{
+Jethro Browell, \email{jethro.browell@strath.ac.uk}
+}
 \keyword{Quantile}
 \keyword{Regression,}
 \keyword{plot}

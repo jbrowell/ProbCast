@@ -19,5 +19,9 @@ data through distributions specified by \code{distdata}.
 Probability integral transform: S3 Generic Method
 }
 \details{
-This is an S3 method, see spcific methods \code{\link{PIT.MultiQR}} for details on functionality.
+This is an S3 method, see spcific methods \code{\link{PIT.MultiQR}}
+and \code{\link{PIT.PPD}} for details on functionality.
+}
+\author{
+Jethro Browell, \email{jethro.browell@strath.ac.uk}; Ciaran Gilbert, \email{ciaran.gilbert@strath.ac.uk}
 }

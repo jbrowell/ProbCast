@@ -4,6 +4,7 @@
 #' object. Optionally, results are produced by cross-validation fold or covariate,
 #' 95\% confidence intervals are estimated via bootstrap, and results are plotted.
 #'  
+#' @author Jethro Browell, \email{jethro.browell@@strath.ac.uk}
 #' @param qrdata \code{MultiQR} object.
 #' @param realisations Vector of realisations corresponding to rows of \code{qrdata}.
 #' \code{NA} accepted where realisations are missing.

@@ -2,7 +2,7 @@
 % Please edit documentation in R/gamboostLSS_2_MultiQR.R
 \name{gamboostLSS_2_MultiQR}
 \alias{gamboostLSS_2_MultiQR}
-\title{Convert gamboostLSS objects to MultiQR, or alternatively return predicted parameters of predictive distribution.}
+\title{Generate predictions from \code{gamboostLSS} object}
 \usage{
 gamboostLSS_2_MultiQR(
   data,
@@ -24,8 +24,11 @@ gamboostLSS_2_MultiQR(
 A \code{MultiQR} object derived from gamlss predictive distributions. Alternatively, a matrix containing the parameters of the predictive gamboostLSS distributions.
 }
 \description{
-Convert gamboostLSS objects to MultiQR, or alternatively return predicted parameters of predictive distribution.
-}
-\details{
-Details go here...
+Convert gamboostLSS objects to MultiQR or alternatively return
+predicted parameters of predictive distribution.
+
+Note that this function may be superseded by an S3 method in future versions of
+\code{ProbCast}.
+
+Ciaran Gilbert, \email{ciaran.gilbert@strath.ac.uk}
 }

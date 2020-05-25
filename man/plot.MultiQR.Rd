@@ -47,6 +47,9 @@ This S3 method for \code{plot} produces a fan plot of a MultiQR object.
 \details{
 If \code{is.null(targetTimes)} row indexes of \code{plotdata} are used.
 }
+\author{
+Jethro Browell, \email{jethro.browell@strath.ac.uk}
+}
 \keyword{Quantile}
 \keyword{Regression,}
 \keyword{plot}

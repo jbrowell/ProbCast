@@ -1,6 +1,8 @@
 #' Re-scale MultiQR object
 #'
 #' This function re-scales MultiQR object.
+#' 
+#' @author Jethro Browell, \email{jethro.browell@@strath.ac.uk}
 #' @param mqr A \code{MultiQR} object to be re-scaled
 #' @param mult Multiplicative adjustment of length 1 or with length equal
 #' to the number of rows in mqr.

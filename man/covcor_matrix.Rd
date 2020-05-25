@@ -16,24 +16,28 @@ covcor_matrix(
 )
 }
 \arguments{
-\item{u_data}{A dataframe of uniform distributed variables.}
+\item{u_data}{A dataframe of standard uniform distributed variables.}
 
 \item{kfold}{A vector of kfold identifiers.}
 
-\item{cov_cor}{specify either covariance or correlation}
+\item{cov_cor}{specify either covariance or correlation.}
 
-\item{boundary_threshold}{handling of boundary values. Set to NA to exclude, or small value to impose threshold.}
+\item{boundary_threshold}{Data outside [0,1] are set to \code{boundary_threshold} or 
+\code{1-boundary_threshold}. Set \code{boundary_threshold=NA} to
+exclude data outside [0,1].}
 
-\item{forcePD}{use \code{nearPD} to return a positive definite cov/cor matrix}
+\item{forcePD}{Use \code{nearPD()} to return a positive definite cov/cor matrix}
 
-\item{scale}{scale gaussian variable inputs to have unit variance for covariance matrix? Defaults to FALSE.}
+\item{scale}{Scale gaussian variable inputs to have unit variance.
+for covariance matrix? Defaults to FALSE.}
 }
 \value{
-A list of covariance/correlation matrices corresponding to kfold ids
+A list of covariance/correlation matrices corresponding to unique values of \code{kfold}
 }
 \description{
-This function produces a list of Multivariate Gaussian spatial/tempral/spatiotemporal covarance/correlation matrices from PIT transformed variables
+This function produces a list of Multivariate Gaussian spatial/tempral/spatiotemporal
+covarance/correlation matrices from uniform distributed variables.
 }
-\details{
-Details go here...
+\author{
+Jethro Browell, \email{jethro.browell@strath.ac.uk}; Ciaran Gilbert, \email{ciaran.gilbert@strath.ac.uk}
 }

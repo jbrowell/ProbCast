@@ -4,6 +4,7 @@
 #' fits semi-parametric regression models for predictive disributions with up to
 #' four parameters (location, scale, shape1, shape2). 
 #'
+#' @author Jethro Browell, \email{jethro.browell@@strath.ac.uk}; Ciaran Gilbert, \email{ciaran.gilbert@@strath.ac.uk}
 #' @param data A \code{data.frame} containing target and explanatory variables.
 #' May optionally contain a collumn called "\code{kfold}" with numbered/labeled folds
 #' and "\code{Test}" for test data.

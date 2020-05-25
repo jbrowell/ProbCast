@@ -1,9 +1,13 @@
 #' Produce a MultiQR ojbect from a Parametric Predictive Distribution
 #' 
-#' Produce multiple predictive quantiles as a \code{MultiQR} ojbect
+#' @description Produce multiple predictive quantiles as a \code{MultiQR} ojbect
 #' from a \code{PPD} object. Alternatively
 #' return predicted parameters from the \code{PPD} models.
+#' 
+#' Note that this function may be superseded by an S3 method in future versions of
+#' \code{ProbCast}.
 #'
+#' @author Jethro Browell, \email{jethro.browell@@strath.ac.uk}
 #' @param data A \code{data.frame} containing explanatory variables required by \code{models}.
 #' @param models A \code{PPD} object.
 #' @param quantiles Vector of quantiles to be included in the returned \code{MultiQR} object.

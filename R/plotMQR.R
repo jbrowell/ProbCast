@@ -2,6 +2,7 @@
 #'
 #' This S3 method for \code{plot} produces a fan plot of a MultiQR object.
 #' 
+#' @author Jethro Browell, \email{jethro.browell@@strath.ac.uk}
 #' @param plotdata A \code{MultiQR} object to be plotted.
 #' @param targetTimes A vector of forecast target times corresponding to \code{plotdata}.
 #' @param quantiles A charater vector. By default \code{colnames(plotdata)},

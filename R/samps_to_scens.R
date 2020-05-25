@@ -1,6 +1,8 @@
 #' Generate multivariate forecasts
 #'
 #' This function produces a list of multivariate scenario forecasts in the marginal domain from the spatial/tempral/spatiotemporal gaussian covariance matrices and marginal distributions
+#' 
+#' @author Ciaran Gilbert, \email{ciaran.gilbert@@strath.ac.uk}
 #' @param copulatype As \code{string}, either \code{"spatial"} or \code{"temporal"},
 #' note that spatio-temporal can be generated via \code{"temporal"} setting.
 #' @param no_samps Number of scenarios to sample

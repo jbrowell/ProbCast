@@ -1,18 +1,24 @@
 #' Multivariate Gaussian covariance/correlation matrices
 #'
-#' This function produces a list of Multivariate Gaussian spatial/tempral/spatiotemporal covarance/correlation matrices from PIT transformed variables
-#' @param u_data A dataframe of uniform distributed variables.
+#' This function produces a list of Multivariate Gaussian spatial/tempral/spatiotemporal
+#' covarance/correlation matrices from uniform distributed variables.
+#' 
+#' @author Jethro Browell, \email{jethro.browell@@strath.ac.uk}; Ciaran Gilbert, \email{ciaran.gilbert@@strath.ac.uk}
+#' @param u_data A dataframe of standard uniform distributed variables.
 #' @param kfold A vector of kfold identifiers.
-#' @param cov_cor specify either covariance or correlation
-#' @param boundary_threshold handling of boundary values. Set to NA to exclude, or small value to impose threshold.
-#' @param forcePD use \code{nearPD} to return a positive definite cov/cor matrix
-#' @param scale scale gaussian variable inputs to have unit variance for covariance matrix? Defaults to FALSE.
-#' @details Details go here...
-#' @return A list of covariance/correlation matrices corresponding to kfold ids
+#' @param cov_cor specify either covariance or correlation.
+#' @param boundary_threshold Data outside [0,1] are set to \code{boundary_threshold} or 
+#' \code{1-boundary_threshold}. Set \code{boundary_threshold=NA} to
+#' exclude data outside [0,1].
+#' @param forcePD Use \code{nearPD()} to return a positive definite cov/cor matrix
+#' @param scale Scale gaussian variable inputs to have unit variance.
+#' for covariance matrix? Defaults to FALSE.
+#' @return A list of covariance/correlation matrices corresponding to unique values of \code{kfold}
 #' @import Matrix
 #' @export
 covcor_matrix  <- function(u_data,kfold=NULL,cov_cor="covariance",
-                           use="pairwise.complete.obs",boundary_threshold=NA,forcePD=F,scale = F,...){
+                           use="pairwise.complete.obs",boundary_threshold=NA,
+                           forcePD=F,scale = F,...){
 
   ### change to autospecify spatial/spatiotemporal from long format marginals?
   if(is.null(kfold)){

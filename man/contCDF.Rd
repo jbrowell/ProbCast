@@ -2,7 +2,7 @@
 % Please edit documentation in R/contCDF.R
 \name{contCDF}
 \alias{contCDF}
-\title{Continuous CFDs}
+\title{Continuous CDF from \code{MultiQR} object}
 \usage{
 contCDF(
   quantiles,
@@ -15,18 +15,34 @@ contCDF(
 \arguments{
 \item{quantiles}{A single-row \code{MultiQR} object.}
 
-\item{method}{Method of interpolation. If \code{method="linear"} linear interpolation is used between quantiles. For spline interpolation, \code{method=list(name=spline,splinemethod)}, where spline method is passed to \code{splinefun}.}
+\item{method}{Method of interpolation. If \code{method="linear"} linear
+interpolation is used between quantiles. For spline interpolation,
+\code{method=list(name=spline,splinemethod)}, where spline method is
+passed to \code{splinefun}.}
 
-\item{tails}{Method for tails, this must be defined as a list with other control parameters. Default is linear interpolation of tails when \code{method="interpolate"} with boundaries at \code{L=0} and \code{U=1}. Exponential tails can be specified through \code{method="exponential"}, the user will either supply user defined thickness parameters for the tail via \code{thicknessPL} and \code{thicknessPR}, otherwise a symetrical tail thickness can be defined data-driven by specifying: number of bins \code{nbins}, a MQR object \code{preds}, and the target variable, \code{targetvar}. The number of interpolation points for the exponential can be defined via \code{ntailpoints}.}
+\item{tails}{Method for tails, this must be defined as a
+list with other control parameters. Default is linear interpolation
+of tails when \code{method="interpolate"} with boundaries at
+\code{L=0} and \code{U=1}. Exponential tails can be specified
+through \code{method="exponential"}, the user will either supply
+user defined thickness parameters for the tail via \code{thicknessPL}
+and \code{thicknessPR}, otherwise a symetrical tail thickness can be
+defined data-driven by specifying: number of bins \code{nbins}, a MQR
+object \code{preds}, and the target variable, \code{targetvar}. The number
+of interpolation points for the exponential can be defined via \code{ntailpoints}.}
 
 \item{kfolds}{Fold/test label corresponding to \code{quantiles}.}
 }
 \value{
-A cumulative densift function
+A cumulative densift function of the type produced by \code{splinefun} and
+\code{approxfun}.
 }
 \description{
-This function generats a function that represents a smooth CDF for each row of a MultiQR object.
+This function generats a smooth, continuous CDF a given row of a \code{MultiQR}
+object. Interpolation if performed between quantiles and a range of tail models
+are available for extrapolating beyond beyond the last estimated upper and lower
+quantile.
 }
-\details{
-Details go here...
+\author{
+Jethro Browell, \email{jethro.browell@strath.ac.uk}; Ciaran Gilbert, \email{ciaran.gilbert@strath.ac.uk}
 }

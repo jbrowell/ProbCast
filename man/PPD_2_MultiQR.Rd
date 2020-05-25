@@ -20,10 +20,16 @@ A \code{MultiQR} object derived from gamlss predictive distributions. Alternativ
 Produce multiple predictive quantiles as a \code{MultiQR} ojbect
 from a \code{PPD} object. Alternatively
 return predicted parameters from the \code{PPD} models.
+
+Note that this function may be superseded by an S3 method in future versions of
+\code{ProbCast}.
 }
 \details{
 Exact quantiles of the (semi-) parametric models (predictive distributions)
 are calculated and output as a \code{MultiQR} object. Warnings are thrown if the
 input \code{data} result in \code{NA} estimates of quantiles, likely as a result of inputs
 being ourside the allowable range for the \code{PPD} model.
+}
+\author{
+Jethro Browell, \email{jethro.browell@strath.ac.uk}
 }

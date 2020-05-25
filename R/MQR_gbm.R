@@ -2,6 +2,8 @@
 #'
 #' This function fits multiple boosted quantile regreesion trees 
 #' using \code{gbm} with facilities for cross-validation.
+#' 
+#' @author Jethro Browell, \email{jethro.browell@@strath.ac.uk}; Ciaran Gilbert, \email{ciaran.gilbert@@strath.ac.uk}
 #' @param data A \code{data.frame} containing target and explanatory
 #' variables. May optionally contain a collumn called "kfold" with
 #' numbered/labeled folds and "Test" for test data.

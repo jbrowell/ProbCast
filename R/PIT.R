@@ -1,5 +1,6 @@
 #' Probability integral transform: S3 Generic Method
 #'
+#' @author Jethro Browell, \email{jethro.browell@@strath.ac.uk}; Ciaran Gilbert, \email{ciaran.gilbert@@strath.ac.uk}
 #' @param distdata An object defining cumulative distributions functions. Currently supported: \code{MultiQR} and \code{PPD}.
 #' @param ... Additional arguments.
 #' @details This is an S3 method, see spcific methods \code{\link{PIT.MultiQR}}
@@ -16,6 +17,7 @@ PIT <- function(distdata,...) {
 #' Transforms data (random variables) through their corresponding cumulative
 #' distribution function (specified by a \code{MultiQR} object and tail parameters) in 
 #' order to produce variables with a standard uniform distribution.
+#' @author Jethro Browell, \email{jethro.browell@@strath.ac.uk}
 #' @param qrdata A \code{MultiQR} object.
 #' @param obs A vector of observations corresponding to the rows of \code{qrdata}.
 #' @param tails A list of arguments passed to \code{condCDF} defining the tails of the CDFs.
@@ -77,6 +79,7 @@ PIT.MultiQR <- function(qrdata,obs,tails,inverse=FALSE,...){
 #' Transforms data (random variables) through their corresponding cumulative
 #' distribution function (specified by a \code{PPD} object) in 
 #' order to produce variables with a standard uniform distribution.
+#' @author Jethro Browell, \email{jethro.browell@@strath.ac.uk}
 #' @param ppd A \code{PPD} object (a list of \code{gamlss} objects).
 #' @param data Input data corresponding to \code{ppd}.
 #' @param inverse A \code{boolean}. If true, the inverse transformation is appiled,
@@ -133,6 +136,55 @@ PIT.PPD <- function(ppd,data,inverse=FALSE,inv_probs=NULL){
     X <- rep(NA,nrow(data))
     X[keepRows] <- do.call(paste0("p",distFamily),input)
   }
+  
+  return(X)
+}
+
+
+#' Probability integral transform for Para_gamboostLSS objects
+#'
+#' @description This function calculates the probability integral transformation
+#' for \code{gamboostLSS} models.
+#' 
+#' @author Ciaran Gilbert, \email{ciaran.gilbert@@strath.ac.uk}
+#' @param models A Para_gamboostLSS object.
+#' @param data Input data corresponding to \code{qrdata}.
+#' @param dist_fun cumulative distribution function corresponging to families specified in gamboostLSS model (see example).
+#' @param response_name name of response variable in \code{data} object.
+#' @return The probability integral transform of \code{data} through the predictive distribution defined by a list of gamboostLSS objects.
+#' @export
+PIT.gamboostLSS <- function(models,data,dist_fun,response_name,...){
+  
+  # Arrange kfold cross-validation
+  if(is.null(data$kfold)){
+    if(length(models)!=1){stop("kfold inconsistent with ppd.")}
+    data$kfold<-names(models)
+  }else{
+    data$kfold[is.na(data$kfold)] <- "Test"
+  }
+  
+  data <- as.data.frame(data)
+  
+  distFamily <- c()
+  
+  for(fold in unique(data$kfold)){
+    distFamily <- unique(c(distFamily,attributes(attributes(models[[fold]])$families)$name))
+  }
+  
+  if(length(distFamily)!=1){stop("length(distFamily)!=1 - Only a single parametric distribution family is allowed.")}
+  
+  parameters <- gamboostLSS_2_MultiQR(data=data,models=models,params=T)
+  
+  
+  tempdata <- data[,which(colnames(data)%in%c(colnames(attributes(models[[fold]])$data)))]
+  gooddata <- rowSums(is.na(tempdata))==0
+  
+  parameters <- data.frame(parameters)
+  parameters$q <-  data[[response_name]]
+  
+  X <- rep(NA, nrow(data))
+  X[gooddata] <- do.call(dist_fun, parameters[gooddata,])
+  
   
   return(X)
 }

@@ -2,7 +2,7 @@
 % Please edit documentation in R/Para_gamlss.R
 \name{Para_gamlss}
 \alias{Para_gamlss}
-\title{Fit a gamlss paramertirc forecast model}
+\title{Fit \code{gamlss}-type semi-paramertirc models}
 \usage{
 Para_gamlss(
   data,
@@ -18,32 +18,48 @@ Para_gamlss(
 )
 }
 \arguments{
-\item{data}{A \code{data.frame} containing target and explanatory variables. May optionally contain a collumn called "kfold" with numbered/labeled folds and "Test" for test data.}
+\item{data}{A \code{data.frame} containing target and explanatory variables.
+May optionally contain a collumn called "\code{kfold}" with numbered/labeled folds
+and "\code{Test}" for test data.}
 
-\item{formula}{A formula object with the response on the left of an ~ operator, and the terms, separated by + operators, on the right.}
+\item{formula}{A formula object with the response on the left of an ~ operator,
+and the terms, separated by + operators, on the right.}
 
-\item{sigma.formula}{A formula object for fitting a model to the sigma parameter, as in the formula above.}
+\item{sigma.formula}{A formula object for fitting a model to the
+sigma parameter, as in the formula above.}
 
-\item{nu.formula}{A formula object for fitting a model to the nu parameter, as in the formula above.}
+\item{nu.formula}{A formula object for fitting a model to the
+nu parameter, as in the formula above.}
 
-\item{tau.formula}{A formula object for fitting a model to the tau parameter, as in the formula above.}
+\item{tau.formula}{A formula object for fitting a model to the
+tau parameter, as in the formula above.}
 
-\item{family}{A gamlss.family object, which is used to define the distribution and the link functions of the various parameters.}
+\item{family}{A gamlss.family object, which is used to define the
+distribution and the link functions of the various parameters.}
 
-\item{parallel}{\code{boolean} parallelize model fitting process?}
+\item{parallel}{\code{boolean} parallelize model fitting process? Parallelisation is
+over cross-validation folds.}
 
 \item{cores}{if parallel is TRUE then number of available cores}
 
-\item{pckgs}{if parallel is TRUE then  specify packages required for each worker (e.g. c("data.table) if data stored as such)}
+\item{pckgs}{if parallel is TRUE then  specify packages required
+for each worker (e.g. c("data.table) if data stored as such)}
 
 \item{...}{Additonal arguments passed to \code{gamlss()}.}
 }
 \value{
-A cumulative density function
+A list of \code{gamlss} models with class \code{PPD}. Each list element
+corresponsds to a cross-validation fold and contains a \code{gamlss} model
+trained on all other folds.
 }
 \description{
-Fit a gamlss paramertirc forecast model
+This function is a wrapper for the function \code{gamlss}, which
+fits semi-parametric regression models for predictive disributions with up to
+four parameters (location, scale, shape1, shape2).
 }
 \details{
-Details go here...
+See \code{?gamlss} for additional details and options.
+}
+\author{
+Jethro Browell, \email{jethro.browell@strath.ac.uk}; Ciaran Gilbert, \email{ciaran.gilbert@strath.ac.uk}
 }

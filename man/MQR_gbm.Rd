@@ -2,7 +2,7 @@
 % Please edit documentation in R/MQR_gbm.R
 \name{MQR_gbm}
 \alias{MQR_gbm}
-\title{Multiple Quantile Regression Using GBM}
+\title{Multiple Quantile Regression Using Gradient Boosted Decision Trees}
 \usage{
 MQR_gbm(
   data,
@@ -21,7 +21,9 @@ MQR_gbm(
 )
 }
 \arguments{
-\item{data}{A \code{data.frame} containing target and explanatory variables. May optionally contain a collumn called "kfold" with numbered/labeled folds and "Test" for test data.}
+\item{data}{A \code{data.frame} containing target and explanatory
+variables. May optionally contain a collumn called "kfold" with
+numbered/labeled folds and "Test" for test data.}
 
 \item{quantiles}{The quantiles to fit models for.}
 
@@ -31,30 +33,44 @@ MQR_gbm(
 
 \item{perf.plot}{Plot GBM performance?}
 
-\item{parallel}{\code{boolean} parallelize cross-validation process?}
+\item{parallel}{\code{boolean} parallelize cross-validation process?
+Parallelisation is over cross-validation folds by default, optionally over
+quantiles by setting code{para_over_q=T}.}
 
-\item{pred_ntree}{predict using a user-specified tree. If unspecified an out-of-the bag estimate will be used unless interval gbm cv folds are specified in \code{gbm_params}}
+\item{pred_ntree}{predict using a user-specified tree.
+If unspecified an out-of-the bag estimate will be used unless interval
+gbm cross-validation folds are specified in \code{gbm_params}.}
 
 \item{cores}{if \code{parallel} is TRUE then number of available cores}
 
-\item{pckgs}{if \code{parallel} is TRUE then  specify packages required for each worker (e.g. c("data.table) if data stored as such)}
+\item{pckgs}{if \code{parallel} is TRUE then  specify packages required for
+each worker (e.g. c("data.table) if data stored as such).}
 
-\item{para_over_q}{if \code{parallel} is TRUE then paralellize over quantiles? Defalts to FALSE i.e."kfold"}
+\item{para_over_q}{if \code{parallel} is TRUE then paralellize over quantiles?
+Defalts to FALSE i.e."kfold".}
 
 \item{Sort}{\code{boolean} Sort quantiles using \code{SortQuantiles()}?}
 
 \item{SortLimits}{\code{Limits} argument to be passed to \code{SortQuantiles()}. Constrains quantiles to upper and lower limits given by \code{list(U=upperlim,L=lowerlim)}.}
 
-\item{formala}{A \code{formula} object with the response on the left of an ~ operator, and the terms, separated by + operators, on the right}
+\item{formala}{A \code{formula} object with the response on the left
+of an ~ operator, and the terms, separated by + operators, on the right}
 }
 \value{
 Quantile forecasts in a \code{MultiQR} object.
 }
 \description{
-This function fits multiple quantile regreesion GBMs with facilities for cross-validation.
+This function fits multiple boosted quantile regreesion trees 
+using \code{gbm} with facilities for cross-validation.
 }
 \details{
-Details go here...
+The returned predictive quantiles are those produced out-of-sample for each
+cross-validation fold (using models trained on the remaining folds but not "Test" data).
+Predictive quantiles corresponding to "Test" data are produced using models trained on all
+non-test data.
+}
+\author{
+Jethro Browell, \email{jethro.browell@strath.ac.uk}; Ciaran Gilbert, \email{ciaran.gilbert@strath.ac.uk}
 }
 \keyword{Quantile}
 \keyword{Regression}

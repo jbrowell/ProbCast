@@ -1,8 +1,10 @@
-## Read .ics of bank holidays from https://www.gov.uk/bank-holidays
-#' Read UK Holidays
+#' Load data of UK Holidays
 #'
-#' @param folder Folder location of .ics file(s) of UK holidays from https://www.gov.uk/bank-holidays
-#' @details Details go here...
+#' Function to read official data of UK public holidays.
+#'
+#' @author Jethro Browell, \email{jethro.browell@@strath.ac.uk}
+#' @param folder Folder location of .ics file(s) of UK holidays
+#' from https://www.gov.uk/bank-holidays
 #' @return Table of UK Holidays
 #' @keywords Date Features
 #' @export
@@ -33,10 +35,13 @@ read_holiday_ics <- function(folder=getwd()){
 
 #' Add Calendar Features
 #'
+#' Add calendar-based columns to a \code{data.table} with a date/time
+#' column, e.g. "hour-of-day" or holidays (based on \code{read_holiday_ics()}).
+#'
+#' @author Jethro Browell, \email{jethro.browell@@strath.ac.uk}
 #' @param dt \code{data.table} to have date/time feature columns added
 #' @param datetimecol column name of \code{POSIX} time stamps
 #' @param UKHolidays optional table of holidays from \code{read_holiday_ics}
-#' @details Details go here...
 #' @return Table of UK Holidays
 #' @keywords Date Features
 #' @import data.table

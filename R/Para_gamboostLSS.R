@@ -4,6 +4,7 @@
 #' fits semi-parametric regression models for predictive disributions with up to
 #' four parameters (location, scale, shape1, shape2) via gradient boosting.
 #'
+#' @author Ciaran Gilbert, \email{ciaran.gilbert@@strath.ac.uk}
 #' @param data A \code{data.frame} containing target and explanatory variables.
 #' May optionally contain a collumn called "kfold" with numbered/labeled
 #' folds and "Test" for test data.
@@ -86,6 +87,9 @@ Para_gamboostLSS <- function(data,formula,families=GaussianLSS(),parallel = F,co
       
     }
     rm(tempdata)
+    
+    # New class to facilitate S3 methods, e.g. PIT.gamboostLSS
+    class(modelList) <- c("gamboostLSS",class(modelList))
     
     return(modelList)
     
