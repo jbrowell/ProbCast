@@ -1,7 +1,6 @@
 # ProbCast
-ProbCast is an R Package (under continuous development) by researchers at the University of Strathclyde. It is a collection of functions for probabilistic forecasting (mainly wrappers for existing models), cross-validation, evaluation and visualisation. Central to ProbCast is the data class "MultiQR", for storing the results of multiple quantile regression, and methods for working with MultiQR objects.
 
-See package documentation for details and the script "Example.R" to see ProbCast in action.
+ProbCast is an `R` Package under continuous development by researchers at the University of Strathclyde. It is a collection of functions for probabilistic forecasting (mainly wrappers for qunatile and semi-parametric regression model fitting functions), cross-validation, evaluation and visualisation. Central to ProbCast is the data class `MultiQR`, for storing the results of multiple quantile regression, and methods for working with `MultiQR` objects.
 
 ## Set-up
 
