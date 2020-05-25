@@ -217,9 +217,9 @@ mean_list <- list()
 for (i in levels(unique(u_obsind$kfold))){
   mean_list[[i]] <- rep(0, 24)
 }
+
+
 ## method for parametric pred dist.
-
-
 scen_gbm <- samps_to_scens(copulatype = "temporal",no_samps = f_nsamp,marginals = list(loc_1 = test1$gbm_mqr),sigma_kf = cvm_gbm,mean_kf = mean_list,
                            control=list(loc_1 = list(kfold = u_obsind$kfold,issue_ind=u_obsind$i_time,horiz_ind=u_obsind$lead_time,
                                                      PIT_method="spline",
