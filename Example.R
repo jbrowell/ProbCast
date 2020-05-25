@@ -153,14 +153,14 @@ test1$ppd <- Para_gamlss(data = test1$data,
                          formula = TARGETVAR~bs(WS100,df=3),
                          sigma.formula = ~WS100,
                          sigma.start = 0.05,
-                         nu.formula = ~WS100,
-                         tau.formula = ~WS100,
-                         family = BEINF, # NO
+                         # nu.formula = ~WS100,
+                         # tau.formula = ~WS100,
+                         family = NO,  # BEINF, #
                          method=mixed(20,10))
 
 
-summary(test1$ppd$fold1)
-plot(test1$ppd$fold1)
+summary(test1$ppd$`Fold 1`)
+plot(test1$ppd$`Fold 1`)
 
 test1$gamlssParams <- PPD_2_MultiQR(data=test1$data,
                                    models = test1$ppd,
