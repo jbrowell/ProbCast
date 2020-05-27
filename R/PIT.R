@@ -21,6 +21,8 @@ PIT <- function(distdata,...) {
 #' @param qrdata A \code{MultiQR} object.
 #' @param obs A vector of observations corresponding to the rows of \code{qrdata}.
 #' @param tails A list of arguments passed to \code{condCDF} defining the tails of the CDFs.
+#' Tail parameters my have length 1 or length \code{nrow(qrdata)} if each row of qrdata
+#' has a corresponding parameter value.
 #' @param inverse A \code{boolean}. If true, the inverse transformation is appiled, i.e. uniform variable
 #' to random variable from original distribution.
 #' @param ... Additional arguments passed to \code{condCDF}.
@@ -51,19 +53,38 @@ PIT.MultiQR <- function(qrdata,obs,tails,inverse=FALSE,...){
   }
   
   
+  ## Get tail parameters if specified for each row of qrdata
+  varying_params <- names(which(lapply(tails,length)==nrow(qrdata)))
   if (inverse){
     
     X <- matrix(NA,nrow(qrdata),ncol = ncol(obs))
     for(i in 1:nrow(qrdata)){
       if(is.na(qrdata[i,1])){X[i,] <- NA}else{
-        X[i,] <- contCDF(quantiles = qrdata[i,],tails = tails,inverse = TRUE,...)(as.numeric(obs[i,]))}
+        
+        temp_tail <- tails
+        if(length(varying_params)>0){
+          for(j in 1:length(varying_params)){
+            temp_tail[[varying_params[j]]] <- tails[[varying_params[j]]][i]
+          }
+        }
+        
+        ## PIT
+        X[i,] <- contCDF(quantiles = qrdata[i,],tails = temp_tail,inverse = TRUE,...)(as.numeric(obs[i,]))}
     }
   }else{
     
     X<-rep(NA,nrow(qrdata))
     for(i in 1:nrow(qrdata)){
       if(is.na(obs[i]) | is.na(sum(qrdata[i,]))){X[i] <- NA}else{
-        X[i] <- contCDF(quantiles = qrdata[i,],tails = tails,...)(obs[i])
+        
+        temp_tail <- tails
+        if(length(varying_params)>0){
+          for(j in 1:length(varying_params)){
+            temp_tail[[varying_params[j]]] <- tails[[varying_params[j]]][i]
+          }
+        }
+        
+        X[i] <- contCDF(quantiles = qrdata[i,],tails = temp_tail,...)(obs[i])
       }
     }
     
