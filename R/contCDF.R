@@ -142,7 +142,8 @@ contCDF <- function(quantiles,kfold=NULL,inverse=F,
     
     if(is.null(tails$ntailpoints)){tails$ntailpoints <- 5}
     
-    # function only tested for inputs between zero and 1 at the moment, outwith that need to modify to capture minimum bound of tail
+    # function only tested for inputs between zero and 1 at the moment,
+    # outwith that need to modify to capture minimum bound of tail
     # watch dividing by 0....
     paraf <- function(rho,x,minq){
       if(rho<minq){rho <- minq}
