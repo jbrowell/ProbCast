@@ -167,6 +167,15 @@ contCDF <- function(quantiles,kfold=NULL,inverse=F,
     
   } else if(tails$method=="gpd"){
     
+    ## GPD Function
+    pgpd <- function(q,location=0,scale,shape){
+      if(shape!=0){
+        1-(1+shape*(q-location)/scale)^(-1/shape)
+      }else{
+        1-exp(-(q-location)/scale)
+      }
+    }
+    
     Rquants <- tails$tail_qs+rev(quantiles)[1]
     RnomP <- pgpd(q=Rquants,location=rev(quantiles)[1],shape = tails$shape_r,scale=tails$scale_r)
     RnomP[length(RnomP)] <- 1
@@ -216,10 +225,3 @@ contCDF <- function(quantiles,kfold=NULL,inverse=F,
 
 
 
-pgpd <- function(q,location=0,scale,shape){
-  if(shape!=0){
-    1-(1+shape*(q-location)/scale)^(-1/shape)
-  }else{
-    1-exp(-(q-location)/scale)
-  }
-}
