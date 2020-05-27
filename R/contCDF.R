@@ -8,26 +8,46 @@
 #' @author Jethro Browell, \email{jethro.browell@@strath.ac.uk}; Ciaran Gilbert, \email{ciaran.gilbert@@strath.ac.uk}
 #' @param quantiles A single-row \code{MultiQR} object.
 #' @param kfolds Fold/test label corresponding to \code{quantiles}.
-#' @param method Method of interpolation. If \code{method="linear"} linear
-#' interpolation is used between quantiles. For spline interpolation,
-#' \code{method=list(name=spline,splinemethod)}, where spline method is
-#' passed to \code{splinefun}.
-#' @param tails Method for tails, this must be defined as a
-#' list with other control parameters. Default is linear interpolation
-#' of tails when \code{method="interpolate"} with boundaries at
-#' \code{L=0} and \code{U=1}. Exponential tails can be specified
-#' through \code{method="exponential"}, the user will either supply
-#' user defined thickness parameters for the tail via \code{thicknessPL}
-#' and \code{thicknessPR}, otherwise a symetrical tail thickness can be
-#' defined data-driven by specifying: number of bins \code{nbins}, a MQR
-#' object \code{preds}, and the target variable, \code{targetvar}. The number
-#' of interpolation points for the exponential can be defined via \code{ntailpoints}. 
+#' @param method Method of interpolation. See details.
+#' @param tails Definition of tails. See details.
+#' @details Interpolation between quantiles may be linear of via smooth splines:
+#' 
+#' Linear interpolation: \code{method="linear"} linear interpolation
+#' between quantiles.
+#' 
+#' Spline interpolation: \code{method=list(name=spline,splinemethod=monoH.FC)}, where spline method is
+#' passed to \code{splinefun}. \code{splinefun=monoH.FC} is recommended to gaurantee monotoincally
+#' increasing function.
+#' 
+#' 
+#' Several options are available for specifying distribution tails beyond
+#' the final upper and lower quantiles:
+#' 
+#' Linear extrapolation: \code{tails=list(method="extrapolate",L,U)} value set to \code{L} and \code {U}
+#' for probability levels 0 and 1, respectively. If \code{method="extrapolate_dtail1"} then
+#' tails are exrapolated to the 50th quantile plus (minus) \code{U} (\code{L}).
+#' 
+#' Exponential tails: \code{tails=list(method="exponential",thicknessPL,thicknessPR,ntailpoints=5)}
+#' the user will either supply user defined thickness parameters for the tail
+#' via \code{thicknessPL} and \code{thicknessPR}. The number
+#' of tail quantiles to be estimated is set by \code{ntailpoints}.
+#' Alternatively (not recommmended) a symetrical tail
+#' thickness can be defined data-driven by specifying: number of bins \code{nbins}, a MQR
+#' object \code{preds}, and the target variable, \code{targetvar}.
+#' 
+#' Dynamic exponential tails: \code{tails=list(method="dyn_exponential",...)} ...
+#' 
+#' Generalised Pareto Distribution: \code{tails="gpd", scale_r,shape_r,
+#' scale_l,shape_l,tail_qs=seq(0.1,2,by=0.1)} with left (_l) and right (_r) scale and shape parameters.
+#' Quantiles are calculated at points defined by the upper (lower) quantile plus (minus)
+#' \code{tail_qs}.
+#' 
 #' @return A cumulative densift function of the type produced by \code{splinefun} and
 #' \code{approxfun}.
 #' @export
 contCDF <- function(quantiles,kfold=NULL,inverse=F,
                     method=list(name="spline",splinemethod="monoH.FC"),
-                    tails=list(method="interpolate",L=0,U=1)){
+                    tails=list(method="extrapolate",L=0,U=1)){
   ### TESTING
   # quantiles = test1$pred_mqr[500,]
   # inverse=F
@@ -47,12 +67,12 @@ contCDF <- function(quantiles,kfold=NULL,inverse=F,
   quantiles <- as.numeric(quantiles)
   
   ### Tails
-  if(tails$method=="interpolate"){
+  if(tails$method=="interpolate" | tails$method=="extrapolate"){
     LnomP <- 0
     Lquants <- tails$L
     RnomP <- 1
     Rquants <- tails$U
-  }else if(tails$method=="interpolate_dtail1"){
+  }else if(tails$method=="interpolate_dtail1" | tails$method=="extrapolate_dtail1"){
     LnomP <- 0
     Lquants <- quantiles[which(Probs==0.5)] + tails$L
     RnomP <- 1
@@ -117,7 +137,53 @@ contCDF <- function(quantiles,kfold=NULL,inverse=F,
       
       # plot(x=c(Lquants,quantiles,Rquants),y=c(LnomP,Probs,RnomP))
       
-    }} else{stop("Tail specification not recognised.")}
+    }
+  }else if(tails$method=="dyn_exponential"){
+    
+    if(is.null(tails$ntailpoints)){tails$ntailpoints <- 5}
+    
+    # function only tested for inputs between zero and 1 at the moment, outwith that need to modify to capture minimum bound of tail
+    # watch dividing by 0....
+    paraf <- function(rho,x,minq){
+      if(rho<minq){rho <- minq}
+      x*rho*exp((1/x)^(1/(1-rho))*log(minq/rho))
+    }
+    
+    
+    # samplebetween 0-1 to get tail shape
+    Lquants <- seq(0,1,length.out = tails$ntailpoints)
+    # find nominal probabilities
+    LnomP <- paraf(min(quantiles),Lquants,min(Probs))
+    # remove max value from tail q[(Pr = min(probs))] and normalize shape between available quantile space
+    Lquants <- Lquants[1:(length(Lquants)-1)]*min(quantiles)
+    # remove max probability from tail (Pr = min(Probs))
+    LnomP<-LnomP[1:(length(LnomP)-1)]
+    
+    # same for R tail
+    Rquants <- seq(0,1,length.out = tails$ntailpoints)
+    RnomP <- rev(1-paraf(1-max(quantiles),Rquants,minq = 1-max(Probs)))
+    Rquants <- rev(((1-Rquants[2:length(Rquants)])*(1-max(quantiles)))+max(quantiles))
+    RnomP<-RnomP[2:length(RnomP)]
+    
+  } else if(tails$method=="gpd"){
+    
+    Rquants <- tails$tail_qs+rev(quantiles)[1]
+    RnomP <- pgpd(q=Rquants,location=rev(quantiles)[1],shape = tails$shape_r,scale=tails$scale_r)
+    RnomP[length(RnomP)] <- 1
+    RnomP <- RnomP*(1-rev(Probs)[1])+rev(Probs)[1]
+    # plot(Rquants,RnomP)
+    
+    Lquants <- tails$tail_qs
+    LnomP <- rev(1-pgpd(q=Lquants,location=0,shape = tails$shape_l,scale=tails$scale_l))
+    LnomP[1] <- 0
+    LnomP <- LnomP*Probs[1]
+    Lquants <- Lquants-max(Lquants)+quantiles[1]
+    # plot(Lquants,LnomP)
+    
+    # plot(c(Lquants,quantiles,Rquants),c(LnomP,Probs,RnomP))
+    
+    
+  }else{stop("Tail specification not recognised.")}
   
   
   
@@ -148,3 +214,12 @@ contCDF <- function(quantiles,kfold=NULL,inverse=F,
   }else{stop("Interpolation method not recognised.")}
 }
 
+
+
+pgpd <- function(q,location=0,scale,shape){
+  if(shape!=0){
+    1-(1+shape*(q-location)/scale)^(-1/shape)
+  }else{
+    1-exp(-(q-location)/scale)
+  }
+}
