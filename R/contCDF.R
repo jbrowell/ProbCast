@@ -31,7 +31,9 @@
 #' the user will either supply user defined thickness parameters for the tail
 #' via \code{thicknessPL} and \code{thicknessPR}. The number
 #' of tail quantiles to be estimated is set by \code{ntailpoints}.
-#' Alternatively (not recommmended) a symetrical tail
+#' Alternatively \code{tails=list(method="exponential",thickparamFunc)} where \code{thickparamFunc}
+#' is a function that takes the q50 as an input and returns the thickness parameter.
+#' Alternatively (not recommmended) \code{tails=list(method="exponential",preds,nbins,targetvar)} a symetrical tail
 #' thickness can be defined data-driven by specifying: number of bins \code{nbins}, a MQR
 #' object \code{preds}, and the target variable, \code{targetvar}.
 #' 
@@ -48,6 +50,7 @@
 contCDF <- function(quantiles,kfold=NULL,inverse=F,
                     method=list(name="spline",splinemethod="monoH.FC"),
                     tails=list(method="extrapolate",L=0,U=1)){
+  
   ### TESTING
   # quantiles = test1$pred_mqr[500,]
   # inverse=F
