@@ -52,7 +52,7 @@ samps_to_scens <- function(copulatype,no_samps,marginals,sigma_kf,mean_kf,contro
   # 
   # 
   # copulatype <- "temporal"
-  # no_samps <- 200
+  # no_samps <- 2000
   # marginals <- list(loc_1 = test1$gbm_mqr)
   # sigma_kf <- cvm_gbm
   # mean_kf <- mean_list
@@ -228,26 +228,27 @@ samps_to_scens <- function(copulatype,no_samps,marginals,sigma_kf,mean_kf,contro
     
     method_list <- lapply(control,function(x){x$PIT_method})
     CDFtail_list <- lapply(control,function(x){x$CDFtails})
-    
+
     marg_names <- lapply(marginals,colnames)
     samp_names <- lapply(samps,function(x){colnames(x)[-c(1:3)]})
-    
+
     ## reduce memory usage in parallel pass_invcdf by joining outside and try gc()
     samps <- mapply(cbind, samps, marginals, SIMPLIFY = F)
     rm(marginals)
     invisible(gc())
-    
+
     ### faster inverse pit using data.table (x7 in example.R)
     pass_invcdf <- function(dt, s_nms, q_nms,...){
-      
+
       ## using as.list here makes data.table return in 'wide format automatically & as numeric(.SD) prevents input samps from being a list..
-      dt <- dt[,as.list(contCDF(quantiles = t(mget(q_nms)),inverse = TRUE,...)(as.numeric(.SD))),by=.(sort_ind),.SDcols=s_nms]
+      dt[,c(s_nms):=as.list(contCDF(quantiles = t(mget(q_nms)),inverse = TRUE,...)(as.numeric(.SD))),by=.(sort_ind),.SDcols=s_nms]
       setorder(dt,sort_ind)
-      dt[,sort_ind := NULL]
+      rem_cols <- colnames(dt)[-c(which(colnames(dt)%in%s_nms))]
+      dt[, c(rem_cols) := NULL]
       return(dt)
-      
+
     }
-    
+
     samps <- mcmapply(function(...){pass_invcdf(...)},dt = samps, s_nms = samp_names, q_nms = marg_names, method = method_list,
                            tails = CDFtail_list, SIMPLIFY = F,mc.cores = mcmapply_cores)
     

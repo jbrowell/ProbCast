@@ -219,7 +219,7 @@ lattice::levelplot(cvm_gbm[["Test"]], xlab="lead time [hours]", ylab="lead time 
                    main="Test --- Covariance")
 
 # sample cvm and convert to power domain
-f_nsamp <- 200
+f_nsamp <- 2000
 mean_list <- list()
 for (i in levels(unique(u_obsind$kfold))){
   mean_list[[i]] <- rep(0, 24)
@@ -241,10 +241,10 @@ matplot(scen_gbm$loc_1[which(test1$data$ISSUEdtm==i_ts),],type="l",ylim=c(0,1),l
 
 set.seed(1)
 t1 <- Sys.time()
-scen_gbm <- ProbCast::samps_to_scens(copulatype = "temporal",no_samps = f_nsamp,marginals = list(loc_1 = test1$gbm_mqr),sigma_kf = cvm_gbm,mean_kf = mean_list,
-                                     control=list(loc_1 = list(kfold = u_obsind$kfold,issue_ind=u_obsind$i_time,horiz_ind=u_obsind$lead_time,
-                                                               PIT_method="spline",
-                                                               CDFtails = list(method="interpolate",L=0,U=1,ntailpoints=100))))
+scen_gbm <- samps_to_scens(copulatype = "temporal",no_samps = f_nsamp,marginals = list(loc_1 = test1$gbm_mqr),sigma_kf = cvm_gbm,mean_kf = mean_list,
+                           control=list(loc_1 = list(kfold = u_obsind$kfold,issue_ind=u_obsind$i_time,horiz_ind=u_obsind$lead_time,
+                                                     PIT_method="spline",
+                                                     CDFtails = list(method="interpolate",L=0,U=1,ntailpoints=100))))
 print(Sys.time()-t1)
 
 

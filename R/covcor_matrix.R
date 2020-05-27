@@ -1,7 +1,7 @@
 #' Multivariate Gaussian covariance/correlation matrices
 #'
 #' This function produces a list of Multivariate Gaussian spatial/tempral/spatiotemporal covarance/correlation matrices from PIT transformed variables
-#' @param u_data A dataframe of uniform distributed variables.
+#' @param u_data A \code{data.frame} of uniform distributed variables.
 #' @param kfold A vector of kfold identifiers.
 #' @param cov_cor specify either covariance or correlation
 #' @param boundary_threshold handling of boundary values. Set to NA to exclude, or small value to impose threshold.
@@ -13,7 +13,7 @@
 #' @export
 covcor_matrix  <- function(u_data,kfold=NULL,cov_cor="covariance",
                            use="pairwise.complete.obs",boundary_threshold=NA,forcePD=F,scale = F,...){
-
+  
   ### change to autospecify spatial/spatiotemporal from long format marginals?
   if(is.null(kfold)){
     kfold <- rep(1,nrow(u_data))
@@ -26,7 +26,7 @@ covcor_matrix  <- function(u_data,kfold=NULL,cov_cor="covariance",
   # Transform to Gaussian...
   g_data <- as.data.frame(lapply(u_data, qnorm))
   rm(u_data)
-
+  
   matList <- list()
   
   if(cov_cor=="covariance"){
@@ -46,7 +46,7 @@ covcor_matrix  <- function(u_data,kfold=NULL,cov_cor="covariance",
         } else{
           temp <- cov(x = g_data, use=use,...)
         }
-
+        
       }
       if(forcePD){
         temp <- as.matrix(nearPD(temp,corr=F)$mat)
