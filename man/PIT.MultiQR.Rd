@@ -12,6 +12,7 @@
 \item{obs}{A vector of observations corresponding to the rows of \code{qrdata}.}
 
 \item{tails}{A list of arguments passed to \code{condCDF} defining the tails of the CDFs.
+See \code{?contCDF} for details.
 Tail parameters my have length 1 or length \code{nrow(qrdata)} if each row of qrdata
 has a corresponding parameter value.}
 

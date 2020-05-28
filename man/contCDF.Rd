@@ -52,19 +52,16 @@ tails are exrapolated to the 50th quantile plus (minus) \code{U} (\code{L}).
 Exponential tails: \code{tails=list(method="exponential",thicknessPL,thicknessPR,ntailpoints=5)}
 the user will either supply user defined thickness parameters for the tail
 via \code{thicknessPL} and \code{thicknessPR}. The number
-of tail quantiles to be estimated is set by \code{ntailpoints}.
+of tail quantiles to be estimated is set by \code{ntailpoints}, which defaults to 5.
 Alternatively \code{tails=list(method="exponential",thickparamFunc)} where \code{thickparamFunc}
 is a function that takes the q50 as an input and returns the thickness parameter.
-Alternatively (not recommmended) \code{tails=list(method="exponential",preds,nbins,targetvar)} a symetrical tail
-thickness can be defined data-driven by specifying: number of bins \code{nbins}, a MQR
-object \code{preds}, and the target variable, \code{targetvar}.
 
 Dynamic exponential tails: \code{tails=list(method="dyn_exponential",ntailpoints=5)}, where the tail shape
 is conditional on the values for the upper and lower quantile of \code{qrdata}. This method 
 currently only supports an input variable scale of \code{[0,1]}. The tail shape moves from linear interpolation
 when the upper/lower quantile is near the boundary for each respective tail, to a conditional exponential shape.
 
-Generalised Pareto Distribution: \code{tails="gpd", scale_r,shape_r,
+Generalised Pareto Distribution Tails: \code{tails="gpd", scale_r,shape_r,
 scale_l,shape_l,tail_qs=seq(0.1,2,by=0.1)} with left (_l) and right (_r) scale and shape parameters.
 Quantiles are calculated at points defined by the upper (lower) quantile plus (minus)
 \code{tail_qs}.
