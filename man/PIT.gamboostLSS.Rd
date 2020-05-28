@@ -11,12 +11,14 @@
 
 \item{data}{Input data corresponding to \code{qrdata}.}
 
-\item{dist_fun}{cumulative distribution function corresponging to families specified in gamboostLSS model (see example).}
+\item{dist_fun}{cumulative distribution function corresponging to families
+specified in gamboostLSS model (see example).}
 
 \item{response_name}{name of response variable in \code{data} object.}
 }
 \value{
-The probability integral transform of \code{data} through the predictive distribution defined by a list of gamboostLSS objects.
+The probability integral transform of \code{data} through the predictive
+distribution defined by a list of gamboostLSS objects.
 }
 \description{
 This function calculates the probability integral transformation

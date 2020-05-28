@@ -21,6 +21,9 @@ PIT <- function(distdata,...) {
 #' @param qrdata A \code{MultiQR} object.
 #' @param obs A vector of observations corresponding to the rows of \code{qrdata}.
 #' @param tails A list of arguments passed to \code{condCDF} defining the tails of the CDFs.
+#' See \code{?contCDF} for details.
+#' Tail parameters my have length 1 or length \code{nrow(qrdata)} if each row of qrdata
+#' has a corresponding parameter value.
 #' @param inverse A \code{boolean}. If true, the inverse transformation is appiled, i.e. uniform variable
 #' to random variable from original distribution.
 #' @param ... Additional arguments passed to \code{condCDF}.
@@ -31,39 +34,43 @@ PIT <- function(distdata,...) {
 #' @export
 PIT.MultiQR <- function(qrdata,obs,tails,inverse=FALSE,...){
   
-  # if(length(obs)!=nrow(qrdata)){stop("length(obs)!=nrow(qrdata)")}
-  
-  if(tails$method=="exponential" & is.null(tails$thicknessPL) & is.null(tails$thicknessPR)){
-    
-    if(!("q50"%in%colnames(qrdata))){stop("q50 required for exponential tails.")}
-    
-    thickness <- rep(NA,tails$nBins)
-    targetquants <- stats::quantile(tails$targetvar,probs = seq(0, 1, 1/tails$nBins),na.rm=T)
-    for(i in 1:tails$nBins){
-      thickness[i] <- mean(tails$targetvar[which(qrdata$q50>=targetquants[i] & qrdata$q50<targetquants[i+1])],na.rm = T)
-    }
-    tails$thickparamFunc <- stepfun(seq(0,1,length.out = tails$nBins+1),y=c(0,thickness,1))
-    
-  }
-  
+
   if(tails$method=="dyn_exponential"){
-    print(paste0(tails$method," method valid for [0,1] target variable scale at the moment..."))
+    warning("tails$method==\"dyn_exponential\" only valid for target variable in [0,1].")
   }
   
-  
+  ## Get names of parameters specified for each row of qrdata
+  varying_params <- names(which(lapply(tails,length)==nrow(qrdata)))
   if (inverse){
     
     X <- matrix(NA,nrow(qrdata),ncol = ncol(obs))
     for(i in 1:nrow(qrdata)){
       if(is.na(qrdata[i,1])){X[i,] <- NA}else{
-        X[i,] <- contCDF(quantiles = qrdata[i,],tails = tails,inverse = TRUE,...)(as.numeric(obs[i,]))}
+        
+        temp_tail <- tails
+        if(length(varying_params)>0){
+          for(j in varying_params){
+            temp_tail[[j]] <- tails[[j]][i]
+          }
+        }
+        
+        ## PIT
+        X[i,] <- contCDF(quantiles = qrdata[i,],tails = temp_tail,inverse = TRUE,...)(as.numeric(obs[i,]))}
     }
   }else{
     
     X<-rep(NA,nrow(qrdata))
     for(i in 1:nrow(qrdata)){
       if(is.na(obs[i]) | is.na(sum(qrdata[i,]))){X[i] <- NA}else{
-        X[i] <- contCDF(quantiles = qrdata[i,],tails = tails,...)(obs[i])
+        
+        temp_tail <- tails
+        if(length(varying_params)>0){
+          for(j in varying_params){
+            temp_tail[[j]] <- tails[[j]][i]
+          }
+        }
+        
+        X[i] <- contCDF(quantiles = qrdata[i,],tails = temp_tail,...)(obs[i])
       }
     }
     
@@ -154,9 +161,11 @@ PIT.PPD <- function(ppd,data,inverse=FALSE,inv_probs=NULL){
 #' @author Ciaran Gilbert, \email{ciaran.gilbert@@strath.ac.uk}
 #' @param models A Para_gamboostLSS object.
 #' @param data Input data corresponding to \code{qrdata}.
-#' @param dist_fun cumulative distribution function corresponging to families specified in gamboostLSS model (see example).
+#' @param dist_fun cumulative distribution function corresponging to families
+#' specified in gamboostLSS model (see example).
 #' @param response_name name of response variable in \code{data} object.
-#' @return The probability integral transform of \code{data} through the predictive distribution defined by a list of gamboostLSS objects.
+#' @return The probability integral transform of \code{data} through the predictive
+#' distribution defined by a list of gamboostLSS objects.
 #' @export
 PIT.gamboostLSS <- function(models,data,dist_fun,response_name,...){
   
