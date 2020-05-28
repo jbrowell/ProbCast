@@ -22,7 +22,7 @@ contCDF(
 \item{kfolds}{Fold/test label corresponding to \code{quantiles}.}
 }
 \value{
-A cumulative densift function of the type produced by \code{splinefun} and
+A cumulative density function of the type produced by \code{splinefun} and
 \code{approxfun}.
 }
 \description{
@@ -45,7 +45,7 @@ increasing function.
 Several options are available for specifying distribution tails beyond
 the final upper and lower quantiles:
 
-Linear extrapolation: \code{tails=list(method="extrapolate",L,U)} value set to \code{L} and \code {U}
+Linear extrapolation: \code{tails=list(method="extrapolate",L,U)} value set to \code{L} and \code{U}
 for probability levels 0 and 1, respectively. If \code{method="extrapolate_dtail1"} then
 tails are exrapolated to the 50th quantile plus (minus) \code{U} (\code{L}).
 
@@ -59,7 +59,10 @@ Alternatively (not recommmended) \code{tails=list(method="exponential",preds,nbi
 thickness can be defined data-driven by specifying: number of bins \code{nbins}, a MQR
 object \code{preds}, and the target variable, \code{targetvar}.
 
-Dynamic exponential tails: \code{tails=list(method="dyn_exponential",...)} ...
+Dynamic exponential tails: \code{tails=list(method="dyn_exponential",ntailpoints=5)}, where the tail shape
+is conditional on the values for the upper and lower quantile of \code{qrdata}. This method 
+currently only supports an input variable scale of \code{[0,1]}. The tail shape moves from linear interpolation
+when the upper/lower quantile is near the boundary for each respective tail, to a conditional exponential shape.
 
 Generalised Pareto Distribution: \code{tails="gpd", scale_r,shape_r,
 scale_l,shape_l,tail_qs=seq(0.1,2,by=0.1)} with left (_l) and right (_r) scale and shape parameters.
