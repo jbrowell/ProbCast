@@ -11,7 +11,7 @@
 #' @export
 read_holiday_ics <- function(folder=getwd()){
 
-  for(file in list.files(pattern = ".ics")){
+  for(file in list.files(path = folder,pattern = ".ics",full.names = T)){
 
     x <- readLines(file,encoding =  "UTF-8")
     x <- gsub(x,pattern = "Andrew.+s",replacement = "Andrew's")
