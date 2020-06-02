@@ -24,7 +24,7 @@ read_holiday_ics <- function(folder=getwd()){
 
     temp <- data.table(Date=as.POSIXct(df$`2.DTSTART;VALUE=DATE`,format="%Y%m%d",tz="Europe/London"),
                        H=df$`2.SUMMARY`)
-    setnames(temp,"H",sub('\\.ics$', '', file))
+    setnames(temp,"H",sub('\\.ics$', '', basename(file)))
     if(exists("output")){
       output <- merge(output,temp,by="Date",all=T)
     }else{
