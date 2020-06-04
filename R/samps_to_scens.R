@@ -3,15 +3,14 @@
 #' This function produces a list of multivariate scenario forecasts in the marginal domain from the spatial/tempral/spatiotemporal gaussian covariance matrices and marginal distributions
 #' @param copulatype Either "spatial" of "temporal", note that spatio-temporal can be generated via "temporal" setting
 #' @param no_samps Number of scenarios required
-#' @param marginals a named list of the margins of the copula - e.g. if class is MultiQR --> list(<<name>> = <<MultiQR object>>). Multiple margins are possible for multiple locations (see examples) although they must be the same class (MQR or distribution parameters). If parametric class supply a list of the distribution parameters here and the corresponding quantile function in \code{control} (see below). The ordering of this list is important for multiple locations --- it should be ordered according to the row/columns in each member of \code{sigma_kf}
+#' @param marginals a named list of the margins of the copula - e.g. if class is MultiQR --> list(<<name>> = <<MultiQR object>>). Multiple margins are possible for multiple locations (see examples) although they must be the same class (MQR or distribution parameters). If parametric class supply a list of the distribution parameters here and the corresponding quantile function in \code{control} (see below). The ordering of this list is important for multiple locations --- see note below.
 #' @param sigma_kf a named list of the covariance matrices with elements corresponding to each fold.
-#' @param mean_kf a named list of the mean vectors with elements corresponding to each fold
+#' @param mean_kf a named lisat of the mean vectors with elements corresponding to each fold
 #' @param control a named list of with nested control parameters (named according to \code{marginals}). Each named list should contain \code{kfold}, \code{issue_ind}, and \code{horiz_ind} which are the kfold, issue time, and lead time vectors corresponding to the margins of the copula. If margins are MultiQR class also define \code{PIT_method} and list \code{CDFtails}, which are passed to the PIT function. If the margins are distribution parameter predictions then define \code{q_fun}, which transforms the columns of \code{marginals} through the quantile function --- see example for more details. 
-#' @param mcmapply_cores defaults to 1. Warning, only change if not using windows OS --- see the \code{parallel::mcmapply} help page for more info. Speed improvements possible when generating sptio-temporal scenarios, set to the number of locations if possible.
+#' @param mcmapply_cores defaults to 1. Warning, only change if not using windows OS --- see the \code{parallel::mcmapply} for more info. Speed improvements possible when generating sptio-temporal scenarios, set to the number of locations if possible.
 #' @param mvnfast_cores defaults to 1. See \code{mvnfast::rmvn}
-#' @param ... other parameters to be passed to mvtnorm::rmvnorm
-#' @note For spatio-temporal scenarios, each site must have the same number of inputs to the governing covariance matrix.
-#' @note For multiple locations the ordering of the lists of the margins & control, and the structure of the covariance matrices is very important; if the columns/rows in each covariance matrix are ordered loc1_h1, loc1_h2,..., loc2_h1, loc2_h_2,..., loc_3_h1, loc_3_h2,... i.e. location_leadtime --- then the list of the marginals should be in the same order loc1, loc2, loc3,....
+#' @note For spatio-temporal scenarios, each site must have the same number of lead-times in the covariance matrix.
+#' @note For multiple locations the ordering of the lists of the margins and the structure of the covariance matrices is very important; if the columns/rows in each covariance matrix are ordered loc1_h1, loc1_h2,..., loc2_h1, loc2_h_2,..., loc_3_h1, loc_3_h2,... i.e. location_leadtime --- then the list of the marginals should be in the same order loc1, loc2, loc3,....
 #' @note Ensure kfold ids in the control list do not change within any issue time --- i.e. make sure the issue times are unique to each fold. 
 #' @details Details go here...
 #' @return A list of \code{data.table} objects containing multivariate scenario forecasts
@@ -40,10 +39,13 @@
 #' @importFrom parallel mcmapply
 #' @import data.table
 #' @export
-samps_to_scens <- function(copulatype,no_samps,marginals,sigma_kf,mean_kf,control,mcmapply_cores = 1L, mvnfast_cores = 1L,...){
+samps_to_scens <- function(copulatype,no_samps,marginals,sigma_kf,mean_kf,control,mcmapply_cores = 1L, mvnfast_cores = 1L){
   
   # no kfold capability?
   # improve ordering of lists cvm matrix...
+  # imposing a class on cvms will help a lot
+  # at the moment the location/leadtime is inferred from data assuming a v. specific ordering of the matrix/marginals
+  # improve memory usage further - avoid split.data.table? (it's making copies)
   
   # mean_list <- list()
   # for (i in levels(unique(u_obsind$kfold))){
@@ -61,6 +63,7 @@ samps_to_scens <- function(copulatype,no_samps,marginals,sigma_kf,mean_kf,contro
   #                           CDFtails = list(method="interpolate",L=0,U=1,ntailpoints=100)))
   # mcmapply_cores <- 1L
   # mvnfast_cores <- 1L
+  
   
   if(class(marginals)[1]!="list"){
     marginals <- list(loc_1 = marginals)
@@ -91,44 +94,6 @@ samps_to_scens <- function(copulatype,no_samps,marginals,sigma_kf,mean_kf,contro
   if(copulatype=="spatial"){
     
     
-    # This function is for extracting spatial scenario samples
-    extr_kf_spatsamp <- function(kf_samp_df,uni_kfold){
-      
-      print(paste0("taking samples for --- ",uni_kfold))
-      
-      ## take cholesky decomp. so we only have to do it once for all issuetimes in fold
-      chol_mat <- chol(sigma_kf[[uni_kfold]])
-      
-      arg_list <- list(n=no_samps,sigma=chol_mat,mu=mean_kf[[uni_kfold]], isChol = TRUE, ncores = mvnfast_cores)
-      
-      # sample from multivariate gaussian, gives results in a list of matrices
-      kf_samps <- replicate(n=nrow(kf_samp_df),expr=do.call(eval(parse(text="rmvn")),args=arg_list),simplify = F)
-      
-      # transform sample rows ---> samples in cols and time_ind in rows
-      kf_samps <- lapply(kf_samps,t)
-      
-      # convert to uniform domain
-      kf_samps <- lapply(kf_samps,pnorm)
-      
-      # add ID row column for split list later (will help margins length>1) --- poss imp, impose naming convention on cvms?
-      kf_samps <- lapply(kf_samps,function(x){cbind(x,sort(rep(1:length(marginals),nrow(x)/length(marginals))))})
-      
-      #bind the rows
-      kf_samps <- data.table(docall("rbind",kf_samps))
-      
-      # split the data.table up into a list of data.tables by the rowID column for different locations
-      kf_samps <- split(kf_samps,by=tail(colnames(kf_samps),1),keep.by = FALSE)
-      
-      # bind with kf_samp_df time indices
-      kf_samps <- lapply(kf_samps,function(x){cbind(kf_samp_df,x)})
-      
-      # name list
-      names(kf_samps) <- names(marginals)
-      
-      return(kf_samps)
-      
-    }
-    
     # find the unique combinations of issue_time and horizon at per fold across all the locations
     find_nsamp <- list()
     for(i in names(sigma_kf)){
@@ -136,124 +101,93 @@ samps_to_scens <- function(copulatype,no_samps,marginals,sigma_kf,mean_kf,contro
       find_nsamp[[i]] <- find_nsamp[[i]][order(find_nsamp[[i]]$issue_ind, find_nsamp[[i]]$horiz_ind),]
     }
     
-    # extract samples calling etr_kf_spatsamp
-    samps <- mapply(extr_kf_spatsamp,kf_samp_df=find_nsamp,uni_kfold = as.list(names(find_nsamp)),SIMPLIFY = F)
+    # extract samples calling etr_kf_spatsamp for each fold
+    samps <- split(rbindlist(lapply(names(sigma_kf),function(i){extr_kf_spatsamp(kf_samp_df=find_nsamp[[i]],
+                                                                                 uni_kfold = i,
+                                                                                 sigmas = sigma_kf,
+                                                                                 means = mean_kf,
+                                                                                 mvnfast_c = mvnfast_cores,
+                                                                                 nsamps = no_samps,
+                                                                                 margs = marginals)})),
+                   by="loc_id",keep.by = FALSE)
+    
     rm(find_nsamp)
     
     
     
   } else{ if (copulatype=="temporal"){
     
-    # This function is for extracting temporal/spatio-temporal scenario samples
-    extr_kf_temposamp <- function(issuetimes,uni_kfold){
-      
-      print(paste0("taking samples for --- ",uni_kfold))
-      
-      ## take cholesky decomp. so we only have to do it once for all issuetimes in fold
-      chol_mat <- chol(sigma_kf[[uni_kfold]])
-      
-      arg_list <- list(n=no_samps,sigma=chol_mat,mu=mean_kf[[uni_kfold]], isChol = TRUE, ncores = mvnfast_cores)
-      
-      # sample from multivariate gaussian, gives results in a list of matrices
-      kf_samps <- replicate(n=length(issuetimes$issue_ind),expr=do.call(eval(parse(text="rmvn")),args=arg_list),simplify = F)
-      
-      # transform sample rows ---> samples in cols and horizon in rows
-      kf_samps <- lapply(kf_samps,t)
-      
-      # convert to uniform domain
-      kf_samps <- lapply(kf_samps,pnorm)
-      
-      # add ID row column for split list later (will help margins length>1) --- poss imp, impose naming convention on cvms?(and kpnames from mvnfast)
-      kf_samps <- lapply(kf_samps,function(x){cbind(x,sort(rep(1:length(marginals),nrow(x)/length(marginals))))})
-      
-      # bind the rows
-      kf_samps <- data.table(docall("rbind",kf_samps))
-      
-      # add issueTime ID to each data.table
-      issue_ind <- sort(rep(issuetimes$issue_ind,nrow(kf_samps)/length(issuetimes$issue_ind)))
-      
-      # add horiz_ind to vector --- need to change this**** impose naming convention on cvms?(and kpnames from mvnfast)
-      horiz_ind <- rep(sort(unique(control[[1]]$horiz_ind)),nrow(kf_samps)/length(sort(unique(control[[1]]$horiz_ind))))
-      kf_samps <- cbind(issue_ind,horiz_ind,kf_samps)
-      
-      # split the data.table up into a list of data.tables by the rowID column for different locations
-      kf_samps <- split(kf_samps,by=tail(colnames(kf_samps),1),keep.by = FALSE)
-      
-      # name list
-      names(kf_samps) <- names(marginals)
-      
-      
-      return(kf_samps)
-      
-    }
     
-    
-    
-    # find number of unique issue_times per fold across all the locations (use data.frame to avoid losing posixct class if present)
+    # find number of unique issue_times and lead times per fold across all the locations (use data.table to avoid losing posixct class if present)
+    # note that at the moment each location is assumed to have an identical number of lead times - class on cvms!
     find_issue <- list()
+    find_horizon <- list()
     for(i in names(sigma_kf)){
       find_issue[[i]] <- unique(do.call(rbind,unname(lapply(control,function(x){data.table(issue_ind=unique(x$issue_ind[x$kfold==i]))}))))
-      find_issue[[i]] <- find_issue[[i]][order(find_issue[[i]]$issue_ind),]
+      find_horizon[[i]] <- unique(do.call(rbind,unname(lapply(control,function(x){data.table(horiz_ind=unique(x$horiz_ind[x$kfold==i]))}))))
+      find_issue[[i]] <- setorder(find_issue[[i]],issue_ind)
+      find_horizon[[i]] <- setorder(find_horizon[[i]],horiz_ind)
     }
     
+    # extract samples calling extr_kf_temposamp for each fold
+    # split --> rbindlist --> kfold --> dts isnt v memory efficient, but need to get outut from kfold$<dt(locs)> to loc$dt(kfold) 
+    # because...passing the PIT in paralell (below) is much faster than using the loc as a group in one big table (as far as I could tell)
+    samps <- split(rbindlist(lapply(names(sigma_kf),function(i){extr_kf_temposamp(issuetimes = find_issue[[i]],
+                                                                                  uni_kfold = i,
+                                                                                  leadtimes = find_horizon[[i]],
+                                                                                  sigmas = sigma_kf,
+                                                                                  means = mean_kf,
+                                                                                  mvnfast_c = mvnfast_cores,
+                                                                                  nsamps = no_samps,
+                                                                                  margs = marginals)})),
+                   by="loc_id",keep.by = FALSE)
     
-    # extract samples calling etr_kf_temposamp for each fold
-    samps <- mapply(extr_kf_temposamp,issuetimes=find_issue,uni_kfold = as.list(names(find_issue)),SIMPLIFY = F)
-    rm(find_issue)
+    rm(find_issue,find_horizon)
+    
     
     
   }else{stop("copula type mis-specified")}}
   
   
+  invisible(gc())
   
-  # merge samples with control data to filter to the required samples for passing to the PIT
-  # output from above is samps$<<fold>>$<<loc>> need to rearrage into samps$<<loc>>
-  samps <- lapply(names(marginals),function(i){rbindlist(lapply(samps,function(x){x[[i]]}))})
-  names(samps) <- names(marginals)
-  
-  # set order of df
-  samps <- lapply(samps,function(x){setorder(x,issue_ind,horiz_ind)})
-  # merge control cols and the samples to give the final samps for transormation through PIT
+  # set control data.tables
   cont_ids <- lapply(control,function(x){data.table(issue_ind=x$issue_ind,horiz_ind=x$horiz_ind,sort_ind=1:length(x$issue_ind))})
-  samps <- mapply(merge.data.table,x = cont_ids,y = samps,MoreArgs = list(all.x=T),SIMPLIFY = F)
-  rm(cont_ids)
-  ## preserve order of merged scenario table with input control table
-  samps <- lapply(samps,function(x){setorder(x,sort_ind)})
-  
   
   print(paste0("Transforming samples into original domain"))
-  ### transform Unifrom Variable into original domain
-  ### add S3 support for PPD...
+  
   if (class(marginals[[1]])[1]%in%c("MultiQR")){
+    
     
     method_list <- lapply(control,function(x){x$PIT_method})
     CDFtail_list <- lapply(control,function(x){x$CDFtails})
-
-    marg_names <- lapply(marginals,colnames)
-    samp_names <- lapply(samps,function(x){colnames(x)[-c(1:3)]})
-
-    ## reduce memory usage in parallel pass_invcdf by joining outside and try gc()
-    samps <- mapply(cbind, samps, marginals, SIMPLIFY = F)
-    rm(marginals)
-    invisible(gc())
-
-    ### faster inverse pit using data.table (x7 in example.R)
-    pass_invcdf <- function(dt, s_nms, q_nms,...){
-
-      ## using as.list here makes data.table return in 'wide format automatically & as numeric(.SD) prevents input samps from being a list..
-      dt[,c(s_nms):=as.list(contCDF(quantiles = t(mget(q_nms)),inverse = TRUE,...)(as.numeric(.SD))),by=.(sort_ind),.SDcols=s_nms]
-      setorder(dt,sort_ind)
-      rem_cols <- colnames(dt)[-c(which(colnames(dt)%in%s_nms))]
-      dt[, c(rem_cols) := NULL]
-      return(dt)
-
+    
+    # fast inversse pit function
+    fastinvpit <- function(dt_samps,dt_contr,qrdata,...){
+      
+      # this is more memory efficient that joining tables invidvidually using merge -- we're subsetting by reference in the join --- on v. high dimensional data on aws anyway
+      # process: join unif. samples on control issue/leadtime --> inverse CDF function for each unique row --> sort by rowind --> remove row ind col
+      dt_samps[dt_contr, on = .(issue_ind,horiz_ind)][,as.list(contCDF(quantiles = qrdata[sort_ind,],inverse = TRUE,...)(as.numeric(.SD))),
+                                                      keyby=.(sort_ind),.SDcols=paste0("V",1:no_samps)][,-c("sort_ind")]
+      
     }
-
-    samps <- mcmapply(function(...){pass_invcdf(...)},dt = samps, s_nms = samp_names, q_nms = marg_names, method = method_list,
-                           tails = CDFtail_list, SIMPLIFY = F,mc.cores = mcmapply_cores)
+    
+    # apply function and transfrom to original domain
+    samps <- mcmapply(function(...){fastinvpit(...)},dt_samps = samps, dt_contr = cont_ids, qrdata = marginals,method = method_list,tails = CDFtail_list,
+                      SIMPLIFY = F,mc.cores = mcmapply_cores)
+    
     
     
   } else {
+    
+    ## change this to similar to above 
+    ## add S3 support for PPD?
+    samps <- mapply(merge.data.table,x = cont_ids,y = samps,MoreArgs = list(all.x=T),SIMPLIFY = F)
+    rm(cont_ids)
+    invisible(gc())
+    
+    ## preserve order of merged scenario table with input control table
+    samps <- lapply(samps,function(x){setorder(x,sort_ind)})
     
     ### make sure before as.list in do.call the object is a data.frame
     return_ppdsamps <- function(samps,margin,quant_f){
@@ -277,3 +211,77 @@ samps_to_scens <- function(copulatype,no_samps,marginals,sigma_kf,mean_kf,contro
   
   
 }
+
+
+
+
+
+##### helper functions....
+
+# This function is for extracting temporal/spatio-temporal scenario samples for a single fold
+extr_kf_temposamp <- function(issuetimes, uni_kfold, leadtimes, sigmas, means, mvnfast_c, nsamps, margs){
+  
+  print(paste0("taking samples for --- ",uni_kfold))
+  
+  ## take cholesky decomp. so we only have to do it once for all issuetimes in fold
+  chol_mat <- chol(sigmas[[uni_kfold]])
+  
+  arg_list <- list(n=nsamps,sigma=chol_mat,mu=means[[uni_kfold]], isChol = TRUE, ncores = mvnfast_c)
+  
+  # sample from multivariate gaussian --> list of matrices for each issuetime -->  samples to cols and horizon to rows --> convert to uniform domain --> data.table class --> rbindlist
+  kf_samps <- rbindlist(replicate(n=length(issuetimes$issue_ind),expr=data.table(pnorm(t(do.call(eval(parse(text="rmvn")),args=arg_list)))),
+                                  simplify = F),
+                        idcol = TRUE)
+  
+  ## add location id column
+  kf_samps[,loc_id := rep(names(margs),each = .N/length(margs)),by=.(.id)]
+  
+  ## rename and redefine .id column to corresponding issuetime
+  kf_samps[,.id:=issuetimes$issue_ind[.id]]
+  setnames(kf_samps,".id","issue_ind")
+  
+  ## add leadtime id column 
+  kf_samps[,horiz_ind:=leadtimes$horiz_ind,by=.(issue_ind,loc_id)]
+  
+  # not really needed but good for inspecting the table when coding this :p
+  setcolorder(kf_samps,c("issue_ind","loc_id","horiz_ind"))
+  
+  return(kf_samps)
+  
+}
+
+
+
+# This function is for extracting spatial scenario samples per fold
+extr_kf_spatsamp <- function(kf_samp_df, uni_kfold, sigmas, means, mvnfast_c, nsamps, margs){
+  
+  print(paste0("taking samples for --- ",uni_kfold))
+  
+  ## take cholesky decomp. so we only have to do it once for all issuetimes in fold
+  chol_mat <- chol(sigmas[[uni_kfold]])
+  
+  arg_list <- list(n=nsamps,sigma=chol_mat,mu=means[[uni_kfold]], isChol = TRUE, ncores = mvnfast_c)
+  
+  # sample from multivariate gaussian --> list of matrices for each row 
+  kf_samps <- replicate(n=nrow(kf_samp_df),expr=do.call(eval(parse(text="rmvn")),args=arg_list),simplify = F)
+  
+  # transform sample rows ---> samples in cols and time_ind/location in rows --> convert to uniform domain
+  kf_samps <- lapply(kf_samps,function(x){pnorm(t(x))})
+  
+  # much more computationally effective to wrap data.table here, because we're taking samples at each row of kf_samp_df
+  kf_samps <- data.table(docall("rbind",kf_samps))
+  
+  kf_samps[,loc_id := rep(names(margs),nrow(kf_samp_df))]
+  setkey(kf_samps,loc_id)
+  
+  # bind with kf_samp_df time indices
+  kf_samps <- cbind(rbindlist(replicate(length(margs),kf_samp_df,simplify=FALSE)),kf_samps)
+  
+  
+  return(kf_samps)
+  
+}
+
+
+
+

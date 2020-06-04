@@ -31,6 +31,7 @@ Wind$kfold[Wind$ISSUEdtm>as.POSIXct("2013-06-30",tz="UTC")] <- "Test"
 
 Wind <- na.omit(Wind)
 
+## for fitting gbm quantiles close to the tail (i.e. q1), perfect 0 values can through-off the fit
 Wind$TARGETVAR[Wind$TARGETVAR==0] <- runif(sum(Wind$TARGETVAR==0,na.rm = TRUE),min=0.001,max = 0.005)
 
 ### Multiple Quantile Regression using GBM ####
@@ -219,7 +220,7 @@ lattice::levelplot(cvm_gbm[["Test"]], xlab="lead time [hours]", ylab="lead time 
                    main="Test --- Covariance")
 
 # sample cvm and convert to power domain
-f_nsamp <- 2000
+f_nsamp <- 200
 mean_list <- list()
 for (i in levels(unique(u_obsind$kfold))){
   mean_list[[i]] <- rep(0, 24)
@@ -228,7 +229,7 @@ for (i in levels(unique(u_obsind$kfold))){
 
 set.seed(1)
 t1 <- Sys.time()
-scen_gbm <- ProbCast::samps_to_scens(copulatype = "temporal",no_samps = f_nsamp,marginals = list(loc_1 = test1$gbm_mqr),sigma_kf = cvm_gbm,mean_kf = mean_list,
+scen_gbm <- samps_to_scens(copulatype = "temporal",no_samps = f_nsamp,marginals = list(loc_1 = test1$gbm_mqr),sigma_kf = cvm_gbm,mean_kf = mean_list,
                            control=list(loc_1 = list(kfold = u_obsind$kfold,issue_ind=u_obsind$i_time,horiz_ind=u_obsind$lead_time,
                                                      PIT_method="spline",
                                                      CDFtails = list(method="dyn_exponential",ntailpoints=100))))
@@ -239,43 +240,15 @@ matplot(scen_gbm$loc_1[which(test1$data$ISSUEdtm==i_ts),],type="l",ylim=c(0,1),l
         xlab="Lead Time [Hours]",ylab="Power [Capacity Factor]",
         col=gray(0.1,alpha = 0.1),axes = F); axis(1,1:24,pos=-0.07); axis(2,las=1)
 
-set.seed(1)
-t1 <- Sys.time()
-scen_gbm <- samps_to_scens(copulatype = "temporal",no_samps = f_nsamp,marginals = list(loc_1 = test1$gbm_mqr),sigma_kf = cvm_gbm,mean_kf = mean_list,
-                           control=list(loc_1 = list(kfold = u_obsind$kfold,issue_ind=u_obsind$i_time,horiz_ind=u_obsind$lead_time,
-                                                     PIT_method="spline",
-                                                     CDFtails = list(method="interpolate",L=0,U=1,ntailpoints=100))))
-print(Sys.time()-t1)
 
 
-matplot(scen_gbm$loc_1[which(test1$data$ISSUEdtm==i_ts),],type="l",ylim=c(0,1),lty=1,
-        xlab="Lead Time [Hours]",ylab="Power [Capacity Factor]",
-        col=gray(0.1,alpha = 0.1),axes = F); axis(1,1:24,pos=-0.07); axis(2,las=1)
-
-
-# set.seed(1)
-# t1 <- Sys.time()
-# scen_gbm2 <- samps_to_scens(copulatype = "temporal",no_samps = f_nsamp,marginals = list(loc_1 = test1$gbm_mqr),sigma_kf = cvm_gbm,mean_kf = mean_list,
-#                            control=list(loc_1 = list(kfold = u_obsind$kfold,issue_ind=u_obsind$i_time,horiz_ind=u_obsind$lead_time,
-#                                                      PIT_method="spline",
-#                                                      CDFtails = list(method="interpolate",L=0,U=1,ntailpoints=100))))
-# print(Sys.time()-t1)
-
-
-
-matplot(scen_gbm$loc_1[which(test1$data$ISSUEdtm==i_ts),],type="l",ylim=c(0,1),lty=1,
-        xlab="Lead Time [Hours]",ylab="Power [Capacity Factor]",
-        col=gray(0.1,alpha = 0.1),axes = F); axis(1,1:24,pos=-0.07); axis(2,las=1)
-# lines(test1$data$TARGETVAR[which(test1$data$ISSUEdtm==i_ts)],lwd=2)
-# legend("bottomleft",c("scenarios","measured"),col = c("grey75","black"),pch=c(NA,NA,NA),bty="n",lty=1)
-
-
-
+#### toy multiple location example
 mean_list <- list()
 for (i in levels(unique(u_obsind$kfold))){
   mean_list[[i]] <- rep(0, 48)
 }
 
+# loc_2 corresponds to cols 25:48 and rows 25:48
 cvm_list <- list()
 for (i in levels(unique(u_obsind$kfold))){
   cvm_list[[i]] <- diag(48)
@@ -284,30 +257,16 @@ for (i in levels(unique(u_obsind$kfold))){
 
 set.seed(1)
 t1 <- Sys.time()
-scen_gbm2 <- ProbCast::samps_to_scens(copulatype = "temporal",no_samps = f_nsamp,marginals = list(loc_1 = test1$gbm_mqr, loc_2 = test1$gbm_mqr),
+scen_gbm <- samps_to_scens(copulatype = "temporal",no_samps = f_nsamp,marginals = list(loc_1 = test1$gbm_mqr, loc_2 = test1$gbm_mqr),
                            sigma_kf = cvm_list,mean_kf = mean_list,
                            control=list(loc_1 = list(kfold = u_obsind$kfold,issue_ind=u_obsind$i_time,horiz_ind=u_obsind$lead_time,
                                                      PIT_method="spline",
                                                      CDFtails = list(method="interpolate",L=0,U=1,ntailpoints=100)),
                                         loc_2 = list(kfold = u_obsind$kfold,issue_ind=u_obsind$i_time,horiz_ind=u_obsind$lead_time,
                                                      PIT_method="spline",
-                                                     CDFtails = list(method="interpolate",L=0,U=1,ntailpoints=100))),mcmapply_cores = 2)
-
+                                                     CDFtails = list(method="interpolate",L=0,U=1,ntailpoints=100))))
 print(Sys.time()-t1)
 
-
-set.seed(1)
-t1 <- Sys.time()
-scen_gbm3 <- samps_to_scens(copulatype = "temporal",no_samps = f_nsamp,marginals = list(loc_1 = test1$gbm_mqr, loc_2 = test1$gbm_mqr),
-                            sigma_kf = cvm_list,mean_kf = mean_list,
-                            control=list(loc_1 = list(kfold = u_obsind$kfold,issue_ind=u_obsind$i_time,horiz_ind=u_obsind$lead_time,
-                                                      PIT_method="spline",
-                                                      CDFtails = list(method="interpolate",L=0,U=1,ntailpoints=100)),
-                                         loc_2 = list(kfold = u_obsind$kfold,issue_ind=u_obsind$i_time,horiz_ind=u_obsind$lead_time,
-                                                      PIT_method="spline",
-                                                      CDFtails = list(method="interpolate",L=0,U=1,ntailpoints=100))),mcmapply_cores = 2)
-
-print(Sys.time()-t1)
 
 
 
@@ -336,21 +295,16 @@ for (i in levels(unique(u_obsind$kfold))){
 # sample cvm and convert to power domain
 # method for parametric pred dist.
 set.seed(1)
-scen_gamlss <- ProbCast::samps_to_scens(copulatype = "temporal",no_samps = f_nsamp,marginals = list(loc_1 = test1$gamlssParams),sigma_kf = cvm_gamlss,mean_kf = mean_list,
+scen_gamlss <- samps_to_scens(copulatype = "temporal",no_samps = f_nsamp,marginals = list(loc_1 = test1$gamlssParams),sigma_kf = cvm_gamlss,mean_kf = mean_list,
                               control=list(loc_1 = list(kfold = u_obsind$kfold,issue_ind=u_obsind$i_time,horiz_ind=u_obsind$lead_time,
                                                         q_fun = gamlss.dist::qBEINF)))
-set.seed(1)
-scen_gamlss2 <- samps_to_scens(copulatype = "temporal",no_samps = f_nsamp,marginals = list(loc_1 = test1$gamlssParams),sigma_kf = cvm_gamlss,mean_kf = mean_list,
-                              control=list(loc_1 = list(kfold = u_obsind$kfold,issue_ind=u_obsind$i_time,horiz_ind=u_obsind$lead_time,
-                                                        q_fun = gamlss.dist::qBEINF)))
-
-identical(scen_gamlss$loc_1,scen_gamlss2$loc_1)
 
 matplot(scen_gamlss$loc_1[which(test1$data$ISSUEdtm==i_ts),],type="l",ylim=c(0,1),lty=1,
         xlab="Lead Time [Hours]",ylab="Power [Capacity Factor]",
         col=gray(0.1,alpha = 0.1),axes = F); axis(1,1:24,pos=-0.07); axis(2,las=1)
 # lines(test1$data$TARGETVAR[which(test1$data$ISSUEdtm==i_ts)],lwd=2)
 # legend("topleft",c("scenarios","measured"),col = c("grey75","black"),pch=c(NA,NA,NA),bty="n",lty=1)
+
 
 
 ##### spatial examples
@@ -369,45 +323,15 @@ for (i in levels(unique(u_obsind$kfold))){
 
 set.seed(1)
 t1 <- Sys.time()
-scen_gbm <- ProbCast::samps_to_scens(copulatype = "spatial",no_samps = f_nsamp,marginals = list(loc_1 = test1$gbm_mqr, loc_2 = test1$gbm_mqr),
-                                      sigma_kf = cvm_list,mean_kf = mean_list,
-                                      control=list(loc_1 = list(kfold = u_obsind$kfold,issue_ind=u_obsind$i_time,horiz_ind=u_obsind$lead_time,
-                                                                PIT_method="spline",
-                                                                CDFtails = list(method="interpolate",L=0,U=1,ntailpoints=100)),
-                                                   loc_2 = list(kfold = u_obsind$kfold,issue_ind=u_obsind$i_time,horiz_ind=u_obsind$lead_time,
-                                                                PIT_method="spline",
-                                                                CDFtails = list(method="interpolate",L=0,U=1,ntailpoints=100))),mcmapply_cores = 2)
+scen_gbm <- samps_to_scens(copulatype = "spatial",no_samps = f_nsamp,marginals = list(loc_1 = test1$gbm_mqr, loc_2 = test1$gbm_mqr),
+                           sigma_kf = cvm_list,mean_kf = mean_list,
+                           control=list(loc_1 = list(kfold = u_obsind$kfold,issue_ind=u_obsind$i_time,horiz_ind=u_obsind$lead_time,
+                                                     PIT_method="spline",
+                                                     CDFtails = list(method="interpolate",L=0,U=1,ntailpoints=100)),
+                                        loc_2 = list(kfold = u_obsind$kfold,issue_ind=u_obsind$i_time,horiz_ind=u_obsind$lead_time,
+                                                     PIT_method="spline",
+                                                     CDFtails = list(method="interpolate",L=0,U=1,ntailpoints=100))))
 print(Sys.time()-t1)
-
-matplot(scen_gbm$loc_1[which(test1$data$ISSUEdtm==i_ts),],type="l",ylim=c(0,1),lty=1,
-        xlab="Lead Time [Hours]",ylab="Power [Capacity Factor]",
-        col=gray(0.1,alpha = 0.1),axes = F); axis(1,1:24,pos=-0.07); axis(2,las=1)
-matplot(scen_gbm$loc_2[which(test1$data$ISSUEdtm==i_ts),],type="l",ylim=c(0,1),lty=1,
-        xlab="Lead Time [Hours]",ylab="Power [Capacity Factor]",
-        col=gray(0.1,alpha = 0.1),axes = F); axis(1,1:24,pos=-0.07); axis(2,las=1)
-
-
-set.seed(1)
-t1 <- Sys.time()
-scen_gbm2 <- samps_to_scens(copulatype = "spatial",no_samps = f_nsamp,marginals = list(loc_1 = test1$gbm_mqr, loc_2 = test1$gbm_mqr),
-                                     sigma_kf = cvm_list,mean_kf = mean_list,
-                                     control=list(loc_1 = list(kfold = u_obsind$kfold,issue_ind=u_obsind$i_time,horiz_ind=u_obsind$lead_time,
-                                                               PIT_method="spline",
-                                                               CDFtails = list(method="interpolate",L=0,U=1,ntailpoints=100)),
-                                                  loc_2 = list(kfold = u_obsind$kfold,issue_ind=u_obsind$i_time,horiz_ind=u_obsind$lead_time,
-                                                               PIT_method="spline",
-                                                               CDFtails = list(method="interpolate",L=0,U=1,ntailpoints=100))),mcmapply_cores = 2)
-print(Sys.time()-t1)
-
-matplot(scen_gbm$loc_1[which(test1$data$ISSUEdtm==i_ts),],type="l",ylim=c(0,1),lty=1,
-        xlab="Lead Time [Hours]",ylab="Power [Capacity Factor]",
-        col=gray(0.1,alpha = 0.1),axes = F); axis(1,1:24,pos=-0.07); axis(2,las=1)
-matplot(scen_gbm$loc_2[which(test1$data$ISSUEdtm==i_ts),],type="l",ylim=c(0,1),lty=1,
-        xlab="Lead Time [Hours]",ylab="Power [Capacity Factor]",
-        col=gray(0.1,alpha = 0.1),axes = F); axis(1,1:24,pos=-0.07); axis(2,las=1)
-
-
-identical(scen_gbm$loc_1,scen_gbm2$loc_1)
 
 
 

@@ -16,7 +16,7 @@ covcor_matrix(
 )
 }
 \arguments{
-\item{u_data}{A dataframe of uniform distributed variables.}
+\item{u_data}{A \code{data.frame} of uniform distributed variables.}
 
 \item{kfold}{A vector of kfold identifiers.}
 
