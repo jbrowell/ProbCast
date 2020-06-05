@@ -131,9 +131,8 @@ samps_to_scens <- function(copulatype,no_samps,marginals,sigma_kf,mean_kf,contro
     
     # extract samples calling extr_kf_temposamp for each fold
     # split --> rbindlist --> kfold --> dts isnt v memory efficient, but need to get outut from kfold$<dt(locs)> to loc$dt(kfold) 
-    # because...passing the PIT in paralell (below) is much faster than using the loc as a group in one big table (as far as I could tell)
-    samps <- split(rbindlist(lapply(names(sigma_kf),function(i){extr_kf_temposamp(issuetimes = find_issue[[i]],
-                                                                                  uni_kfold = i,
+    # because...passing the PIT in paralell (below) is much faster than using the by=.(loc,sort_ind) in one big table (as far as I could tell)
+    samps <- split(rbindlist(lapply(names(sigma_kf),function(i){extr_kf_temposamp(issuetimes = find_issue[[i]],                                                                            uni_kfold = i,
                                                                                   leadtimes = find_horizon[[i]],
                                                                                   sigmas = sigma_kf,
                                                                                   means = mean_kf,
@@ -148,13 +147,15 @@ samps_to_scens <- function(copulatype,no_samps,marginals,sigma_kf,mean_kf,contro
     
   }else{stop("copula type mis-specified")}}
   
-  
+  # clear deleted tables
+  # not really needed but keeps the memory down before a parallel process
   invisible(gc())
   
   # set control data.tables
   cont_ids <- lapply(control,function(x){data.table(issue_ind=x$issue_ind,horiz_ind=x$horiz_ind,sort_ind=1:length(x$issue_ind))})
   
   print(paste0("Transforming samples into original domain"))
+  
   
   if (class(marginals[[1]])[1]%in%c("MultiQR")){
     
@@ -165,10 +166,15 @@ samps_to_scens <- function(copulatype,no_samps,marginals,sigma_kf,mean_kf,contro
     # fast inversse pit function
     fastinvpit <- function(dt_samps,dt_contr,qrdata,...){
       
-      # this is more memory efficient that joining tables invidvidually using merge -- we're subsetting by reference in the join --- on v. high dimensional data on aws anyway
-      # process: join unif. samples on control issue/leadtime --> inverse CDF function for each unique row --> sort by rowind --> remove row ind col
-      dt_samps[dt_contr, on = .(issue_ind,horiz_ind)][,as.list(contCDF(quantiles = qrdata[sort_ind,],inverse = TRUE,...)(as.numeric(.SD))),
-                                                      keyby=.(sort_ind),.SDcols=paste0("V",1:no_samps)][,-c("sort_ind")]
+      # subsetting by reference in the join on control issue/leadtime --- add sort_ind var from cont_ids
+      dt_samps[dt_contr,sort_ind:=sort_ind,on = .(issue_ind,horiz_ind)]
+      # delete rows where there is nomatch...by reference someday https://github.com/Rdatatable/data.table/issues/635
+      dt_samps <- delete_memsafe(dt_samps, dt_samps[,which(is.na(sort_ind))])
+      # clear deleted tables
+      invisible(gc())
+      ## inverse CDF function for each unique row --> sort by sort_ind --> remove time indx
+      dt_samps[,paste0("V",1:no_samps):=as.list(contCDF(quantiles = qrdata[sort_ind,],inverse = TRUE,...)(as.numeric(.SD))),
+                                                      keyby=.(sort_ind),.SDcols=paste0("V",1:no_samps)][,c("sort_ind","issue_ind","horiz_ind"):=NULL]
       
     }
     
@@ -282,6 +288,20 @@ extr_kf_spatsamp <- function(kf_samp_df, uni_kfold, sigmas, means, mvnfast_c, ns
   
 }
 
+
+### memory safe function for deleting rows due to potential size of datasets
+### credit https://stackoverflow.com/questions/10790204/how-to-delete-a-row-by-reference-in-data-table
+delete_memsafe <- function(DT, del.idxs) { ## del.idxs here is the rows to remove...
+  keep.idxs <- setdiff(DT[, .I], del.idxs);
+  cols = names(DT);
+  DT.subset <- data.table(DT[[1]][keep.idxs]);
+  setnames(DT.subset, cols[1]);
+    for (col in cols[2:length(cols)]) {
+      DT.subset[, (col) := DT[[col]][keep.idxs]];
+      DT[, (col) := NULL];  # delete
+    }
+  return(DT.subset);
+}
 
 
 
