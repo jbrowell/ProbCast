@@ -5,10 +5,11 @@
 #' @param no_samps Number of scenarios required
 #' @param marginals a named list of the margins of the copula - e.g. if class is MultiQR --> list(<<name>> = <<MultiQR object>>). Multiple margins are possible for multiple locations (see examples) although they must be the same class (MQR or distribution parameters). If parametric class supply a list of the distribution parameters here and the corresponding quantile function in \code{control} (see below). The ordering of this list is important for multiple locations --- see note below.
 #' @param sigma_kf a named list of the covariance matrices with elements corresponding to each fold.
-#' @param mean_kf a named lisat of the mean vectors with elements corresponding to each fold
+#' @param mean_kf a named list of the mean vectors with elements corresponding to each fold
 #' @param control a named list of with nested control parameters (named according to \code{marginals}). Each named list should contain \code{kfold}, \code{issue_ind}, and \code{horiz_ind} which are the kfold, issue time, and lead time vectors corresponding to the margins of the copula. If margins are MultiQR class also define \code{PIT_method} and list \code{CDFtails}, which are passed to the PIT function. If the margins are distribution parameter predictions then define \code{q_fun}, which transforms the columns of \code{marginals} through the quantile function --- see example for more details. 
 #' @param mcmapply_cores defaults to 1. Warning, only change if not using windows OS --- see the \code{parallel::mcmapply} for more info. Speed improvements possible when generating sptio-temporal scenarios, set to the number of locations if possible.
 #' @param mvnfast_cores defaults to 1. See \code{mvnfast::rmvn}
+#' @param chunk_dir a character string containing a directory for storing temporary chunked datasets per fold. Useful for very high dimensional distributions or many samples. Defaults to \code{NULL}, i.e. no chunk. Only valid for \code{Multi.QR} type marginals for now...
 #' @note For spatio-temporal scenarios, each site must have the same number of lead-times in the covariance matrix.
 #' @note For multiple locations the ordering of the lists of the margins and the structure of the covariance matrices is very important; if the columns/rows in each covariance matrix are ordered loc1_h1, loc1_h2,..., loc2_h1, loc2_h_2,..., loc_3_h1, loc_3_h2,... i.e. location_leadtime --- then the list of the marginals should be in the same order loc1, loc2, loc3,....
 #' @note Ensure kfold ids in the control list do not change within any issue time --- i.e. make sure the issue times are unique to each fold. 
@@ -37,15 +38,15 @@
 #' }
 #' @importFrom mvnfast rmvn
 #' @importFrom parallel mcmapply
+#' @importFrom fst write_fst read_fst
 #' @import data.table
 #' @export
-samps_to_scens <- function(copulatype,no_samps,marginals,sigma_kf,mean_kf,control,mcmapply_cores = 1L, mvnfast_cores = 1L){
+samps_to_scens <- function(copulatype,no_samps,marginals,sigma_kf,mean_kf,control,mcmapply_cores = 1L, mvnfast_cores = 1L, chunk_dir = NULL){
   
   # no kfold capability?
   # improve ordering of lists cvm matrix...
   # imposing a class on cvms will help a lot
   # at the moment the location/leadtime is inferred from data assuming a v. specific ordering of the matrix/marginals
-  # improve memory usage further - avoid split.data.table? (it's making copies)
   
   # mean_list <- list()
   # for (i in levels(unique(u_obsind$kfold))){
@@ -64,7 +65,6 @@ samps_to_scens <- function(copulatype,no_samps,marginals,sigma_kf,mean_kf,contro
   # mcmapply_cores <- 1L
   # mvnfast_cores <- 1L
   
-  
   if(class(marginals)[1]!="list"){
     marginals <- list(loc_1 = marginals)
     warning("1 location detected --- margin coerced to list")
@@ -72,6 +72,15 @@ samps_to_scens <- function(copulatype,no_samps,marginals,sigma_kf,mean_kf,contro
       control <- list(loc_1 = control)
     }
     
+  }
+  
+  if(length(unique(sapply(marginals,function(x){class(x)[1]})))!=1){
+    stop("marginals must all be the same class")
+  }
+  
+  if(class(marginals[[1]])[1]!="MultiQR" & !is.null(chunk_dir)){
+    warning("chunk_dir set to NULL")
+    chunk_dir <- NULL
   }
   
   if(length(marginals)!=length(control)){
@@ -102,14 +111,19 @@ samps_to_scens <- function(copulatype,no_samps,marginals,sigma_kf,mean_kf,contro
     }
     
     # extract samples calling etr_kf_spatsamp for each fold
-    samps <- split(rbindlist(lapply(names(sigma_kf),function(i){extr_kf_spatsamp(kf_samp_df=find_nsamp[[i]],
-                                                                                 uni_kfold = i,
-                                                                                 sigmas = sigma_kf,
-                                                                                 means = mean_kf,
-                                                                                 mvnfast_c = mvnfast_cores,
-                                                                                 nsamps = no_samps,
-                                                                                 margs = marginals)})),
-                   by="loc_id",keep.by = FALSE)
+    samps <- list() 
+    for(i in names(sigma_kf)){
+      
+      samps[[i]] <- extr_kf_spatsamp(kf_samp_df=find_nsamp[[i]],
+                                     uni_kfold = i,
+                                     sigmas = sigma_kf,
+                                     means = mean_kf,
+                                     mvnfast_c = mvnfast_cores,
+                                     nsamps = no_samps,
+                                     margs = marginals,
+                                     chunk = chunk_dir)
+    }
+    
     
     rm(find_nsamp)
     
@@ -130,16 +144,21 @@ samps_to_scens <- function(copulatype,no_samps,marginals,sigma_kf,mean_kf,contro
     }
     
     # extract samples calling extr_kf_temposamp for each fold
-    # split --> rbindlist --> kfold --> dts isnt v memory efficient, but need to get outut from kfold$<dt(locs)> to loc$dt(kfold) 
-    # because...passing the PIT in paralell (below) is much faster than using the by=.(loc,sort_ind) in one big table (as far as I could tell)
-    samps <- split(rbindlist(lapply(names(sigma_kf),function(i){extr_kf_temposamp(issuetimes = find_issue[[i]],                                                                            uni_kfold = i,
-                                                                                  leadtimes = find_horizon[[i]],
-                                                                                  sigmas = sigma_kf,
-                                                                                  means = mean_kf,
-                                                                                  mvnfast_c = mvnfast_cores,
-                                                                                  nsamps = no_samps,
-                                                                                  margs = marginals)})),
-                   by="loc_id",keep.by = FALSE)
+    # output in format kfold$<dt(locs)>
+    samps <- list() 
+    for(i in names(sigma_kf)){
+      
+      samps[[i]] <- extr_kf_temposamp(issuetimes = find_issue[[i]],
+                                      uni_kfold = i,
+                                      leadtimes = find_horizon[[i]],
+                                      sigmas = sigma_kf,
+                                      means = mean_kf,
+                                      mvnfast_c = mvnfast_cores,
+                                      nsamps = no_samps,
+                                      margs = marginals,
+                                      chunk = chunk_dir)
+    }
+    
     
     rm(find_issue,find_horizon)
     
@@ -172,22 +191,76 @@ samps_to_scens <- function(copulatype,no_samps,marginals,sigma_kf,mean_kf,contro
       dt_samps <- delete_memsafe(dt_samps, dt_samps[,which(is.na(sort_ind))])
       # clear deleted tables
       invisible(gc())
-      ## inverse CDF function for each unique row --> sort by sort_ind --> remove time indx
+      ## inverse CDF function for each unique row --> sort by sort_ind
       dt_samps[,paste0("V",1:no_samps):=as.list(contCDF(quantiles = qrdata[sort_ind,],inverse = TRUE,...)(as.numeric(.SD))),
-                                                      keyby=.(sort_ind),.SDcols=paste0("V",1:no_samps)][,c("sort_ind","issue_ind","horiz_ind"):=NULL]
+               keyby=.(sort_ind),.SDcols=paste0("V",1:no_samps)]
       
     }
     
-    # apply function and transfrom to original domain
-    samps <- mcmapply(function(...){fastinvpit(...)},dt_samps = samps, dt_contr = cont_ids, qrdata = marginals,method = method_list,tails = CDFtail_list,
-                      SIMPLIFY = F,mc.cores = mcmapply_cores)
     
+    ## overwrite samps which is a kfold list of dt - indexes in the chunked case
+    ## overwrite samps which is a kfold list of dt - indexes and samples in the normal case
+    ## this function takes the samp file in format kfold$<dt(locs)> and outputs to loc$dt(kfold) 
+    samps <-  mclapply(names(marginals),function(x){
+      
+      samps_temp <- list()
+      for(i in names(sigma_kf)){
+        
+        if(!is.null(chunk_dir)){ ## if chunked save
+          
+          ## get indexes for fold i and location x
+          indx <- range(samps[[i]][loc_id==x,which=TRUE])
+          
+          ## apply inv pit function loading in the data for fold i and location x
+          samps_temp[[i]] <- fastinvpit(dt_samps = fst::read_fst(paste0(chunk_dir,i,"_temp.fst"),from = indx[1], to = indx[2], as.data.table = TRUE),
+                                        dt_contr = cont_ids[[x]],
+                                        qrdata = marginals[[x]],
+                                        method = method_list[[x]],
+                                        tails = CDFtail_list[[x]])
+          ## clear loaded table from fst
+          invisible(gc())
+          
+        } else{ ## else standard conversion
+          
+          ## apply inv pit function  from samps data for fold i and location x
+          samps_temp[[i]] <- fastinvpit(dt_samps =  samps[[i]][loc_id==x],
+                                        dt_contr = cont_ids[[x]],
+                                        qrdata = marginals[[x]],
+                                        method = method_list[[x]],
+                                        tails = CDFtail_list[[x]])
+          
+        }
+        
+        ## remove location id
+        samps_temp[[i]][,loc_id := NULL]
+        
+      }
+      
+      ## bind list for location x over all folds
+      rbindlist(samps_temp)
+      
+    },mc.cores = mcmapply_cores)
+    
+    
+    if(!is.null(chunk_dir)){
+      for(i in names(sigma_kf)){
+        file.remove(paste0(chunk_dir,i,"_temp.fst"))
+      }
+    }
+    
+    
+    names(samps) <- names(marginals)
+    
+    ## setorder and remove time indx
+    lapply(samps,function(x){setorder(x,sort_ind)})
+    lapply(samps,function(x){x[,c("sort_ind","issue_ind","horiz_ind"):=NULL]})
     
     
   } else {
     
-    ## change this to similar to above 
+    ## change to similar to multi QR
     ## add S3 support for PPD?
+    samps <- split(rbindlist(samps), by="loc_id",keep.by = FALSE)
     samps <- mapply(merge.data.table,x = cont_ids,y = samps,MoreArgs = list(all.x=T),SIMPLIFY = F)
     rm(cont_ids)
     invisible(gc())
@@ -225,7 +298,7 @@ samps_to_scens <- function(copulatype,no_samps,marginals,sigma_kf,mean_kf,contro
 ##### helper functions....
 
 # This function is for extracting temporal/spatio-temporal scenario samples for a single fold
-extr_kf_temposamp <- function(issuetimes, uni_kfold, leadtimes, sigmas, means, mvnfast_c, nsamps, margs){
+extr_kf_temposamp <- function(issuetimes, uni_kfold, leadtimes, sigmas, means, mvnfast_c, nsamps, margs, chunk){
   
   print(paste0("taking samples for --- ",uni_kfold))
   
@@ -252,6 +325,19 @@ extr_kf_temposamp <- function(issuetimes, uni_kfold, leadtimes, sigmas, means, m
   # not really needed but good for inspecting the table when coding this :p
   setcolorder(kf_samps,c("issue_ind","loc_id","horiz_ind"))
   
+  if(!is.null(chunk)){
+    
+    ## set order so we can load subsets of bmu_ids via fst
+    setorder(kf_samps,loc_id,issue_ind,horiz_ind)
+    
+    fst::write_fst(kf_samps, path = paste0(chunk,uni_kfold,"_temp.fst"), compress = 100)
+    
+    kf_samps[,c(paste0("V",1:nsamps)):=NULL]
+    invisible(gc())
+    
+  }
+  
+  
   return(kf_samps)
   
 }
@@ -259,7 +345,7 @@ extr_kf_temposamp <- function(issuetimes, uni_kfold, leadtimes, sigmas, means, m
 
 
 # This function is for extracting spatial scenario samples per fold
-extr_kf_spatsamp <- function(kf_samp_df, uni_kfold, sigmas, means, mvnfast_c, nsamps, margs){
+extr_kf_spatsamp <- function(kf_samp_df, uni_kfold, sigmas, means, mvnfast_c, nsamps, margs, chunk){
   
   print(paste0("taking samples for --- ",uni_kfold))
   
@@ -283,6 +369,18 @@ extr_kf_spatsamp <- function(kf_samp_df, uni_kfold, sigmas, means, mvnfast_c, ns
   # bind with kf_samp_df time indices
   kf_samps <- cbind(rbindlist(replicate(length(margs),kf_samp_df,simplify=FALSE)),kf_samps)
   
+  if(!is.null(chunk)){
+    
+    ## set order so we can load subsets of bmu_ids via fst
+    setorder(kf_samps,loc_id,issue_ind,horiz_ind)
+    
+    fst::write_fst(kf_samps, path = paste0(chunk,uni_kfold,"_temp.fst"), compress = 100)
+    
+    kf_samps[,c(paste0("V",1:nsamps)):=NULL]
+    invisible(gc())
+    
+  }
+  
   
   return(kf_samps)
   
@@ -296,10 +394,10 @@ delete_memsafe <- function(DT, del.idxs) { ## del.idxs here is the rows to remov
   cols = names(DT);
   DT.subset <- data.table(DT[[1]][keep.idxs]);
   setnames(DT.subset, cols[1]);
-    for (col in cols[2:length(cols)]) {
-      DT.subset[, (col) := DT[[col]][keep.idxs]];
-      DT[, (col) := NULL];  # delete
-    }
+  for (col in cols[2:length(cols)]) {
+    DT.subset[, (col) := DT[[col]][keep.idxs]];
+    DT[, (col) := NULL];  # delete
+  }
   return(DT.subset);
 }
 
