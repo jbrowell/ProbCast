@@ -64,6 +64,8 @@ samps_to_scens <- function(copulatype,no_samps,marginals,sigma_kf,mean_kf,contro
   #                           CDFtails = list(method="interpolate",L=0,U=1,ntailpoints=100)))
   # mcmapply_cores <- 1L
   # mvnfast_cores <- 1L
+  # chunk_dir <- "/Users/Ciaran/"
+  # rm(control,loc_list,marginals,method_list,mean_kf,samps,samps_temp,sigma_kf,chunk_dir,copulatype,mcmapply_cores,mvnfast_cores,i,CDFtail_list)
   
   if(class(marginals)[1]!="list"){
     marginals <- list(loc_1 = marginals)
@@ -182,74 +184,68 @@ samps_to_scens <- function(copulatype,no_samps,marginals,sigma_kf,mean_kf,contro
     method_list <- lapply(control,function(x){x$PIT_method})
     CDFtail_list <- lapply(control,function(x){x$CDFtails})
     
-    # fast inversse pit function
-    fastinvpit <- function(dt_samps,dt_contr,qrdata,...){
-      
-      # subsetting by reference in the join on control issue/leadtime --- add sort_ind var from cont_ids
-      dt_samps[dt_contr,sort_ind:=sort_ind,on = .(issue_ind,horiz_ind)]
-      # delete rows where there is nomatch...by reference someday https://github.com/Rdatatable/data.table/issues/635
-      dt_samps <- delete_memsafe(dt_samps, dt_samps[,which(is.na(sort_ind))])
-      # clear deleted tables
-      invisible(gc())
-      ## inverse CDF function for each unique row --> sort by sort_ind
-      dt_samps[,paste0("V",1:no_samps):=as.list(contCDF(quantiles = qrdata[sort_ind,],inverse = TRUE,...)(as.numeric(.SD))),
-               keyby=.(sort_ind),.SDcols=paste0("V",1:no_samps)]
-      
-    }
     
+    if(!is.null(chunk_dir)){ ### chunked calc - meh
     
-    ## overwrite samps which is a kfold list of dt - indexes in the chunked case
-    ## overwrite samps which is a kfold list of dt - indexes and samples in the normal case
-    ## this function takes the samp file in format kfold$<dt(locs)> and outputs to loc$dt(kfold) 
-    samps <-  mclapply(names(marginals),function(x){
+      loc_list <- as.list(names(marginals))
+      names(loc_list) <- names(marginals)
       
       samps_temp <- list()
       for(i in names(sigma_kf)){
         
-        if(!is.null(chunk_dir)){ ## if chunked save
-          
-          ## get indexes for fold i and location x
-          indx <- range(samps[[i]][loc_id==x,which=TRUE])
-          
-          ## apply inv pit function loading in the data for fold i and location x
-          samps_temp[[i]] <- fastinvpit(dt_samps = fst::read_fst(paste0(chunk_dir,i,"_temp.fst"),from = indx[1], to = indx[2], as.data.table = TRUE),
-                                        dt_contr = cont_ids[[x]],
-                                        qrdata = marginals[[x]],
-                                        method = method_list[[x]],
-                                        tails = CDFtail_list[[x]])
-          ## clear loaded table from fst
-          invisible(gc())
-          
-        } else{ ## else standard conversion
-          
-          ## apply inv pit function  from samps data for fold i and location x
-          samps_temp[[i]] <- fastinvpit(dt_samps =  samps[[i]][loc_id==x],
-                                        dt_contr = cont_ids[[x]],
-                                        qrdata = marginals[[x]],
-                                        method = method_list[[x]],
-                                        tails = CDFtail_list[[x]])
-          
-        }
+        print(i)
         
-        ## remove location id
-        samps_temp[[i]][,loc_id := NULL]
+        samps_temp[[i]] <-  mcmapply(function(name_loc, samps_indx,...){
+          
+          ## get indexes for fold i and location name_loc
+          indx <- range(samps_indx[loc_id==name_loc,which=TRUE])
+          
+          # apply inv pit function loading in the data for fold i and location x
+          fastinvpit(dt_samps = fst::read_fst(paste0(chunk_dir,i,"_temp.fst"),from = indx[1], to = indx[2], as.data.table = TRUE),
+                     no_samps = no_samps,
+                     ...)
+          
+        },name_loc = loc_list, dt_contr = cont_ids, qrdata = marginals, method = method_list, tails = CDFtail_list,
+        MoreArgs = list(samps_indx = samps[[i]]), mc.cores = mcmapply_cores, SIMPLIFY = FALSE)
+        
+        ## clear memory before next parallel loop
+        invisible(gc())
         
       }
       
-      ## bind list for location x over all folds
-      rbindlist(samps_temp)
       
-    },mc.cores = mcmapply_cores)
-    
-    
-    if(!is.null(chunk_dir)){
       for(i in names(sigma_kf)){
         file.remove(paste0(chunk_dir,i,"_temp.fst"))
       }
+      
+      samps <- list()
+      invisible(gc())
+      for(i in names(marginals)){
+        
+        samps[[i]] <- rbindlist(lapply(samps_temp,function(z){z[[i]][,loc_id:=NULL]}))
+        
+        lapply(samps_temp,function(z){delete_memsafe(z[[i]],z[[i]][!is.na(V1),which = TRUE])})
+        invisible(gc())
+        
+      }
+      
+      rm(samps_temp)
+      
+      
+    } else{ #### no chunked calc
+      
+      
+      samps <- split(rbindlist(samps), by="loc_id",keep.by = FALSE)
+      invisible(gc())
+      # apply function and transfrom to original domain
+      samps <- mcmapply(function(...){fastinvpit(no_samps = no_samps,...)},
+                        dt_samps = samps, dt_contr = cont_ids, qrdata = marginals,method = method_list,tails = CDFtail_list,
+                        SIMPLIFY = FALSE,mc.cores = mcmapply_cores)
+      
+      
+      
     }
     
-    
-    names(samps) <- names(marginals)
     
     ## setorder and remove time indx
     lapply(samps,function(x){setorder(x,sort_ind)})
@@ -399,6 +395,23 @@ delete_memsafe <- function(DT, del.idxs) { ## del.idxs here is the rows to remov
     DT[, (col) := NULL];  # delete
   }
   return(DT.subset);
+}
+
+
+
+# fast inversse pit function
+fastinvpit <- function(dt_samps,dt_contr,qrdata, no_samps, ...){
+  
+  # subsetting by reference in the join on control issue/leadtime --- add sort_ind var from cont_ids
+  dt_samps[dt_contr,sort_ind:=sort_ind,on = .(issue_ind,horiz_ind)]
+  # delete rows where there is nomatch...by reference someday https://github.com/Rdatatable/data.table/issues/635
+  dt_samps <- delete_memsafe(dt_samps, dt_samps[,which(is.na(sort_ind))])
+  # clear deleted tables
+  invisible(gc())
+  ## inverse CDF function for each unique row --> sort by sort_ind
+  dt_samps[,paste0("V",1:no_samps):=as.list(contCDF(quantiles = qrdata[sort_ind,],inverse = TRUE,...)(as.numeric(.SD))),
+           keyby=.(sort_ind),.SDcols=paste0("V",1:no_samps)]
+  
 }
 
 
