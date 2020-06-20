@@ -147,6 +147,7 @@ samps_to_scens <- function(copulatype,no_samps,marginals,sigma_kf,mean_kf,contro
     
     # extract samples calling extr_kf_temposamp for each fold
     # output in format kfold$<dt(locs)>
+    # note that for chunked calculation samps[[i]] is a dt of location, issuetime, and lead time indexes only
     samps <- list() 
     for(i in names(sigma_kf)){
       
@@ -186,10 +187,12 @@ samps_to_scens <- function(copulatype,no_samps,marginals,sigma_kf,mean_kf,contro
     
     
     if(!is.null(chunk_dir)){ ### chunked calc - meh
-    
+      
+      ## get list of locations
       loc_list <- as.list(names(marginals))
       names(loc_list) <- names(marginals)
       
+      ## for each kfold inverse pit for each location
       samps_temp <- list()
       for(i in names(sigma_kf)){
         
@@ -200,7 +203,7 @@ samps_to_scens <- function(copulatype,no_samps,marginals,sigma_kf,mean_kf,contro
           ## get indexes for fold i and location name_loc
           indx <- range(samps_indx[loc_id==name_loc,which=TRUE])
           
-          # apply inv pit function loading in the data for fold i and location x
+          # apply inv pit function loading in the data for fold i and location name_loc
           fastinvpit(dt_samps = fst::read_fst(paste0(chunk_dir,i,"_temp.fst"),from = indx[1], to = indx[2], as.data.table = TRUE),
                      no_samps = no_samps,
                      ...)
@@ -218,12 +221,14 @@ samps_to_scens <- function(copulatype,no_samps,marginals,sigma_kf,mean_kf,contro
         file.remove(paste0(chunk_dir,i,"_temp.fst"))
       }
       
+      ## order data.tables properly - from kfold$location to location dts
       samps <- list()
       invisible(gc())
       for(i in names(marginals)){
         
         samps[[i]] <- rbindlist(lapply(samps_temp,function(z){z[[i]][,loc_id:=NULL]}))
         
+        ## delete samps temp dt -- all folds location i
         lapply(samps_temp,function(z){delete_memsafe(z[[i]],z[[i]][!is.na(V1),which = TRUE])})
         invisible(gc())
         
@@ -402,7 +407,7 @@ delete_memsafe <- function(DT, del.idxs) { ## del.idxs here is the rows to remov
 # fast inversse pit function
 fastinvpit <- function(dt_samps,dt_contr,qrdata, no_samps, ...){
   
-  # subsetting by reference in the join on control issue/leadtime --- add sort_ind var from cont_ids
+  # subsetting by reference -- join on control issue/leadtime --- add sort_ind var from cont_ids
   dt_samps[dt_contr,sort_ind:=sort_ind,on = .(issue_ind,horiz_ind)]
   # delete rows where there is nomatch...by reference someday https://github.com/Rdatatable/data.table/issues/635
   dt_samps <- delete_memsafe(dt_samps, dt_samps[,which(is.na(sort_ind))])
