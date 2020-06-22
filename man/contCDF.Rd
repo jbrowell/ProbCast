@@ -9,7 +9,8 @@ contCDF(
   kfold = NULL,
   inverse = F,
   method = list(name = "spline", splinemethod = "monoH.FC"),
-  tails = list(method = "interpolate", L = 0, U = 1)
+  tails = list(method = "interpolate", L = 0, U = 1),
+  ...
 )
 }
 \arguments{
@@ -23,6 +24,8 @@ contCDF(
   \item Dynamic exponential tails can be specified through \code{method="dyn_exponential"}, where the tail depends on the values for the upper and lower quantile of \code{qrdata}, these are only valid for an input variable scale of \code{[0,1]}.
   \item The Generalised Pareto Distribution may be chosen with \code{method="gpd"}, and additional arguments \code{scale_r,shape_r,scale_l,shape_l,tail_qs} specifying the right and left scale and shapre parameters and the incraments beyond the final quantiles to evaluate the gpd at, e.g. \code{tail_qs=seq(0.1,1,by=0.1)} to exctend into the tails by +/- 1 in steps of 0.1.
 }}
+
+\item{...}{extra arguments to \code{approxfun} or \code{splinefun}. For example to deal with ties if present.}
 
 \item{kfolds}{Fold/test label corresponding to \code{quantiles}.}
 }

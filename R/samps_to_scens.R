@@ -10,6 +10,7 @@
 #' @param mcmapply_cores defaults to 1. Warning, only change if not using windows OS --- see the \code{parallel::mcmapply} for more info. Speed improvements possible when generating sptio-temporal scenarios, set to the number of locations if possible.
 #' @param mvnfast_cores defaults to 1. See \code{mvnfast::rmvn}
 #' @param chunk_dir a character string containing a directory for storing temporary chunked datasets per fold. Useful for very high dimensional distributions or many samples. Defaults to \code{NULL}, i.e. no chunk. Only valid for \code{Multi.QR} type marginals for now...
+#' @param ... extra arguments to \code{contCDF} to be applied to all marginals, e.g to deal with ties.
 #' @note For spatio-temporal scenarios, each site must have the same number of lead-times in the covariance matrix.
 #' @note For multiple locations the ordering of the lists of the margins and the structure of the covariance matrices is very important; if the columns/rows in each covariance matrix are ordered loc1_h1, loc1_h2,..., loc2_h1, loc2_h_2,..., loc_3_h1, loc_3_h2,... i.e. location_leadtime --- then the list of the marginals should be in the same order loc1, loc2, loc3,....
 #' @note Ensure kfold ids in the control list do not change within any issue time --- i.e. make sure the issue times are unique to each fold. 
@@ -41,7 +42,7 @@
 #' @importFrom fst write_fst read_fst
 #' @import data.table
 #' @export
-samps_to_scens <- function(copulatype,no_samps,marginals,sigma_kf,mean_kf,control,mcmapply_cores = 1L, mvnfast_cores = 1L, chunk_dir = NULL){
+samps_to_scens <- function(copulatype,no_samps,marginals,sigma_kf,mean_kf,control,mcmapply_cores = 1L, mvnfast_cores = 1L, chunk_dir = NULL,...){
   
   # no kfold capability?
   # improve ordering of lists cvm matrix...
@@ -209,7 +210,7 @@ samps_to_scens <- function(copulatype,no_samps,marginals,sigma_kf,mean_kf,contro
                      ...)
           
         },name_loc = loc_list, dt_contr = cont_ids, qrdata = marginals, method = method_list, tails = CDFtail_list,
-        MoreArgs = list(samps_indx = samps[[i]]), mc.cores = mcmapply_cores, SIMPLIFY = FALSE)
+        MoreArgs = list(samps_indx = samps[[i]],...), mc.cores = mcmapply_cores, SIMPLIFY = FALSE)
         
         ## clear memory before next parallel loop
         invisible(gc())
@@ -245,7 +246,7 @@ samps_to_scens <- function(copulatype,no_samps,marginals,sigma_kf,mean_kf,contro
       # apply function and transfrom to original domain
       samps <- mcmapply(function(...){fastinvpit(no_samps = no_samps,...)},
                         dt_samps = samps, dt_contr = cont_ids, qrdata = marginals,method = method_list,tails = CDFtail_list,
-                        SIMPLIFY = FALSE,mc.cores = mcmapply_cores)
+                        SIMPLIFY = FALSE,mc.cores = mcmapply_cores,MoreArgs = list(...))
       
       
       

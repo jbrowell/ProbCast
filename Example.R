@@ -134,7 +134,7 @@ pinball(qrdata = test1$gbm_mqr[test1$data$kfold=="Test",],
 
 
 
-index <- 54
+index <- 2290
 x <- seq(0,1,by=0.001)
 cdf <- contCDF(quantiles = test1$gbm_mqr[index,],method = "spline")
 plot(x,cdf(x),type="l",xlab="Target Variable",ylab="CDF",axes=F); axis(1); axis(2,las=2); #grid()
@@ -148,11 +148,20 @@ points(test1$gbm_mqr[index,],as.numeric(gsub("q","",colnames(test1$gbm_mqr[index
 legend(0.01,1,c("Predicted Quantiles","Linear","Spline","Spline with Exponential Tails"),
        pch=c(1,NA,NA,NA),lty=c(NA,2,1,3),col=c(1,2,1,4),bty="n")
 
+
+samp <- function(x){sample(x,1)}
+
+
+contCDF(quantiles = test1$gbm_mqr[index,],method = "spline", tails=list(method="dyn_exponential",ntailpoints=25),ties="samp")
+lines(x,cdf(x),lty=4,col=5)
+
 # test1$X_gbm <- PIT(test1$gbm_mqr,test1$data$TARGETVAR,method = "spline",tails=list(method="exponential",L=0,U=1,nBins=5,preds=test1$gbm_mqr,targetvar=test1$data$TARGETVAR,ntailpoints=25))
 test1$X_gbm <- PIT(test1$gbm_mqr,test1$data$TARGETVAR,method = "spline",tails=list(method="interpolate",L=0,U=1))
 test1$X_gbmdyn <- PIT(test1$gbm_mqr,test1$data$TARGETVAR,method = "spline",tails=list(method="dyn_exponential", ntailpoints=100))
-hist(test1$X_gbm,breaks = 50,freq=F,ylim = c(0,3)); lines(c(0,1),c(1,1),lty=2)
-hist(test1$X_gbmdyn,breaks = 50,freq=F,ylim = c(0,3)); lines(c(0,1),c(1,1),lty=2)
+test1$X_gbmdyn2 <- PIT(test1$gbm_mqr,test1$data$TARGETVAR,method = "spline",tails=list(method="dyn_exponential", ntailpoints=100), ties = "samp")
+hist(test1$X_gbm,breaks = 100,freq=F,ylim = c(0,3)); lines(c(0,1),c(1,1),lty=2)
+hist(test1$X_gbmdyn,breaks = 100,freq=F,ylim = c(0,3)); lines(c(0,1),c(1,1),lty=2)
+hist(test1$X_gbmdyn2,breaks = 100,freq=F,ylim = c(0,3)); lines(c(0,1),c(1,1),lty=2)
 
 ### Parametric PredDist Using GAMLSS ####
 
@@ -235,10 +244,27 @@ scen_gbm <- samps_to_scens(copulatype = "temporal",no_samps = f_nsamp,marginals 
                                                      CDFtails = list(method="dyn_exponential",ntailpoints=100))))
 print(Sys.time()-t1)
 
+i_ts <- as.POSIXct("2012-04-05",tz="UTC")
 
 matplot(scen_gbm$loc_1[which(test1$data$ISSUEdtm==i_ts),],type="l",ylim=c(0,1),lty=1,
         xlab="Lead Time [Hours]",ylab="Power [Capacity Factor]",
         col=gray(0.1,alpha = 0.1),axes = F); axis(1,1:24,pos=-0.07); axis(2,las=1)
+
+
+set.seed(1)
+t1 <- Sys.time()
+scen_gbm2 <- samps_to_scens(copulatype = "temporal",no_samps = f_nsamp,marginals = list(loc_1 = test1$gbm_mqr),sigma_kf = cvm_gbm,mean_kf = mean_list,
+                           control=list(loc_1 = list(kfold = u_obsind$kfold,issue_ind=u_obsind$i_time,horiz_ind=u_obsind$lead_time,
+                                                     PIT_method="linear",
+                                                     CDFtails = list(method="dyn_exponential",ntailpoints=100))),
+                           ties = "mean")
+print(Sys.time()-t1)
+
+
+matplot(scen_gbm2$loc_1[which(test1$data$ISSUEdtm==i_ts),],type="l",ylim=c(0,1),lty=1,
+        xlab="Lead Time [Hours]",ylab="Power [Capacity Factor]",
+        col=gray(0.1,alpha = 0.1),axes = F); axis(1,1:24,pos=-0.07); axis(2,las=1)
+
 
 
 
