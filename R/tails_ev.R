@@ -37,7 +37,9 @@ tails_ev <- function(data,
                      BadData_col=NULL,
                      evgam_family = "gpd"){
   
+  ## Input Checks
   if(evgam_family!="gpd"){warning("Only tested for evgam_family = \"gpd\"...")}
+  if(length(tail_starts)!=2){stop("tail_starts should be length 2 and in paste0(\"q\",names(mqr_data)).")}
   
   ### Add BadData column if doesn't exist
   if(is.null(data$BadData) & is.null(BadData_col)){
