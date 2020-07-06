@@ -10,7 +10,10 @@
 #'  tail distribution is used. E.g. \code{c(5,95)} to use tail distribution for probabilities
 #'  below quantile 0.05 and above 0.95. Defaults to min and max from \code{mqr_data} 
 #' @param formala A \code{formula} object with the response on the left
-#' of an ~ operator, and the terms, separated by + operators, on the right
+#' of an ~ operator, and the terms, separated by + operators, on the right. This formula is
+#' used for both upper and lower tails unless \code{formula_r} is specified in which case
+#' \code{formula} is used for the lower tail only.
+#' @param formula_r as \code{formula} but for the upper tail only.
 #' @param CVfolds Control for cross-validation if not supplied in \code{data}
 #' @param BadData_col Name of a boolean column in \code{data} indicating bad data
 #' which should be excluded from parameter estimation
@@ -29,14 +32,18 @@ tails_ev <- function(data,
                      mqr_data,
                      tail_starts=range(as.numeric(gsub("q","",names(mqr_data))),na.rm = T),
                      formula,
+                     formula_r=formula,
                      CVfolds=NULL,
-                     BadData_col=NULL){
+                     BadData_col=NULL,
+                     evgam_family = "gpd"){
+  
+  if(evgam_family!="gpd"){warning("Only tested for evgam_family = \"gpd\"...")}
   
   ### Add BadData column if doesn't exist
-  if(!exists(data$BadData) & is.null(BadData_col)){
+  if(is.null(data$BadData) & is.null(BadData_col)){
     ## No bad data
     data[,BadData:=F]  
-  }else{
+  }else if(is.null(data$BadData)){
     ## BadData indicator from a different column
     data[,BadData:=get(BadData_col)]  
   }
@@ -66,35 +73,37 @@ tails_ev <- function(data,
   ### Convert input data to data.table
   data <- as.data.table(data)
   
-  ### Get target variable name from formula
-  target <- "???"
-  
+  ### Get target variable name from formula and prep formulas for evgam
+  target <- paste0(formula[[1]][[2]])
+  formula[[1]] <- reformulate(deparse(formula[[1]]),response="tail_l_resid")
+  formula_r[[1]] <- reformulate(deparse(formula_r[[1]]),response="tail_r_resid")
   
   ### Get "tail residuals"
   data$tail_l_resid <- -(data[,get(target)] - mqr_data[[paste0("q",tail_starts[1])]])
   data$tail_r_resid <- data[,get(target)] - mqr_data[[paste0("q",tail_starts[2])]]
   
   
-  ### Fit model in CV
-  stop("Function not finished!!!")
+  ### Fit model using CV
   for(fold in unique(data$kfold)){# Loop over CV folds and test data
     
-    fit_l <- evgam(list(tail_l_resid~1,
-                        ~1),
+    fit_l <- evgam(formula,
                    data = data[tail_l_resid>0 & BadData==F & !(kfold%in%c(fold,"Test")),],
-                   family = "gpd")
+                   family = evgam_family)
     
-    fit_r <- evgam(list(tail_r_resid~1,
-                        ~1), data = data[tail_r_resid>0 & BadData==F & !(kfold%in%c(fold,"Test")),],
-                   family = "gpd")
+    fit_r <- evgam(formula_r,
+                   data = data[tail_r_resid>0 & BadData==F & !(kfold%in%c(fold,"Test")),],
+                   family = evgam_family)
     
     # summary(fit_l)
     # plot(fit_l)    
     
-    
     ## Estimate Parameters
-    gpd_params_l <- predict(fit_l,newdata = NodeData[[N]])
-    gpd_params_r <- predict(fit_r,newdata = NodeData[[N]])
+    params_l <- predict(fit_l,newdata = data[kfold==fold],type="response")
+    params_r <- predict(fit_r,newdata = data[kfold==fold],type = "response")
+    
+    data[kfold==fold,c(paste0(names(params_l),"_l"),
+                       paste0(names(params_r),"_r")):=cbind(params_l,params_r)]
+    
   }
   
   return(data)
