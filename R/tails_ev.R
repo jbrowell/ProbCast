@@ -81,7 +81,7 @@ tails_ev <- function(data,
   
   ### Get target variable name from formula and prep formulas for evgam
   target <- paste0(formula[[1]][[2]])
-  formula[[1]] <- reformulate(deparse(formula[[1]]),response="tail_l_resid") ## Check for compatibility!!! <<<
+  formula[[1]] <- reformulate(deparse(formula[[1]]),response="tail_l_resid") ## Check for compatibility!!! <<< consider deleting repsonse first: delete.response()
   formula_r[[1]] <- reformulate(deparse(formula_r[[1]]),response="tail_r_resid")
   
   ### Get "tail residuals"
