@@ -34,15 +34,12 @@ tails_ev <- function(data,
                      mqr_data,
                      tail_starts=range(as.numeric(gsub("q","",names(mqr_data))),na.rm = T),
                      formula,
-                     formula_r=NULL,
+                     formula_r=formula,
                      CVfolds=NULL,
                      BadData_col=NULL,
                      evgam_family = "gpd",
                      print_summary=F){
   
-  if(is.null(formula_r)){
-    formula_r <- formula
-  }
   
   ## Input Checks
   if(evgam_family!="gpd"){warning("Only tested for evgam_family = \"gpd\"...")}
@@ -84,7 +81,7 @@ tails_ev <- function(data,
   
   ### Get target variable name from formula and prep formulas for evgam
   target <- paste0(formula[[1]][[2]])
-  formula[[1]] <- reformulate(deparse(formula[[1]]),response="tail_l_resid")
+  formula[[1]] <- reformulate(deparse(formula[[1]]),response="tail_l_resid") ## Check for compatibility!!! <<<
   formula_r[[1]] <- reformulate(deparse(formula_r[[1]]),response="tail_r_resid")
   
   ### Get "tail residuals"
