@@ -14,9 +14,11 @@
 #' used for both upper and lower tails unless \code{formula_r} is specified in which case
 #' \code{formula} is used for the lower tail only.
 #' @param formula_r as \code{formula} but for the upper tail only.
-#' @param CVfolds Control for cross-validation if not supplied in \code{data}
+#' @param CVfolds Control for cross-validation if not supplied in \code{data}.
 #' @param BadData_col Name of a boolean column in \code{data} indicating bad data
-#' which should be excluded from parameter estimation
+#' which should be excluded from parameter estimation.
+#' @param evgam_family specifies distribution, see \code{?evgam}.
+#' @param print_summary If \code{TRUE}, summary is printed for each evgam fit.
 #' 
 #' @details The returned predictive quantiles are those produced out-of-sample for each
 #' cross-validation fold (using models trained on the remaining folds but not "Test" data).
@@ -35,7 +37,8 @@ tails_ev <- function(data,
                      formula_r=formula,
                      CVfolds=NULL,
                      BadData_col=NULL,
-                     evgam_family = "gpd"){
+                     evgam_family = "gpd",
+                     print_summary=F){
   
   ## Input Checks
   if(evgam_family!="gpd"){warning("Only tested for evgam_family = \"gpd\"...")}
@@ -96,15 +99,21 @@ tails_ev <- function(data,
                    data = data[tail_r_resid>0 & BadData==F & !(kfold%in%c(fold,"Test")),],
                    family = evgam_family)
     
-    # summary(fit_l)
-    # plot(fit_l)    
+    if(print_summary){
+      print(summary(fit_l))
+      print(summary(fit_r))
+      
+      plot(fit_l) 
+      plot(fit_r) 
+    }
+    
     
     ## Estimate Parameters
     params_l <- predict(fit_l,newdata = data[kfold==fold],type="response")
     params_r <- predict(fit_r,newdata = data[kfold==fold],type = "response")
     
-    data[kfold==fold,c(paste0(names(params_l),"_l"),
-                       paste0(names(params_r),"_r")):=cbind(params_l,params_r)]
+    data[kfold==fold,c(paste0(evgam_family,"_",names(params_l),"_l"),
+                       paste0(evgam_family,"_",names(params_r),"_r")):=cbind(params_l,params_r)]
     
   }
   
