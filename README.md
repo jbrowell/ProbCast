@@ -14,6 +14,10 @@ The latest release is:
 
 [![DOI](https://zenodo.org/badge/143147931.svg)](https://zenodo.org/badge/latestdoi/143147931)
     
+It may be necessary to set the following:
+
+    Sys.setenv(R_REMOTES_NO_ERRORS_FROM_WARNINGS="true")
+
 ## Usage
 
 The package includes a script `Example.R` which demonstrates much of ProbCast's functionallity.
