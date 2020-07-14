@@ -34,11 +34,15 @@ tails_ev <- function(data,
                      mqr_data,
                      tail_starts=range(as.numeric(gsub("q","",names(mqr_data))),na.rm = T),
                      formula,
-                     formula_r=formula,
+                     formula_r=NULL,
                      CVfolds=NULL,
                      BadData_col=NULL,
                      evgam_family = "gpd",
                      print_summary=F){
+  
+  if(is.null(formula_r)){
+    formula_r <- formula
+  }
   
   ## Input Checks
   if(evgam_family!="gpd"){warning("Only tested for evgam_family = \"gpd\"...")}
