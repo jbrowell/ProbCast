@@ -154,6 +154,10 @@ contCDF <- function(quantiles,kfold=NULL,inverse=F,
       }
     }
     
+    if(is.null(tails$tail_qs)){
+      tails$tail_qs <- (1:300/100)*diff(range(quantiles))
+    }
+    
     Rquants <- tails$tail_qs+rev(quantiles)[1]
     RnomP <- pgpd(q=Rquants,location=rev(quantiles)[1],shape = tails$shape_r,scale=tails$scale_r)
     RnomP[length(RnomP)] <- 1
