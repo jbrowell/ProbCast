@@ -214,7 +214,7 @@ MQR_gbm <- function(data,
   class(predqs) <- c("MultiQR","data.frame")
   
   
-  if(Sort){
+  if((Sort) & (length(quantiles) != 1)){# if only one quantile specified, sortquantiles transposes predqs (also no need to sort).
     predqs <- SortQuantiles(data = predqs,Limits = SortLimits)
   }
   
