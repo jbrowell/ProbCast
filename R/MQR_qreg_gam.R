@@ -21,6 +21,9 @@
 #' @param gbm_params List of parameters to be passed to \code{fit.gbm()}.
 #' @param CVfolds Control for cross-validation if not supplied in \code{data}.
 #' @param Sort \code{boolean} Sort quantiles using \code{SortQuantiles()}?
+#' @param ... Additional agruments passter to \code{gam()} or (\code{bam()}).
+#' @param use_bam If \code{TRUE} (default) then GAM is fit using (\code{bam()}) in stead of \code{gam()}. See \code{bam()} documentation for details.
+#' @param w Weights on the contribution of data to model fit. See \code{gam()}.
 #' @param SortLimits \code{Limits} argument to be passed to \code{SortQuantiles()}. Constrains quantiles to upper and lower limits given by \code{list(U=upperlim,L=lowerlim)}.
 #' @details Returns a \code{list} comprising predictive quantiles, GAM models, and deterministic predictions
 #' from GAMs.
