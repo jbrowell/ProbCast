@@ -25,14 +25,12 @@
 #' @param use_bam If \code{TRUE} (default) then GAM is fit using (\code{bam()}) in stead of \code{gam()}. See \code{bam()} documentation for details.
 #' @param w Weights on the contribution of data to model fit. See \code{gam()}.
 #' @param SortLimits \code{Limits} argument to be passed to \code{SortQuantiles()}. Constrains quantiles to upper and lower limits given by \code{list(U=upperlim,L=lowerlim)}.
-#' @details Returns a \code{list} comprising predictive quantiles, GAM models, and deterministic predictions
-#' from GAMs.
-#' 
-#' The returned predictive quantiles and GAM predictions are those produced out-of-sample for each
+#' @details The returned predictive quantiles and GAM predictions are those produced out-of-sample for each
 #' cross-validation fold (using models trained on the remaining folds but not "Test" data).
 #' Predictive quantiles corresponding to "Test" data are produced using models trained on all
 #' non-test data.
-#' @return Quantile forecasts in a \code{MultiQR} object.
+#' @return Returns a \code{list} containing predictive quantiles (in a \code{MultiQR} object), GAM models, and deterministic predictions
+#' from GAMs.
 #' @keywords Quantile Regression
 #' @export
 MQR_qreg_gam <- function(data,
