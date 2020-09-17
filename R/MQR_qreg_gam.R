@@ -22,7 +22,7 @@
 #' @param CVfolds Control for cross-validation if not supplied in \code{data}.
 #' @param Sort \code{boolean} Sort quantiles using \code{SortQuantiles()}?
 #' @param ... Additional agruments passter to \code{gam()} or (\code{bam()}).
-#' @param use_bam If \code{TRUE} (default) then GAM is fit using (\code{bam()}) in stead of \code{gam()}. See \code{bam()} documentation for details.
+#' @param use_bam If \code{TRUE} (default) then GAM is fit using (\code{bam()}) in stead of \code{gam()}. \code{bam} is better suited to large datasets but not all \code{gam} model options are available with \code{bam}. See \code{bam()} documentation for further details.
 #' @param w Weights on the contribution of data to model fit. See \code{gam()}.
 #' @param SortLimits \code{Limits} argument to be passed to \code{SortQuantiles()}. Constrains quantiles to upper and lower limits given by \code{list(U=upperlim,L=lowerlim)}.
 #' @details The returned predictive quantiles and GAM predictions are those produced out-of-sample for each
