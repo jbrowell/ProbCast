@@ -147,11 +147,17 @@ contCDF <- function(quantiles,kfold=NULL,inverse=F,
     
     ## GPD distribution function
     pgpd <- function(q,location=0,scale,shape){
-      if(shape!=0){
+      if(shape>0){
         1-(1+shape*(q-location)/scale)^(-1/shape)
-      }else{
+      }else if(shape<0){
+        0 + (q>=location & q<=location-scale/shape)*(1-(1+shape*(q-location)/scale)^(-1/shape))
+      }else if(shape==0){
         1-exp(-(q-location)/scale)
       }
+    }
+    
+    if(is.null(tails$tail_qs)){
+      tails$tail_qs <- (1:300/100)*abs(diff(range(quantiles)))
     }
     
     Rquants <- tails$tail_qs+rev(quantiles)[1]

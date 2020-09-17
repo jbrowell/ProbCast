@@ -22,7 +22,11 @@ SortQuantiles <- function(data,Limits=NULL){
   }
 
   temp <- as.matrix(data)
-  temp <- t(apply(temp,1,sort))
+  
+  # Need to exclude rows which are all NAs
+  all_nas <- which(rowSums(is.na(temp))==ncol(temp))
+  
+  temp[-all_nas,] <- t(apply(temp[-all_nas,],1,sort))
 
   if(!is.null(Limits)){
     temp[temp>Limits$U] <- Limits$U
