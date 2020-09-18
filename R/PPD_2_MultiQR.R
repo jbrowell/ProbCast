@@ -38,8 +38,7 @@ PPD_2_MultiQR <- function(data,models,quantiles=seq(0.05,0.95,by=0.05),params=F)
     tempdata <- data[,which(colnames(data)%in%c(all.names(models[[1]]$mu.formula),
                                                 all.names(models[[1]]$sigma.formula),
                                                 all.names(models[[1]]$nu.formula),
-                                                all.names(models[[1]]$tau.formula))),
-                     with=F]
+                                                all.names(models[[1]]$tau.formula)))]
     
     # NAs not allowed in newdata. Flags required to record possition.
     gooddata <- rowSums(is.na(tempdata))==0
