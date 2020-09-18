@@ -2,23 +2,31 @@
 % Please edit documentation in R/SortQuantiles.R
 \name{SortQuantiles}
 \alias{SortQuantiles}
-\title{Sort multiple quantiles stored in a data.frame/MultiQR object}
+\title{Sort multiple quantiles to remove quantile crossing}
 \usage{
 SortQuantiles(data, Limits = NULL)
 }
 \arguments{
-\item{data}{A \code{MultiQR, data.frame} containing quantile forecasts}
+\item{data}{A \code{MultiQR, data.frame} containing multiple quantiles}
 
-\item{Limits}{List Upper and lower limits to apply to quantiles. E.g. list(U=0.999,L=0.001)}
+\item{Limits}{A \code{list} of the upper (\code{U}) and lower (\code{L}) limits to apply
+to quantiles if the output should be bounded. E.g. \code{list(U=0.999,L=0.001)}/}
 }
 \value{
-A \code{MultiQR, data.frame} object with ordered quanitles.
+A \code{MultiQR, data.frame} object with (nonstrictly) increasing quanitles.
 }
 \description{
-This function sorts quantiles so that q1<q2<q3<... is satisfied.
+This function sorts quantiles so that q1<q2<q3<...
 }
 \details{
-Details go here...
+The method use in the produciton of multiple quantiles may not gaurantee
+that quantiles are (nonstrictly) increasing, which is necseary if combining quantiles
+to form a cumulative distribution function. Similarly, the quantiles may not
+respect the boundaries of the target variable. This function re-orders quantiles and 
+constrains them to the user-specified limits.
+}
+\author{
+Jethro Browell, \email{jethro.browell@strath.ac.uk}
 }
 \keyword{Quantile}
 \keyword{Regression}

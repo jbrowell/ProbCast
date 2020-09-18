@@ -1,10 +1,16 @@
-#' Convert gamboostLSS objects to MultiQR, or alternatively return predicted parameters of predictive distribution.
+#' Generate predictions from \code{gamboostLSS} object
+#' 
+#' @description Convert gamboostLSS objects to MultiQR or alternatively return
+#' predicted parameters of predictive distribution.
 #'
+#' Note that this function may be superseded by an S3 method in future versions of
+#' \code{ProbCast}.
+#'
+#' Ciaran Gilbert, \email{ciaran.gilbert@@strath.ac.uk}
 #' @param data A \code{data.frame} containing explanatory variables.
 #' @param models A Para_gamboostLSS object.
 #' @param quantiles Vector of quantiles to be calculated
 #' @param params, return distribution parameters instead?
-#' @details Details go here...
 #' @return A \code{MultiQR} object derived from gamlss predictive distributions. Alternatively, a matrix containing the parameters of the predictive gamboostLSS distributions.
 #' @export
 gamboostLSS_2_MultiQR <- function(data,models,quantiles=seq(0.05,0.95,by=0.05),params=F){

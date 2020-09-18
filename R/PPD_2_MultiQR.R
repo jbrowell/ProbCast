@@ -1,17 +1,25 @@
-#' Convert PPD to MultiQR, or alternatively return predicted parameters of predictive distribution.
+#' Produce a MultiQR ojbect from a Parametric Predictive Distribution
+#' 
+#' @description Produce multiple predictive quantiles as a \code{MultiQR} ojbect
+#' from a \code{PPD} object. Alternatively
+#' return predicted parameters from the \code{PPD} models.
+#' 
+#' Note that this function may be superseded by an S3 method in future versions of
+#' \code{ProbCast}.
 #'
-#' @param data A \code{data.frame} containing explanatory variables.
-#' @param models An \code{PPD} object.
-#' @param quantiles Vector of quantiles to be calculated
-#' @param params return distribution parameter predictions?
-#' @details Details go here...
+#' @author Jethro Browell, \email{jethro.browell@@strath.ac.uk}
+#' @param data A \code{data.frame} containing explanatory variables required by \code{models}.
+#' @param models A \code{PPD} object.
+#' @param quantiles Vector of quantiles to be included in the returned \code{MultiQR} object.
+#'
+#' @details Exact quantiles of the (semi-) parametric models (predictive distributions)
+#' are calculated and output as a \code{MultiQR} object. Warnings are thrown if the
+#' input \code{data} result in \code{NA} estimates of quantiles, likely as a result of inputs
+#' being ourside the allowable range for the \code{PPD} model.
 #' @return A \code{MultiQR} object derived from gamlss predictive distributions. Alternatively, a matrix condaining the parameters of the predictive  gamlss distributions.
 #' @export
+
 PPD_2_MultiQR <- function(data,models,quantiles=seq(0.05,0.95,by=0.05),params=F){
-  
-  if(class(data)!="data.frame"){
-    data <- data.frame(data)
-  }
   
   # Arrange kfold cross-validation
   if(is.null(data$kfold)){
@@ -30,7 +38,8 @@ PPD_2_MultiQR <- function(data,models,quantiles=seq(0.05,0.95,by=0.05),params=F)
     tempdata <- data[,which(colnames(data)%in%c(all.names(models[[1]]$mu.formula),
                                                 all.names(models[[1]]$sigma.formula),
                                                 all.names(models[[1]]$nu.formula),
-                                                all.names(models[[1]]$tau.formula)))]
+                                                all.names(models[[1]]$tau.formula))),
+                     with=F]
     
     # NAs not allowed in newdata. Flags required to record possition.
     gooddata <- rowSums(is.na(tempdata))==0

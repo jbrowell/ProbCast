@@ -2,7 +2,7 @@
 % Please edit documentation in R/pinball.R
 \name{pinball}
 \alias{pinball}
-\title{Pinball Loss for MultiQR}
+\title{Pinball Score for \code{MultiQR} Objects}
 \usage{
 pinball(
   qrdata,
@@ -18,9 +18,11 @@ pinball(
 \arguments{
 \item{qrdata}{\code{MultiQR} object.}
 
-\item{realisations}{Vector of realisations corresponding to rows of \code{qrdata}. \code{NA} accepted.}
+\item{realisations}{Vector of realisations corresponding to rows of \code{qrdata}.
+\code{NA} accepted where realisations are missing.}
 
-\item{kfolds}{Optional vector of fold/test labels corresponding to rows of \code{qrdata}.}
+\item{kfolds}{Optional vector of fold/test labels corresponding to rows of \code{qrdata}.
+Cannot be used with \code{subsets}.}
 
 \item{plot.it}{\code{boolean}. Make a plot?}
 
@@ -33,11 +35,17 @@ pinball(
 \item{...}{Additional arguments passed to \code{plot()}.}
 }
 \value{
-Quantile Score data and, if \code{plot.it=TRUE}, a reliability diagram.
+Quantile Score data and, if \code{plot.it=T}, a plot.
 }
 \description{
-This function calculates and plots the pinball loss for a MultiQR object and plots the result
+This function calculates the pinball score for each quantile in a \code{MultiQR}
+object. Optionally, results are produced by cross-validation fold or covariate,
+95\% confidence intervals are estimated via bootstrap, and results are plotted.
 }
 \details{
-Details go here...
+Missing values in \code{realisations} are handled by \code{na.rm=T} when
+calculating average exceedence of a given quantile.
+}
+\author{
+Jethro Browell, \email{jethro.browell@strath.ac.uk}
 }

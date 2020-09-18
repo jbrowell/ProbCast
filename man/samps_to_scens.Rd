@@ -12,44 +12,70 @@ samps_to_scens(
   mean_kf,
   control,
   mcmapply_cores = 1L,
-  mvnfast_cores = 1L,
-  chunk_dir = NULL
+  ...
 )
 }
 \arguments{
-\item{copulatype}{Either "spatial" of "temporal", note that spatio-temporal can be generated via "temporal" setting}
+\item{copulatype}{As \code{string}, either \code{"spatial"} or \code{"temporal"},
+note that spatio-temporal can be generated via \code{"temporal"} setting.}
 
-\item{no_samps}{Number of scenarios required}
+\item{no_samps}{Number of scenarios to sample}
 
-\item{marginals}{a named list of the margins of the copula - e.g. if class is MultiQR --> list(<<name>> = <<MultiQR object>>). Multiple margins are possible for multiple locations (see examples) although they must be the same class (MQR or distribution parameters). If parametric class supply a list of the distribution parameters here and the corresponding quantile function in \code{control} (see below). The ordering of this list is important for multiple locations --- see note below.}
+\item{marginals}{a named list of marginal distibutions,
+e.g. if class is \code{MultiQR}, \code{list(<<name>> = <<MultiQR object>>)}.
+Multiple margins are possible for multiple locations (see examples) although
+they must be the same class (\code{MultiQR} or \code{PPD}).
+If parametric class supply a list of the distribution parameters here
+and the corresponding quantile function in \code{control} (see below).
+The ordering of this list is important for multiple locations ---
+it should be ordered according to the row/columns in each member of \code{sigma_kf}.}
 
-\item{sigma_kf}{a named list of the covariance matrices with elements corresponding to each fold.}
+\item{sigma_kf}{a named list of the covariance matrices with elements corresponding
+to cross-validation folds.}
 
-\item{mean_kf}{a named list of the mean vectors with elements corresponding to each fold}
+\item{mean_kf}{a named list of the mean vectors with elements corresponding to
+cross-validation folds.}
 
-\item{control}{a named list of with nested control parameters (named according to \code{marginals}). Each named list should contain \code{kfold}, \code{issue_ind}, and \code{horiz_ind} which are the kfold, issue time, and lead time vectors corresponding to the margins of the copula. If margins are MultiQR class also define \code{PIT_method} and list \code{CDFtails}, which are passed to the PIT function. If the margins are distribution parameter predictions then define \code{q_fun}, which transforms the columns of \code{marginals} through the quantile function --- see example for more details.}
+\item{control}{a named list of with nested control parameters
+(named according to \code{marginals}). Each named list should contain
+\code{kfold}, \code{issue_ind}, and \code{horiz_ind} which are the cross-validation folds,
+issue time, and lead time vectors corresponding to the margins of the copula, respectively.
+If margins are MultiQR class also define \code{PIT_method} and list \code{CDFtails},
+which are passed to the \code{PIT} function. If the margins are distribution parameter
+predictions then define \code{q_fun}, which transforms the columns of \code{marginals}
+through the quantile function --- see example for more details.}
 
-\item{mcmapply_cores}{defaults to 1. Warning, only change if not using windows OS --- see the \code{parallel::mcmapply} for more info. Speed improvements possible when generating sptio-temporal scenarios, set to the number of locations if possible.}
+\item{mcmapply_cores}{Defaults to 1. Warning, only change if not using
+Windows OS --- see the \code{parallel::mcmapply} help page for more info.
+Speed improvements possible when generating sptio-temporal scenarios, set to
+the number of locations if possible.}
 
-\item{mvnfast_cores}{defaults to 1. See \code{mvnfast::rmvn}}
-
-\item{chunk_dir}{a character string containing a directory for storing temporary chunked datasets per fold. Useful for very high dimensional distributions or many samples. Defaults to \code{NULL}, i.e. no chunk. Only valid for \code{Multi.QR} type marginals for now...}
+\item{...}{other parameters to be passed to \code{mvtnorm::rmvnorm}.}
 }
 \value{
-A list of \code{data.table} objects containing multivariate scenario forecasts
+A \code{list} or \code{data.frame} of multivariate/scenario/trajectroy forecasts.
 }
 \description{
 This function produces a list of multivariate scenario forecasts in the marginal domain from the spatial/tempral/spatiotemporal gaussian covariance matrices and marginal distributions
 }
 \details{
-Details go here...
+This is a sampling function for Gaussian couplas with marginals
+specificed by \code{MultiQR} or \code{PPD} objects and user-specified covariance
+matrix.
 }
 \note{
-For spatio-temporal scenarios, each site must have the same number of lead-times in the covariance matrix.
+For spatio-temporal scenarios, each site must have the same number
+of inputs to the governing covariance matrix.
 
-For multiple locations the ordering of the lists of the margins and the structure of the covariance matrices is very important; if the columns/rows in each covariance matrix are ordered loc1_h1, loc1_h2,..., loc2_h1, loc2_h_2,..., loc_3_h1, loc_3_h2,... i.e. location_leadtime --- then the list of the marginals should be in the same order loc1, loc2, loc3,....
+For multiple locations the ordering of the lists
+of the margins & control, and the structure of the covariance
+matrices is very important: if the columns/rows in each covariance
+matrix are ordered \code{loc1_h1, loc1_h2,..., loc2_h1, loc2_h_2,...,
+loc_3_h1, loc_3_h2,...} i.e. location_leadtime --- then the list of
+the marginals should be in the same order loc1, loc2, loc3,....
 
-Ensure kfold ids in the control list do not change within any issue time --- i.e. make sure the issue times are unique to each fold.
+Ensure cross-validation fold names in the control list do not change
+within any issue time --- i.e. make sure the issue times are unique to each fold.
 }
 \examples{
 \dontrun{
@@ -72,4 +98,7 @@ scens <- samps_to_scens(copulatype = "temporal", no_samps = 100,marginals = list
                                      loc_2 = list(kfold = loc_2data$kfold, issue_ind = loc_2data$issue_time, horiz_ind = loc_2data$lead_time,
                                                   PIT_method = "linear", CDFtails = list(method = "interpolate", L=0, U=1))))
 }
+}
+\author{
+Ciaran Gilbert, \email{ciaran.gilbert@strath.ac.uk}
 }

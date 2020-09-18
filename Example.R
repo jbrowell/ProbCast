@@ -24,15 +24,11 @@ Wind$WS100 <- sqrt(Wind$U100^2+Wind$V100^2)
 Wind$Power <- pmin(Wind$WS100,11)^3
 
 ## Set-up simple kfold CV. NB --- For scenario forecasting make sure the CV folds don't cross issue times
-Wind$kfold <- "Fold1"
-Wind$kfold[Wind$ISSUEdtm>as.POSIXct("2012-06-30",tz="UTC")] <- "Fold2"
-Wind$kfold[Wind$ISSUEdtm>as.POSIXct("2012-12-31",tz="UTC")] <- "Fold3"
+Wind$kfold <- "Fold 1"
+Wind$kfold[Wind$ISSUEdtm>as.POSIXct("2012-06-30",tz="UTC")] <- "Fold 2"
+Wind$kfold[Wind$ISSUEdtm>as.POSIXct("2012-12-31",tz="UTC")] <- "Fold 3"
 Wind$kfold[Wind$ISSUEdtm>as.POSIXct("2013-06-30",tz="UTC")] <- "Test"
 
-Wind <- na.omit(Wind)
-
-## for fitting gbm quantiles close to the tail (i.e. q1), perfect 0 values can through-off the fit
-Wind$TARGETVAR[Wind$TARGETVAR==0] <- runif(sum(Wind$TARGETVAR==0,na.rm = TRUE),min=0.001,max = 0.005)
 
 ### Multiple Quantile Regression using GBM ####
 test1<-list(data=Wind)
@@ -68,15 +64,15 @@ test1<-list(data=Wind)
 
 test1$gbm_mqr <- MQR_gbm(data = test1$data,
                          formula = TARGETVAR~U100+V100+U10+V10+(sqrt((U100^2+V100^2))),
-                         gbm_params = list(interaction.depth = 2,
+                         gbm_params = list(interaction.depth = 3,
                                            n.trees = 1000,
-                                           shrinkage = 0.01,
-                                           n.minobsinnode = 30,
-                                           bag.fraction = 0.9,
+                                           shrinkage = 0.05,
+                                           n.minobsinnode = 20,
+                                           bag.fraction = 0.5,
                                            keep.data = F),
                          parallel = T,
                          cores = detectCores(),
-                         quantiles = c(0.01,0.03,seq(0.05,0.95,by=0.05),0.97,0.99),
+                         quantiles = seq(0.05,0.95,by=0.05),
                          Sort = T,
                          SortLimits = list(U=1,L=0),
                          pred_ntree = 1000,
@@ -88,18 +84,18 @@ par(tcl=0.35)  # Switch tick marks to insides of axes
 par(mgp=c(1.5,0.2,0))  # Set margin lines; default c(3,1,0) [title,labels,line]
 par(xaxs="r",yaxs="r")  # Extend axis limits by 4% ("i" does no extension)
 
-i_ts <- unique(test1$data$ISSUEdtm)[100]
+i_ts <- unique(test1$data$ISSUEdtm)[3]
 
 plot(test1$gbm_mqr[which(test1$data$ISSUEdtm==i_ts),],xlab="Time Index [Hours]",ylab="Power [Capacity Factor]",axes=F,Legend = 1,ylim=c(0,1)); axis(1,1:24,pos=-0.07); axis(2,las=1)
-# lines(test1$data$TARGETVAR[which(test1$data$ISSUEdtm==i_ts)],lwd=3)
+lines(test1$data$TARGETVAR[which(test1$data$ISSUEdtm==i_ts)],lwd=3)
 
 reliability(qrdata = test1$gbm_mqr,
             realisations = test1$data$TARGETVAR,
             kfolds = test1$data$kfold)
 
 pinball(qrdata = test1$gbm_mqr,
-        realisations = test1$data$TARGETVAR,
-        kfolds = test1$data$kfold)
+         realisations = test1$data$TARGETVAR,
+         kfolds = test1$data$kfold)
 
 
 reliability(qrdata = test1$gbm_mqr,
@@ -116,9 +112,9 @@ pinball(qrdata = test1$gbm_mqr,
         bootstrap = 100)
 
 pinball(qrdata = test1$gbm_mqr,
-        realisations = test1$data$TARGETVAR,
-        kfolds = test1$data$kfold,
-        bootstrap = 100,ylim=c(0,.08))
+            realisations = test1$data$TARGETVAR,
+            kfolds = test1$data$kfold,
+            bootstrap = 100,ylim=c(0,.08))
 
 pinball(qrdata = test1$gbm_mqr[test1$data$kfold=="Test",],
         realisations = test1$data$TARGETVAR[test1$data$kfold=="Test"],
@@ -134,7 +130,7 @@ pinball(qrdata = test1$gbm_mqr[test1$data$kfold=="Test",],
 
 
 
-index <- 2290
+index <- 54
 x <- seq(0,1,by=0.001)
 cdf <- contCDF(quantiles = test1$gbm_mqr[index,],method = "spline")
 plot(x,cdf(x),type="l",xlab="Target Variable",ylab="CDF",axes=F); axis(1); axis(2,las=2); #grid()
@@ -148,40 +144,27 @@ points(test1$gbm_mqr[index,],as.numeric(gsub("q","",colnames(test1$gbm_mqr[index
 legend(0.01,1,c("Predicted Quantiles","Linear","Spline","Spline with Exponential Tails"),
        pch=c(1,NA,NA,NA),lty=c(NA,2,1,3),col=c(1,2,1,4),bty="n")
 
-
-samp <- function(x){sample(x,1)}
-
-
-contCDF(quantiles = test1$gbm_mqr[index,],method = "spline", tails=list(method="dyn_exponential",ntailpoints=25),ties="samp")
-lines(x,cdf(x),lty=4,col=5)
-
 # test1$X_gbm <- PIT(test1$gbm_mqr,test1$data$TARGETVAR,method = "spline",tails=list(method="exponential",L=0,U=1,nBins=5,preds=test1$gbm_mqr,targetvar=test1$data$TARGETVAR,ntailpoints=25))
 test1$X_gbm <- PIT(test1$gbm_mqr,test1$data$TARGETVAR,method = "spline",tails=list(method="interpolate",L=0,U=1))
-test1$X_gbmdyn <- PIT(test1$gbm_mqr,test1$data$TARGETVAR,method = "spline",tails=list(method="dyn_exponential", ntailpoints=100))
-test1$X_gbmdyn2 <- PIT(test1$gbm_mqr,test1$data$TARGETVAR,method = "spline",tails=list(method="dyn_exponential", ntailpoints=100), ties = "samp")
-hist(test1$X_gbm,breaks = 100,freq=F,ylim = c(0,3)); lines(c(0,1),c(1,1),lty=2)
-hist(test1$X_gbmdyn,breaks = 100,freq=F,ylim = c(0,3)); lines(c(0,1),c(1,1),lty=2)
-hist(test1$X_gbmdyn2,breaks = 100,freq=F,ylim = c(0,3)); lines(c(0,1),c(1,1),lty=2)
+hist(test1$X_gbm,breaks = 50,freq=F,ylim = c(0,3)); lines(c(0,1),c(1,1),lty=2)
 
 ### Parametric PredDist Using GAMLSS ####
-
-
 test1$ppd <- Para_gamlss(data = test1$data,
                          formula = TARGETVAR~bs(WS100,df=3),
                          sigma.formula = ~WS100,
                          sigma.start = 0.05,
                          nu.formula = ~WS100,
                          tau.formula = ~WS100,
-                         family = BEINF, # NO
+                         family =  BEINF, #NO,  #
                          method=mixed(20,10))
 
 
-summary(test1$ppd$Fold1)
-plot(test1$ppd$Fold1)
+summary(test1$ppd$`Fold 1`)
+plot(test1$ppd$`Fold 1`)
 
 test1$gamlssParams <- PPD_2_MultiQR(data=test1$data,
-                                    models = test1$ppd,
-                                    params = T)
+                                   models = test1$ppd,
+                                   params = T)
 
 
 
@@ -202,8 +185,8 @@ reliability(qrdata = test1$gamlss_mqr,
             kfolds = test1$data$kfold)
 
 pinball(qrdata = test1$gamlss_mqr,
-        realisations = test1$data$TARGETVAR,
-        kfolds = test1$data$kfold)
+         realisations = test1$data$TARGETVAR,
+         kfolds = test1$data$kfold)
 
 
 # test1$data[test1$data$TARGETVAR<0 | test1$data$TARGETVAR>1,]
@@ -234,66 +217,20 @@ mean_list <- list()
 for (i in levels(unique(u_obsind$kfold))){
   mean_list[[i]] <- rep(0, 24)
 }
-## method for parametric pred dist.
 
-set.seed(1)
-t1 <- Sys.time()
+
+## method for gbm pred dist.
 scen_gbm <- samps_to_scens(copulatype = "temporal",no_samps = f_nsamp,marginals = list(loc_1 = test1$gbm_mqr),sigma_kf = cvm_gbm,mean_kf = mean_list,
                            control=list(loc_1 = list(kfold = u_obsind$kfold,issue_ind=u_obsind$i_time,horiz_ind=u_obsind$lead_time,
                                                      PIT_method="spline",
-                                                     CDFtails = list(method="dyn_exponential",ntailpoints=100))))
-print(Sys.time()-t1)
+                                                     CDFtails = list(method="interpolate",L=0,U=1,ntailpoints=100))))
 
-i_ts <- as.POSIXct("2012-04-05",tz="UTC")
 
 matplot(scen_gbm$loc_1[which(test1$data$ISSUEdtm==i_ts),],type="l",ylim=c(0,1),lty=1,
         xlab="Lead Time [Hours]",ylab="Power [Capacity Factor]",
         col=gray(0.1,alpha = 0.1),axes = F); axis(1,1:24,pos=-0.07); axis(2,las=1)
-
-
-set.seed(1)
-t1 <- Sys.time()
-scen_gbm2 <- samps_to_scens(copulatype = "temporal",no_samps = f_nsamp,marginals = list(loc_1 = test1$gbm_mqr),sigma_kf = cvm_gbm,mean_kf = mean_list,
-                           control=list(loc_1 = list(kfold = u_obsind$kfold,issue_ind=u_obsind$i_time,horiz_ind=u_obsind$lead_time,
-                                                     PIT_method="linear",
-                                                     CDFtails = list(method="dyn_exponential",ntailpoints=100))),
-                           ties = "mean")
-print(Sys.time()-t1)
-
-
-matplot(scen_gbm2$loc_1[which(test1$data$ISSUEdtm==i_ts),],type="l",ylim=c(0,1),lty=1,
-        xlab="Lead Time [Hours]",ylab="Power [Capacity Factor]",
-        col=gray(0.1,alpha = 0.1),axes = F); axis(1,1:24,pos=-0.07); axis(2,las=1)
-
-
-
-
-#### toy multiple location example
-mean_list <- list()
-for (i in levels(unique(u_obsind$kfold))){
-  mean_list[[i]] <- rep(0, 48)
-}
-
-# loc_2 corresponds to cols 25:48 and rows 25:48
-cvm_list <- list()
-for (i in levels(unique(u_obsind$kfold))){
-  cvm_list[[i]] <- diag(48)
-}
-
-
-set.seed(1)
-t1 <- Sys.time()
-scen_gbm <- samps_to_scens(copulatype = "temporal",no_samps = f_nsamp,marginals = list(loc_1 = test1$gbm_mqr, loc_2 = test1$gbm_mqr),
-                           sigma_kf = cvm_list,mean_kf = mean_list,
-                           control=list(loc_1 = list(kfold = u_obsind$kfold,issue_ind=u_obsind$i_time,horiz_ind=u_obsind$lead_time,
-                                                     PIT_method="spline",
-                                                     CDFtails = list(method="interpolate",L=0,U=1,ntailpoints=100)),
-                                        loc_2 = list(kfold = u_obsind$kfold,issue_ind=u_obsind$i_time,horiz_ind=u_obsind$lead_time,
-                                                     PIT_method="spline",
-                                                     CDFtails = list(method="interpolate",L=0,U=1,ntailpoints=100))))
-print(Sys.time()-t1)
-
-
+# lines(test1$data$TARGETVAR[which(test1$data$ISSUEdtm==i_ts)],lwd=2)
+# legend("bottomleft",c("scenarios","measured"),col = c("grey75","black"),pch=c(NA,NA,NA),bty="n",lty=1)
 
 
 
@@ -314,52 +251,17 @@ lattice::levelplot(cvm_gamlss[["Test"]], xlab="lead time [hours]", ylab="lead ti
                    scales=list(x=list(at=seq(0,24,3),rot=90),y=list(at=seq(0,24,3)),tck=0.3,cex=1.1),
                    main="Test --- Covariance")
 
-mean_list <- list()
-for (i in levels(unique(u_obsind$kfold))){
-  mean_list[[i]] <- rep(0, 24)
-}
 # sample cvm and convert to power domain
 # method for parametric pred dist.
-set.seed(1)
 scen_gamlss <- samps_to_scens(copulatype = "temporal",no_samps = f_nsamp,marginals = list(loc_1 = test1$gamlssParams),sigma_kf = cvm_gamlss,mean_kf = mean_list,
-                              control=list(loc_1 = list(kfold = u_obsind$kfold,issue_ind=u_obsind$i_time,horiz_ind=u_obsind$lead_time,
-                                                        q_fun = gamlss.dist::qBEINF)))
+                           control=list(loc_1 = list(kfold = u_obsind$kfold,issue_ind=u_obsind$i_time,horiz_ind=u_obsind$lead_time,
+                                                     q_fun = gamlss.dist::qBEINF)))
 
 matplot(scen_gamlss$loc_1[which(test1$data$ISSUEdtm==i_ts),],type="l",ylim=c(0,1),lty=1,
         xlab="Lead Time [Hours]",ylab="Power [Capacity Factor]",
         col=gray(0.1,alpha = 0.1),axes = F); axis(1,1:24,pos=-0.07); axis(2,las=1)
 # lines(test1$data$TARGETVAR[which(test1$data$ISSUEdtm==i_ts)],lwd=2)
 # legend("topleft",c("scenarios","measured"),col = c("grey75","black"),pch=c(NA,NA,NA),bty="n",lty=1)
-
-
-
-##### spatial examples
-
-
-mean_list <- list()
-for (i in levels(unique(u_obsind$kfold))){
-  mean_list[[i]] <- rep(0, 2)
-}
-
-cvm_list <- list()
-for (i in levels(unique(u_obsind$kfold))){
-  cvm_list[[i]] <- diag(2)
-}
-
-
-set.seed(1)
-t1 <- Sys.time()
-scen_gbm <- samps_to_scens(copulatype = "spatial",no_samps = f_nsamp,marginals = list(loc_1 = test1$gbm_mqr, loc_2 = test1$gbm_mqr),
-                           sigma_kf = cvm_list,mean_kf = mean_list,
-                           control=list(loc_1 = list(kfold = u_obsind$kfold,issue_ind=u_obsind$i_time,horiz_ind=u_obsind$lead_time,
-                                                     PIT_method="spline",
-                                                     CDFtails = list(method="interpolate",L=0,U=1,ntailpoints=100)),
-                                        loc_2 = list(kfold = u_obsind$kfold,issue_ind=u_obsind$i_time,horiz_ind=u_obsind$lead_time,
-                                                     PIT_method="spline",
-                                                     CDFtails = list(method="interpolate",L=0,U=1,ntailpoints=100))))
-print(Sys.time()-t1)
-
-
 
 
 
@@ -383,7 +285,7 @@ FCs[,horiz:=as.numeric(TARGETdtm - ISSUEdtm)]
 test1$mvscore_gbm <- FCs[,list(ES=es_sample(y=TARGETVAR,dat=(as.matrix(.SD))),
                                wVS1=vs_sample(y=TARGETVAR,dat=(as.matrix(.SD)),w=mat(d = .N,horizon = horiz),p=1),
                                wVS.5=vs_sample(y=TARGETVAR,dat=(as.matrix(.SD)),w=mat(d = .N,horizon = horiz),p=.5))
-                         ,.SDcols=paste0("scen_",1:f_nsamp),by=c("kfold","ISSUEdtm")]
+                         ,.SDcols=paste0("X",1:f_nsamp),by=c("kfold","ISSUEdtm")]
 
 
 ### gamlss
@@ -392,7 +294,7 @@ FCs[,horiz:=as.numeric(TARGETdtm - ISSUEdtm)]
 test1$mvscore_gamlss <- FCs[,list(ES=es_sample(y=TARGETVAR,dat=(as.matrix(.SD))),
                                   wVS1=vs_sample(y=TARGETVAR,dat=(as.matrix(.SD)),w=mat(d = .N,horizon = horiz),p=1),
                                   wVS.5=vs_sample(y=TARGETVAR,dat=(as.matrix(.SD)),w=mat(d = .N,horizon = horiz),p=.5))
-                            ,.SDcols=paste0("scen_",1:f_nsamp),by=c("kfold","ISSUEdtm")]
+                         ,.SDcols=paste0("X",1:f_nsamp),by=c("kfold","ISSUEdtm")]
 
 
 
@@ -415,11 +317,11 @@ evalplot_block <- function(data_table, block,nboot = 100, na.rm = TRUE,score = "
   
   boot <- NULL
   for(i in 1:nboot) {
-    bootind <- sample(unique(block), replace = TRUE)
-    data <- rbindlist(lapply(bootind,function(x){data_table[block==x]}))
-    
-    boot <- rbind(boot, data[,as.list(colMeans(.SD,na.rm = na.rm)),.SDcols = score,by=.(marginal)])
-    rm(data)
+  bootind <- sample(unique(block), replace = TRUE)
+  data <- rbindlist(lapply(bootind,function(x){data_table[block==x]}))
+
+  boot <- rbind(boot, data[,as.list(colMeans(.SD,na.rm = na.rm)),.SDcols = score,by=.(marginal)])
+  rm(data)
   }
   
   boxplot(data = boot, as.formula(paste0(score,"~ marginal")),ylab = score,xlab = "", ...)

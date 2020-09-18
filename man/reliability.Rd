@@ -18,15 +18,21 @@ reliability(
 \arguments{
 \item{qrdata}{\code{MultiQR} object.}
 
-\item{realisations}{Vector of realisations corresponding to rows of \code{qrdata}. \code{NA} accepted.}
+\item{realisations}{Vector of realisations corresponding to
+rows of \code{qrdata}. Missing data as \code{NA}s accepted.}
 
-\item{kfolds}{Optional vector of fold/test labels corresponding to rows of \code{qrdata}. Cannot be used with \code{subsets}.}
+\item{kfolds}{Optional vector of cross-validation fold labels corresponding
+to rows of \code{qrdata}. Cannot be used with \code{subsets}.}
 
-\item{subsets}{Optional vector of covariates to bin data by. Breaks between bins are the empirical quantiles of \code{subsets}. Cannot be used with \code{kfold}.}
+\item{subsets}{Optional vector of covariates to bin data by.
+Breaks between bins are the empirical quantiles of
+\code{subsets}. Cannot be used with \code{kfolds}.}
 
-\item{breaks}{Number of quantiles to divide subsets by, results in \code{breaks+1} bins.}
+\item{breaks}{Number of quantiles to divide subsets by, results
+in \code{breaks+1} bins.}
 
-\item{bootstrap}{Calculate this number of boostrap samples to estimate 95\% confdence interval}
+\item{bootstrap}{Calculate this number of boostrap samples
+to estimate 95\% confdence interval}
 
 \item{plot.it}{\code{boolean}. Make a plot?}
 
@@ -36,8 +42,16 @@ reliability(
 Reliability data and, if \code{plot.it=TRUE}, a reliability diagram.
 }
 \description{
-This function plots a reliabiltiy diagram for a MultiQR object and returns the plotdata
+Calculated empirical exceedence of each quantile and 
+plots a reliabiltiy diagram for a \code{MultiQR} object.
+
+Optionally, results may be split by cross-validation fold or covariate and/or
+confidence intervals may be estimated.
 }
 \details{
-Details go here...
+Missing values in \code{realisations} are handled by \code{na.rm=T} when
+calculating average exceedence of a given quantile.
+}
+\author{
+Jethro Browell, \email{jethro.browell@strath.ac.uk}
 }

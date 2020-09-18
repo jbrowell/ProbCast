@@ -2,21 +2,22 @@
 % Please edit documentation in R/DateFeatures.R
 \name{read_holiday_ics}
 \alias{read_holiday_ics}
-\title{Read UK Holidays}
+\title{Load data of UK Holidays}
 \usage{
 read_holiday_ics(folder = getwd())
 }
 \arguments{
-\item{folder}{Folder location of .ics file(s) of UK holidays from https://www.gov.uk/bank-holidays}
+\item{folder}{Folder location of .ics file(s) of UK holidays
+from https://www.gov.uk/bank-holidays}
 }
 \value{
 Table of UK Holidays
 }
 \description{
-Read UK Holidays
+Function to read official data of UK public holidays.
 }
-\details{
-Details go here...
+\author{
+Jethro Browell, \email{jethro.browell@strath.ac.uk}
 }
 \keyword{Date}
 \keyword{Features}

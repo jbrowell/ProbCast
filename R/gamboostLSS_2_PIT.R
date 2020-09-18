@@ -1,6 +1,10 @@
 #' Probability integral transform for Para_gamboostLSS objects
 #'
-#' This function produces a fan plot of a MultiQR object.
+#' @description This function calculates the probability integral transformation
+#' for \code{gamboostLSS} models. Is has been replaced by an S3 method for \code{PIT}
+#' and is only included for backwards compatability. May be removed in the future.
+#' 
+#' @author Ciaran Gilbert, \email{ciaran.gilbert@@strath.ac.uk}
 #' @param models A Para_gamboostLSS object.
 #' @param data Input data corresponding to \code{qrdata}.
 #' @param dist_fun cumulative distribution function corresponging to families specified in gamboostLSS model (see example).
@@ -9,6 +13,8 @@
 #' @return The probability integral transform of \code{data} through the predictive distribution defined by a list of gamboostLSS objects.
 #' @export
 gamboostLSS_2_PIT <- function(models,data,dist_fun,response_name,...){
+  
+  warning("gamboostLSS_2_PIT has been superseeded by S3 method PIT.gamboostLSS() and may be removed in the future.")
   
   # Arrange kfold cross-validation
   if(is.null(data$kfold)){

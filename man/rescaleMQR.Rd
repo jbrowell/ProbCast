@@ -9,20 +9,28 @@ rescaleMQR(mqr, mult = 1, add = 0, Order = "ma")
 \arguments{
 \item{mqr}{A \code{MultiQR} object to be re-scaled}
 
-\item{mult}{Multiplicative adjustment of length 1 or with length equal to the number of rows in mqr}
+\item{mult}{Multiplicative adjustment of length 1 or with length equal
+to the number of rows in mqr.}
 
-\item{add}{Additive adjustment of length 1 or with length equal to the number of rows in mqr}
+\item{add}{Additive adjustment of length 1 or with
+length equal to the number of rows in mqr.}
 
-\item{order}{Order in which to perform adjustment}
+\item{order}{Order in which to perform adjustment, either
+\code{"ma"} (multiple-then-add) or vice versa.}
 }
 \value{
-A \code{MultiQR} object
+A \code{MultiQR} object.
 }
 \description{
 This function re-scales MultiQR object.
 }
 \details{
-Details go here...
+This function re-scales \code{MultiQR} objects. Typical usage
+is to return forecasts in the domain of the original target variable if modelling
+and forecasting has been performed after normalisation/standardisation.
+}
+\author{
+Jethro Browell, \email{jethro.browell@strath.ac.uk}
 }
 \keyword{Quantile}
 \keyword{Regression,}

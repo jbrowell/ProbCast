@@ -19,8 +19,13 @@ gamboostLSS_2_PIT(models, data, dist_fun, response_name, ...)
 The probability integral transform of \code{data} through the predictive distribution defined by a list of gamboostLSS objects.
 }
 \description{
-This function produces a fan plot of a MultiQR object.
+This function calculates the probability integral transformation
+for \code{gamboostLSS} models. Is has been replaced by an S3 method for \code{PIT}
+and is only included for backwards compatability. May be removed in the future.
 }
 \details{
 Details go here...
+}
+\author{
+Ciaran Gilbert, \email{ciaran.gilbert@strath.ac.uk}
 }
