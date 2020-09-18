@@ -214,7 +214,7 @@ lattice::levelplot(cvm_gbm[["Test"]], xlab="lead time [hours]", ylab="lead time 
 # sample cvm and convert to power domain
 f_nsamp <- 200
 mean_list <- list()
-for (i in levels(unique(u_obsind$kfold))){
+for (i in unique(u_obsind$kfold)){
   mean_list[[i]] <- rep(0, 24)
 }
 
@@ -285,7 +285,7 @@ FCs[,horiz:=as.numeric(TARGETdtm - ISSUEdtm)]
 test1$mvscore_gbm <- FCs[,list(ES=es_sample(y=TARGETVAR,dat=(as.matrix(.SD))),
                                wVS1=vs_sample(y=TARGETVAR,dat=(as.matrix(.SD)),w=mat(d = .N,horizon = horiz),p=1),
                                wVS.5=vs_sample(y=TARGETVAR,dat=(as.matrix(.SD)),w=mat(d = .N,horizon = horiz),p=.5))
-                         ,.SDcols=paste0("X",1:f_nsamp),by=c("kfold","ISSUEdtm")]
+                         ,.SDcols=paste0("scen_",1:f_nsamp),by=c("kfold","ISSUEdtm")]
 
 
 ### gamlss
@@ -294,7 +294,7 @@ FCs[,horiz:=as.numeric(TARGETdtm - ISSUEdtm)]
 test1$mvscore_gamlss <- FCs[,list(ES=es_sample(y=TARGETVAR,dat=(as.matrix(.SD))),
                                   wVS1=vs_sample(y=TARGETVAR,dat=(as.matrix(.SD)),w=mat(d = .N,horizon = horiz),p=1),
                                   wVS.5=vs_sample(y=TARGETVAR,dat=(as.matrix(.SD)),w=mat(d = .N,horizon = horiz),p=.5))
-                         ,.SDcols=paste0("X",1:f_nsamp),by=c("kfold","ISSUEdtm")]
+                         ,.SDcols=paste0("scen_",1:f_nsamp),by=c("kfold","ISSUEdtm")]
 
 
 
