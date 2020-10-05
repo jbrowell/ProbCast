@@ -9,7 +9,8 @@ contCDF(
   kfold = NULL,
   inverse = F,
   method = list(name = "spline", splinemethod = "monoH.FC"),
-  tails = list(method = "extrapolate", L = 0, U = 1)
+  tails = list(method = "extrapolate", L = 0, U = 1),
+  ...
 )
 }
 \arguments{
@@ -19,10 +20,12 @@ contCDF(
 
 \item{tails}{Definition of tails. See details.}
 
+\item{...}{extra arguments to \code{approxfun} or \code{splinefun}.}
+
 \item{kfolds}{Fold/test label corresponding to \code{quantiles}.}
 }
 \value{
-A cumulative density function of the type produced by \code{splinefun} and
+A cumulative density function of the type produced by \code{splinefun} or
 \code{approxfun}.
 }
 \description{
@@ -38,7 +41,7 @@ Linear interpolation: \code{method="linear"} linear interpolation
 between quantiles.
 
 Spline interpolation: \code{method=list(name=spline,splinemethod=monoH.FC)}, where spline method is
-passed to \code{splinefun}. \code{splinefun=monoH.FC} is recommended to gaurantee monotoincally
+passed to \code{splinefun}. \code{splinefun=monoH.FC} is recommended to guarantee monotonically
 increasing function.
 
 
@@ -47,7 +50,7 @@ the final upper and lower quantiles:
 
 Linear extrapolation: \code{tails=list(method="extrapolate",L,U)} value set to \code{L} and \code{U}
 for probability levels 0 and 1, respectively. If \code{method="extrapolate_dtail1"} then
-tails are exrapolated to the 50th quantile plus (minus) \code{U} (\code{L}).
+tails are extrapolated to the 50th quantile plus (minus) \code{U} (\code{L}).
 
 Exponential tails: \code{tails=list(method="exponential",thicknessPL,thicknessPR,ntailpoints=5)}
 the user will either supply user defined thickness parameters for the tail

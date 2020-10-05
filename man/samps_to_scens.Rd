@@ -12,6 +12,8 @@ samps_to_scens(
   mean_kf,
   control,
   mcmapply_cores = 1L,
+  mvnfast_cores = 1L,
+  chunk_dir = NULL,
   ...
 )
 }
@@ -21,10 +23,11 @@ note that spatio-temporal can be generated via \code{"temporal"} setting.}
 
 \item{no_samps}{Number of scenarios to sample}
 
-\item{marginals}{a named list of marginal distibutions,
+\item{marginals}{a named list of marginal distributions,
 e.g. if class is \code{MultiQR}, \code{list(<<name>> = <<MultiQR object>>)}.
 Multiple margins are possible for multiple locations (see examples) although
-they must be the same class (\code{MultiQR} or \code{PPD}).
+they must be the same class (\code{MultiQR} or distribution predictions 
+from a \code{PPD} object).
 If parametric class supply a list of the distribution parameters here
 and the corresponding quantile function in \code{control} (see below).
 The ordering of this list is important for multiple locations ---
@@ -50,17 +53,23 @@ Windows OS --- see the \code{parallel::mcmapply} help page for more info.
 Speed improvements possible when generating sptio-temporal scenarios, set to
 the number of locations if possible.}
 
-\item{...}{other parameters to be passed to \code{mvtnorm::rmvnorm}.}
+\item{mvnfast_cores}{defaults to 1. See \code{mvnfast::rmvn}}
+
+\item{chunk_dir}{a character string containing a directory for storing temporary chunked 
+datasets per fold. Useful for very high dimensional distributions or many samples.
+Defaults to \code{NULL}, i.e. no chunking. Only valid for \code{Multi.QR} type marginals for now...}
+
+\item{...}{extra arguments to \code{contCDF} to be applied to all marginals.}
 }
 \value{
-A \code{list} or \code{data.frame} of multivariate/scenario/trajectroy forecasts.
+A \code{list} of \code{data.table} objects containing multivariate forecasts.
 }
 \description{
-This function produces a list of multivariate scenario forecasts in the marginal domain from the spatial/tempral/spatiotemporal gaussian covariance matrices and marginal distributions
+This function produces a list of multivariate scenario forecasts in the marginal domain from the spatial/temporal/spatiotemporal gaussian covariance matrices and marginal distributions
 }
 \details{
-This is a sampling function for Gaussian couplas with marginals
-specificed by \code{MultiQR} or \code{PPD} objects and user-specified covariance
+This is a sampling function for the Gaussian copula with marginals
+specified by \code{MultiQR} or \code{PPD} objects and user-specified covariance
 matrix.
 }
 \note{

@@ -32,7 +32,7 @@ covcor_matrix  <- function(u_data,kfold=NULL,cov_cor="covariance",
   # Transform to Gaussian...
   g_data <- as.data.frame(lapply(u_data, qnorm))
   rm(u_data)
-
+  
   matList <- list()
   
   if(cov_cor=="covariance"){
@@ -52,7 +52,7 @@ covcor_matrix  <- function(u_data,kfold=NULL,cov_cor="covariance",
         } else{
           temp <- cov(x = g_data, use=use,...)
         }
-
+        
       }
       if(forcePD){
         temp <- as.matrix(nearPD(temp,corr=F)$mat)
