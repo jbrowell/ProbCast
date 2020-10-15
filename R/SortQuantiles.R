@@ -3,7 +3,7 @@
 #' This function sorts quantiles so that q1<q2<q3<...
 #' 
 #' @author Jethro Browell, \email{jethro.browell@@strath.ac.uk}
-#' @param data A \code{MultiQR, data.frame} containing multiple quantiles
+#' @param data A \code{MultiQR} containing multiple quantiles
 #' @param Limits A \code{list} of the upper (\code{U}) and lower (\code{L}) limits to apply
 #' to quantiles if the output should be bounded. E.g. \code{list(U=0.999,L=0.001)}/
 #' @details The method use in the produciton of multiple quantiles may not gaurantee
@@ -20,6 +20,8 @@ SortQuantiles <- function(data,Limits=NULL){
   if(is.unsorted(as.numeric(gsub(colnames(data),pattern = "q",replacement = "")))){
     stop("Columns are not sorted. Check format.")
   }
+  cl <- class(data)
+  if(cl[1]!="MultiQR"){stop("class(data)[1] does not equal \"MultiQR\"")}
 
   temp <- as.matrix(data)
   
@@ -35,7 +37,7 @@ SortQuantiles <- function(data,Limits=NULL){
 
   temp <- data.frame(temp)
   colnames(temp) <- colnames(data)
-  class(temp) <- c("MultiQR","data.frame")
+  class(temp) <- cl
 
   return(temp)
 
