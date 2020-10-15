@@ -257,8 +257,8 @@ pinball <- function(qrdata,realisations,kfolds=NULL,plot.it=T,subsets=NULL,break
                col=c(rainbow(breaks+1)),
                pch=c(rep(16,breaks+1)),bty = "n")
       }else{
-        legend("topleft",c(paste0(c("<=",paste0(round(break_qs[2:breaks],digits=1)," to "),">"),
-                                          round(break_qs[c(2:(breaks+1),breaks+1)],digits=1))),
+        legend("topleft",c(paste0(c("<=",paste0(signif(break_qs[2:breaks],digits=2)," to "),">"),
+                                          signif(break_qs[c(2:(breaks+1),breaks+1)],digits=2))),
                lty=c(rep(1,breaks+1)),
                col=c(rainbow(breaks+1)),
                pch=c(rep(16,breaks+1)),bty = "n")
