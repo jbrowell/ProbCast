@@ -168,8 +168,8 @@ reliability <- function(qrdata,realisations,kfolds=NULL,subsets=NULL,breaks=4,bo
                col=c(1,rainbow(breaks+1)),
                pch=c(NA,rep(16,breaks+1)),bty = "n")
       }else{
-        legend("topleft",c("Ideal",paste0(c("<=",paste0(round(break_qs[2:breaks],digits=1)," to "),">"),
-                                          round(break_qs[c(2:(breaks+1),breaks+1)],digits=1))),
+        legend("topleft",c("Ideal",paste0(c("<=",paste0(signif(break_qs[2:breaks],digits=2)," to "),">"),
+                                          signif(break_qs[c(2:(breaks+1),breaks+1)],digits=2))),
                lty=c(2,rep(1,breaks+1)),
                col=c(1,rainbow(breaks+1)),
                pch=c(NA,rep(16,breaks+1)),bty = "n")
