@@ -70,37 +70,46 @@ MQR_qreg_gam <- function(data,
   
   
   ## GAM for conditional expectation (and possible squared residuals)
-  data[,gam_pred:=as.numeric(NA)]
-  gams <- list()
-  formula_res2 <- reformulate(attr(terms(formula_res2),"term.labels"),response = "gam_res2")
-  for(fold in unique(data$kfold)){
-    ## Fit gam
-    print(paste0("GAM, kfold=",fold))
+  
+  ## Skip and only do quantile regression if gam_pred is provided
+  if(is.null(data$gam_pred)){
     
-    if(use_bam){
-      gams[[fold]] <- bam(data=data[kfold!=fold & kfold!="Test" & BadData==F,],
-                          formula = formula,
-                          weights = w,...)
-      if(model_res2){
-        gams[[paste0(fold,"_r")]] <- bam(data=cbind(data[kfold!=fold & kfold!="Test" & BadData==F,],data.table(gam_res2=residuals(gams[[fold]])^2)),
-                                         formula = formula_res2,
-                                         weights = w,...)
+    data[,gam_pred:=as.numeric(NA)]
+    gams <- list()
+    formula_res2 <- reformulate(attr(terms(formula_res2),"term.labels"),response = "gam_res2")
+    for(fold in unique(data$kfold)){
+      ## Fit gam
+      print(paste0("GAM, kfold=",fold))
+      
+      if(use_bam){
+        gams[[fold]] <- bam(data=data[kfold!=fold & kfold!="Test" & BadData==F,],
+                            formula = formula,
+                            weights = w,...)
+        if(model_res2){
+          gams[[paste0(fold,"_r")]] <- bam(data=cbind(data[kfold!=fold & kfold!="Test" & BadData==F,],data.table(gam_res2=residuals(gams[[fold]])^2)),
+                                           formula = formula_res2,
+                                           weights = w,...)
+        }
+      }else{
+        gams[[fold]] <- gam(data=data[kfold!=fold & kfold!="Test" & BadData==F,],
+                            formula = formula,
+                            weights = w,...)
+        if(model_res2){
+          gams[[paste0(fold,"_r")]] <- gam(data=cbind(data[kfold!=fold & kfold!="Test" & BadData==F,],data.table(gam_res2=residuals(gams[[fold]])^2)),
+                                           formula = formula_res2,
+                                           weights = w,...)
+        }
       }
-    }else{
-      gams[[fold]] <- gam(data=data[kfold!=fold & kfold!="Test" & BadData==F,],
-                          formula = formula,
-                          weights = w,...)
-      if(model_res2){
-        gams[[paste0(fold,"_r")]] <- gam(data=cbind(data[kfold!=fold & kfold!="Test" & BadData==F,],data.table(gam_res2=residuals(gams[[fold]])^2)),
-                                         formula = formula_res2,
-                                         weights = w,...)
-      }
+      
+      ## Predictions
+      data$gam_pred[data$kfold==fold] <- predict(gams[[fold]],newdata = data[kfold==fold,])  
+      
     }
-    
-    ## Predictions
-    data$gam_pred[data$kfold==fold] <- predict(gams[[fold]],newdata = data[kfold==fold,])  
-    
+  }else{
+    warning("Skipping gam modelling and using provided gam_pred.")
+    gams <- list()
   }
+  
   
   data[,gam_resid:=get(as.character(formula[[2]]))-gam_pred]
   
