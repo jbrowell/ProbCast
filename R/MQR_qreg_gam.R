@@ -9,7 +9,8 @@
 #' @author Jethro Browell, \email{jethro.browell@@strath.ac.uk}
 #' @param data A \code{data.frame} containing target and explanatory
 #' variables. May optionally contain a collumn called "kfold" with
-#' numbered/labeled folds and "Test" for test data.
+#' numbered/labeled folds and "Test" for test data. If \code{data} contains a column called
+#' "gam_pred" then gam modelling will be skipped and this will be used in quantile regression. 
 #' @param formala A \code{formula} object with the response on the left
 #' of an ~ operator, and the terms, separated by + operators, on the right passed to \code{gam()}
 #' or \code{bam()} from \code{mgcv}.
