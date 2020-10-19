@@ -1,6 +1,6 @@
-#' Produce a MultiQR ojbect from a Parametric Predictive Distribution
+#' Produce a MultiQR object from a Parametric Predictive Distribution
 #' 
-#' @description Produce multiple predictive quantiles as a \code{MultiQR} ojbect
+#' @description Produce multiple predictive quantiles as a \code{MultiQR} object
 #' from a \code{PPD} object. Alternatively
 #' return predicted parameters from the \code{PPD} models.
 #' 
@@ -15,11 +15,16 @@
 #' @details Exact quantiles of the (semi-) parametric models (predictive distributions)
 #' are calculated and output as a \code{MultiQR} object. Warnings are thrown if the
 #' input \code{data} result in \code{NA} estimates of quantiles, likely as a result of inputs
-#' being ourside the allowable range for the \code{PPD} model.
-#' @return A \code{MultiQR} object derived from gamlss predictive distributions. Alternatively, a matrix condaining the parameters of the predictive  gamlss distributions.
+#' being outside the allowable range for the \code{PPD} model.
+#' @return A \code{MultiQR} object derived from gamlss predictive distributions. Alternatively, a matrix containing the parameters of the predictive gamlss distributions.
 #' @export
-
 PPD_2_MultiQR <- function(data,models,quantiles=seq(0.05,0.95,by=0.05),params=F){
+  
+  
+  # picking out 1st class in-case 'data' is a data.table
+  if(class(data)[1]!="data.frame"){
+    data <- as.data.frame(data)
+  }
   
   # Arrange kfold cross-validation
   if(is.null(data$kfold)){
@@ -40,7 +45,7 @@ PPD_2_MultiQR <- function(data,models,quantiles=seq(0.05,0.95,by=0.05),params=F)
                                                 all.names(models[[1]]$nu.formula),
                                                 all.names(models[[1]]$tau.formula)))]
     
-    # NAs not allowed in newdata. Flags required to record possition.
+    # NAs not allowed in newdata. Flags required to record position.
     gooddata <- rowSums(is.na(tempdata))==0
     
     tempPred <- predictAll(object = models[[fold]],
