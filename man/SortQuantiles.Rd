@@ -7,20 +7,20 @@
 SortQuantiles(data, Limits = NULL)
 }
 \arguments{
-\item{data}{A \code{MultiQR, data.frame} containing multiple quantiles}
+\item{data}{A \code{MultiQR} containing multiple quantiles}
 
 \item{Limits}{A \code{list} of the upper (\code{U}) and lower (\code{L}) limits to apply
 to quantiles if the output should be bounded. E.g. \code{list(U=0.999,L=0.001)}/}
 }
 \value{
-A \code{MultiQR, data.frame} object with (nonstrictly) increasing quanitles.
+A \code{MultiQR, data.frame} object with (non-strictly) increasing quanitles.
 }
 \description{
 This function sorts quantiles so that q1<q2<q3<...
 }
 \details{
-The method use in the produciton of multiple quantiles may not gaurantee
-that quantiles are (nonstrictly) increasing, which is necseary if combining quantiles
+The method use in the production of multiple quantiles may not guarantee
+that quantiles are (non-strictly) increasing, which is necessary if combining quantiles
 to form a cumulative distribution function. Similarly, the quantiles may not
 respect the boundaries of the target variable. This function re-orders quantiles and 
 constrains them to the user-specified limits.

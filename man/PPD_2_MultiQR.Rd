@@ -2,7 +2,7 @@
 % Please edit documentation in R/PPD_2_MultiQR.R
 \name{PPD_2_MultiQR}
 \alias{PPD_2_MultiQR}
-\title{Produce a MultiQR ojbect from a Parametric Predictive Distribution}
+\title{Produce a MultiQR object from a Parametric Predictive Distribution}
 \usage{
 PPD_2_MultiQR(data, models, quantiles = seq(0.05, 0.95, by = 0.05), params = F)
 }
@@ -14,10 +14,10 @@ PPD_2_MultiQR(data, models, quantiles = seq(0.05, 0.95, by = 0.05), params = F)
 \item{quantiles}{Vector of quantiles to be included in the returned \code{MultiQR} object.}
 }
 \value{
-A \code{MultiQR} object derived from gamlss predictive distributions. Alternatively, a matrix condaining the parameters of the predictive  gamlss distributions.
+A \code{MultiQR} object derived from gamlss predictive distributions. Alternatively, a matrix containing the parameters of the predictive gamlss distributions.
 }
 \description{
-Produce multiple predictive quantiles as a \code{MultiQR} ojbect
+Produce multiple predictive quantiles as a \code{MultiQR} object
 from a \code{PPD} object. Alternatively
 return predicted parameters from the \code{PPD} models.
 
@@ -28,7 +28,7 @@ Note that this function may be superseded by an S3 method in future versions of
 Exact quantiles of the (semi-) parametric models (predictive distributions)
 are calculated and output as a \code{MultiQR} object. Warnings are thrown if the
 input \code{data} result in \code{NA} estimates of quantiles, likely as a result of inputs
-being ourside the allowable range for the \code{PPD} model.
+being outside the allowable range for the \code{PPD} model.
 }
 \author{
 Jethro Browell, \email{jethro.browell@strath.ac.uk}
