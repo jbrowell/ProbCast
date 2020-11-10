@@ -4,8 +4,12 @@
 rm(list=ls())
 
 library(foreach)
+library(devtools)
 
-Wind <- ProbCast::Wind
+load_all("./", TRUE)
+
+
+# Wind <- ProbCast::Wind
 
 Wind$WS100 <- sqrt(Wind$U100^2+Wind$V100^2)
 Wind$Power <- pmin(Wind$WS100,11)^3
@@ -16,8 +20,10 @@ Wind$kfold[Wind$ISSUEdtm>as.POSIXct("2012-06-30",tz="UTC")] <- "Fold 2"
 Wind$kfold[Wind$ISSUEdtm>as.POSIXct("2012-12-31",tz="UTC")] <- "Fold 3"
 Wind$kfold[Wind$ISSUEdtm>as.POSIXct("2013-06-30",tz="UTC")] <- "Test"
 
-
+#################################################################################
 ### Multiple Quantile Regression using GBM ####
+#################################################################################
+
 test1<-list(data=Wind)
 
 ## test in series
@@ -154,6 +160,16 @@ test1$gbm_mqr6 <- MQR_gbm(data = test1$data,
                           para_over_q = TRUE)
 
 
+### default
+test1$gbm_mqr7 <- mqr_qreg_gbm(data = test1$data,
+                               formula = TARGETVAR~U100+V100+U10+V10+(sqrt((U100^2+V100^2))),
+                               quantiles = seq(0.1,0.9,by=0.1),
+                               sort = T,
+                               sort_limits = list(U=0.999,L=0.001),
+                               pred_ntree = 100)
+
+
+
 
 
 
@@ -166,33 +182,35 @@ par(xaxs="r",yaxs="r")  # Extend axis limits by 4% ("i" does no extension)
 
 i_ts <- unique(test1$data$ISSUEdtm)[3]
 
-ProbCast:::plot.MultiQR(test1$gbm_mqr[which(test1$data$ISSUEdtm==i_ts),],xlab="Time Index [Hours]",ylab="Power [Capacity Factor]",axes=F,Legend = 1,ylim=c(0,1)); axis(1,1:24,pos=-0.07); axis(2,las=1)
+plot(test1$gbm_mqr[which(test1$data$ISSUEdtm==i_ts),],xlab="Time Index [Hours]",ylab="Power [Capacity Factor]",axes=F,Legend = 1,ylim=c(0,1)); axis(1,1:24,pos=-0.07); axis(2,las=1)
 lines(test1$data$TARGETVAR[which(test1$data$ISSUEdtm==i_ts)],lwd=3)
 
-ProbCast:::plot.MultiQR(test1$gbm_mqr3[which(test1$data$ISSUEdtm==i_ts),],xlab="Time Index [Hours]",ylab="Power [Capacity Factor]",axes=F,Legend = 1,ylim=c(0,1)); axis(1,1:24,pos=-0.07); axis(2,las=1)
+plot(test1$gbm_mqr3[which(test1$data$ISSUEdtm==i_ts),],xlab="Time Index [Hours]",ylab="Power [Capacity Factor]",axes=F,Legend = 1,ylim=c(0,1)); axis(1,1:24,pos=-0.07); axis(2,las=1)
 lines(test1$data$TARGETVAR[which(test1$data$ISSUEdtm==i_ts)],lwd=3)
 
-ProbCast:::plot.MultiQR(test1$gbm_mqr4[which(test1$data$ISSUEdtm==i_ts),],xlab="Time Index [Hours]",ylab="Power [Capacity Factor]",axes=F,Legend = 1,ylim=c(0,1)); axis(1,1:24,pos=-0.07); axis(2,las=1)
+plot(test1$gbm_mqr4[which(test1$data$ISSUEdtm==i_ts),],xlab="Time Index [Hours]",ylab="Power [Capacity Factor]",axes=F,Legend = 1,ylim=c(0,1)); axis(1,1:24,pos=-0.07); axis(2,las=1)
 lines(test1$data$TARGETVAR[which(test1$data$ISSUEdtm==i_ts)],lwd=3)
 
-
-ProbCast:::plot.MultiQR(test1$gbm_mqr6[which(test1$data$ISSUEdtm==i_ts),],xlab="Time Index [Hours]",ylab="Power [Capacity Factor]",axes=F,Legend = 1,ylim=c(0,1)); axis(1,1:24,pos=-0.07); axis(2,las=1)
+plot(test1$gbm_mqr6[which(test1$data$ISSUEdtm==i_ts),],xlab="Time Index [Hours]",ylab="Power [Capacity Factor]",axes=F,Legend = 1,ylim=c(0,1)); axis(1,1:24,pos=-0.07); axis(2,las=1)
 lines(test1$data$TARGETVAR[which(test1$data$ISSUEdtm==i_ts)],lwd=3)
 
-
-
-ProbCast:::plot.MultiQR(test1$gbm_mqr2[which(test1$data$ISSUEdtm==i_ts),],xlab="Time Index [Hours]",ylab="Power [Capacity Factor]",axes=F,Legend = 1,ylim=c(0,1)); axis(1,1:24,pos=-0.07); axis(2,las=1)
-lines(test1$data$TARGETVAR[which(test1$data$ISSUEdtm==i_ts)],lwd=3)
-
-
-ProbCast:::plot.MultiQR(test1$gbm_mqr5[which(test1$data$ISSUEdtm==i_ts),],xlab="Time Index [Hours]",ylab="Power [Capacity Factor]",axes=F,Legend = 1,ylim=c(0,1)); axis(1,1:24,pos=-0.07); axis(2,las=1)
+plot(test1$gbm_mqr7[which(test1$data$ISSUEdtm==i_ts),],xlab="Time Index [Hours]",ylab="Power [Capacity Factor]",axes=F,Legend = 1,ylim=c(0,1)); axis(1,1:24,pos=-0.07); axis(2,las=1)
 lines(test1$data$TARGETVAR[which(test1$data$ISSUEdtm==i_ts)],lwd=3)
 
 
 
-lapply(names(test1)[-1][c(1,3,4,6,2,5)],function(x){
+plot(test1$gbm_mqr2[which(test1$data$ISSUEdtm==i_ts),],xlab="Time Index [Hours]",ylab="Power [Capacity Factor]",axes=F,Legend = 1,ylim=c(0,1)); axis(1,1:24,pos=-0.07); axis(2,las=1)
+lines(test1$data$TARGETVAR[which(test1$data$ISSUEdtm==i_ts)],lwd=3)
+
+
+plot(test1$gbm_mqr5[which(test1$data$ISSUEdtm==i_ts),],xlab="Time Index [Hours]",ylab="Power [Capacity Factor]",axes=F,Legend = 1,ylim=c(0,1)); axis(1,1:24,pos=-0.07); axis(2,las=1)
+lines(test1$data$TARGETVAR[which(test1$data$ISSUEdtm==i_ts)],lwd=3)
+
+
+
+lapply(names(test1)[-1][c(1,3,4,6,7,2,5)],function(x){
   
-  ProbCast::reliability(qrdata = test1[[x]],
+  reliability(qrdata = test1[[x]],
                         realisations = test1$data$TARGETVAR,
                         kfolds = test1$data$kfold,main=x)
   
@@ -200,9 +218,9 @@ lapply(names(test1)[-1][c(1,3,4,6,2,5)],function(x){
 })
 
 
-lapply(names(test1)[-1][c(1,3,4,6,2,5)],function(x){
+lapply(names(test1)[-1][c(1,3,4,6,7,2,5)],function(x){
   
-  ProbCast::pinball(qrdata = test1[[x]],
+  pinball(qrdata = test1[[x]],
                     realisations = test1$data$TARGETVAR,
                     kfolds = test1$data$kfold,main=x)
   
@@ -211,10 +229,201 @@ lapply(names(test1)[-1][c(1,3,4,6,2,5)],function(x){
 
 
 
+#################################################################################
+### Multiple Quantile Regression using QGAM ####
+#################################################################################
+
+load_all("./", TRUE)
+
+test1<-list(data=Wind)
+
+## test in series
+test1$gam_mqr <- mqr_qreg_mboost(data = test1$data,
+                                formula = TARGETVAR~bbs(WS100,knots=8),
+                                bc_mstop = 100,
+                                bc_nu = 0.01,
+                                quantiles = seq(0.1,0.9,by=0.1),
+                                sort = T,
+                                sort_limits = list(U=0.999,L=0.001))
+
+# test with modified hyperparameters
+test1$gam_mqr2 <- mqr_qreg_mboost(data = test1$data,
+                                 formula = TARGETVAR~bbs(WS100,knots=8),
+                                 bc_mstop = 100,
+                                 bc_nu = 0.5,
+                                 quantiles = seq(0.1,0.9,by=0.1),
+                                 sort = T,
+                                 sort_limits = list(U=0.999,L=0.001))
+
+
+# test in parallel ---> should equal model 1
+test1$gam_mqr3 <- mqr_qreg_mboost(data = test1$data,
+                                 formula = TARGETVAR~bbs(WS100,knots=8),
+                                 bc_mstop = 100,
+                                 bc_nu = 0.01,
+                                 quantiles = seq(0.1,0.9,by=0.1),
+                                 sort = T,
+                                 sort_limits = list(U=0.999,L=0.001),
+                                 cores = 8L)
+
+# test with save model function 1 worker
+tmp <- mqr_qreg_mboost(data = test1$data,
+                       formula = TARGETVAR~bbs(WS100,knots=8),
+                       bc_mstop = 100,
+                       bc_nu = 0.01,
+                       quantiles = seq(0.1,0.9,by=0.1),
+                       sort = T,
+                       sort_limits = list(U=0.999,L=0.001),
+                       save_models_path = "./tmp")
+rm(tmp)
+
+file.remove(list.files(pattern = "*.rda"))
+
+# test with save model function 8 workers
+tmp <- mqr_qreg_mboost(data = test1$data,
+                       formula = TARGETVAR~bbs(WS100,knots=8),
+                       bc_mstop = 100,
+                       bc_nu = 0.01,
+                       quantiles = seq(0.1,0.9,by=0.1),
+                       sort = T,
+                       sort_limits = list(U=0.999,L=0.001),
+                       save_models_path = "./tmp",
+                       cores=8L)
+
+file.remove(list.files(pattern = "*.rda"))
+rm(tmp)
 
 
 
 
+
+#####################
+
+## back compatibility test
+## test in series
+test1$gam_mqr4 <- MQR_qreg_mboost(data = test1$data,
+                                 formula = TARGETVAR~bbs(WS100,knots=8),
+                                 bc_mstop = 100,
+                                 bc_nu = 0.01,
+                                 quantiles = seq(0.1,0.9,by=0.1),
+                                 Sort = T,
+                                 SortLimits = list(U=0.999,L=0.001))
+
+# test with modified hyperparameters
+test1$gam_mqr5 <- MQR_qreg_mboost(data = test1$data,
+                                  formula = TARGETVAR~bbs(WS100,knots=8),
+                                  bc_mstop = 100,
+                                  bc_nu = 0.5,
+                                  quantiles = seq(0.1,0.9,by=0.1),
+                                  Sort = T,
+                                  SortLimits = list(U=0.999,L=0.001))
+
+
+# test in parallel ---> should equal model 1
+test1$gam_mqr6 <- MQR_qreg_mboost(data = test1$data,
+                                  formula = TARGETVAR~bbs(WS100,knots=8),
+                                  bc_mstop = 100,
+                                  bc_nu = 0.01,
+                                  quantiles = seq(0.1,0.9,by=0.1),
+                                  Sort = T,
+                                  SortLimits = list(U=0.999,L=0.001),
+                                  cores = 8L,
+                                  parallel = TRUE)
+
+
+
+### default
+test1$gam_mqr7 <- mqr_qreg_mboost(data = test1$data,
+                                  formula = TARGETVAR~WS100,
+                                  bc_mstop = 100,
+                                  bc_nu = 0.01,
+                                  quantiles = seq(0.1,0.9,by=0.1),
+                                  sort = T,
+                                  sort_limits = list(U=0.999,L=0.001),
+                                  cores = 8L,
+                                  baselearner="btree")
+
+
+
+
+
+
+
+
+par(mar=c(3,3,0.5,1))  # Trim margin around plot [b,l,t,r]
+par(tcl=0.35)  # Switch tick marks to insides of axes
+par(mgp=c(1.5,0.2,0))  # Set margin lines; default c(3,1,0) [title,labels,line]
+par(xaxs="r",yaxs="r")  # Extend axis limits by 4% ("i" does no extension)
+
+i_ts <- unique(test1$data$ISSUEdtm)[3]
+
+plot(test1$gam_mqr[which(test1$data$ISSUEdtm==i_ts),],xlab="Time Index [Hours]",ylab="Power [Capacity Factor]",axes=F,Legend = 1,ylim=c(0,1)); axis(1,1:24,pos=-0.07); axis(2,las=1)
+lines(test1$data$TARGETVAR[which(test1$data$ISSUEdtm==i_ts)],lwd=3)
+
+plot(test1$gam_mqr3[which(test1$data$ISSUEdtm==i_ts),],xlab="Time Index [Hours]",ylab="Power [Capacity Factor]",axes=F,Legend = 1,ylim=c(0,1)); axis(1,1:24,pos=-0.07); axis(2,las=1)
+lines(test1$data$TARGETVAR[which(test1$data$ISSUEdtm==i_ts)],lwd=3)
+
+plot(test1$gam_mqr4[which(test1$data$ISSUEdtm==i_ts),],xlab="Time Index [Hours]",ylab="Power [Capacity Factor]",axes=F,Legend = 1,ylim=c(0,1)); axis(1,1:24,pos=-0.07); axis(2,las=1)
+lines(test1$data$TARGETVAR[which(test1$data$ISSUEdtm==i_ts)],lwd=3)
+
+plot(test1$gam_mqr6[which(test1$data$ISSUEdtm==i_ts),],xlab="Time Index [Hours]",ylab="Power [Capacity Factor]",axes=F,Legend = 1,ylim=c(0,1)); axis(1,1:24,pos=-0.07); axis(2,las=1)
+lines(test1$data$TARGETVAR[which(test1$data$ISSUEdtm==i_ts)],lwd=3)
+
+plot(test1$gam_mqr7[which(test1$data$ISSUEdtm==i_ts),],xlab="Time Index [Hours]",ylab="Power [Capacity Factor]",axes=F,Legend = 1,ylim=c(0,1)); axis(1,1:24,pos=-0.07); axis(2,las=1)
+lines(test1$data$TARGETVAR[which(test1$data$ISSUEdtm==i_ts)],lwd=3)
+
+
+
+plot(test1$gam_mqr2[which(test1$data$ISSUEdtm==i_ts),],xlab="Time Index [Hours]",ylab="Power [Capacity Factor]",axes=F,Legend = 1,ylim=c(0,1)); axis(1,1:24,pos=-0.07); axis(2,las=1)
+lines(test1$data$TARGETVAR[which(test1$data$ISSUEdtm==i_ts)],lwd=3)
+
+
+plot(test1$gam_mqr5[which(test1$data$ISSUEdtm==i_ts),],xlab="Time Index [Hours]",ylab="Power [Capacity Factor]",axes=F,Legend = 1,ylim=c(0,1)); axis(1,1:24,pos=-0.07); axis(2,las=1)
+lines(test1$data$TARGETVAR[which(test1$data$ISSUEdtm==i_ts)],lwd=3)
+
+
+
+lapply(names(test1)[-1][c(1,3,4,6,7,2,5)],function(x){
+  
+  reliability(qrdata = test1[[x]],
+              realisations = test1$data$TARGETVAR,
+              kfolds = test1$data$kfold,main=x)
+  
+  
+})
+
+
+lapply(names(test1)[-1][c(1,3,4,6,7,2,5)],function(x){
+  
+  pinball(qrdata = test1[[x]],
+          realisations = test1$data$TARGETVAR,
+          kfolds = test1$data$kfold,main=x)
+  
+  
+})
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+#################################################################################
+### Multiple Quantile Regression using QGAM ####
+#################################################################################
 
 
 index <- 54

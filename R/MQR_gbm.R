@@ -15,13 +15,16 @@
 #' @param pred_ntree predict using a user-specified tree.
 #' If unspecified an out-of-the bag estimate will be used unless internal
 #' gbm cross-validation folds are specified in \code{gbm_params}.
-#' @param cores the number of available cores. Defaults to one, i.e. no parallelisation, although in this case the user must still specify \code{pckgs} if applicable.
+#' @param cores the number of available cores. Defaults to one, i.e. no parallelisation, although in this case the user
+#'  must still specify \code{pckgs} if applicable.
 #' @param pckgs specify additional packages required for
 #' each worker (e.g. c("data.table") if data stored as such).
 #' @param sort Sort quantiles using \code{SortQuantiles()}?
-#' @param sort_limits \code{Limits} argument to be passed to \code{SortQuantiles()}. Constrains quantiles to upper and lower limits given by \code{list(U=upperlim,L=lowerlim)}.
-#' @param save_models_path Path to save models. Model details and file extension pasted onto this string. Defaults to \code{NULL}, i.e. no model save.
-#' @param ... extra hyper-parameters to be passed to \code{fit.gbm()}.
+#' @param sort_limits \code{Limits} argument to be passed to \code{SortQuantiles()}. Constrains quantiles to upper and 
+#' lower limits given by \code{list(U=upperlim,L=lowerlim)}.
+#' @param save_models_path Path to save models. Model details and file extension pasted onto this string. 
+#' Defaults to \code{NULL}, i.e. no model save.
+#' @param ... extra hyper-parameters to be passed to \code{gbm()}.
 #' @details The returned predictive quantiles are those produced out-of-sample for each
 #' cross-validation fold (using models trained on the remaining folds but not "Test" data).
 #' Predictive quantiles corresponding to "Test" data are produced using models trained on all
@@ -82,7 +85,7 @@ mqr_qreg_gbm <- function(data,
   gc()
   
   ### fit the models
-  qpred <- foreach::foreach(q = quantiles,.packages = c("gbm",pckgs),.options.snow = opts,.export="...") %dopar% {
+  qpred <- foreach::foreach(q = quantiles,.packages = c("gbm",pckgs),.options.snow = opts) %dopar% {
     
     pred <- list()
     
@@ -136,7 +139,7 @@ mqr_qreg_gbm <- function(data,
   
   
   if((sort) & (length(quantiles) != 1)){# if only one quantile specified, sortquantiles transposes predqs (also no need to sort).
-    predqs <- ProbCast::SortQuantiles(data = predqs,Limits = sort_limits)
+    predqs <- SortQuantiles(data = predqs,Limits = sort_limits)
   }
   
   
