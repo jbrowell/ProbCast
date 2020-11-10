@@ -52,8 +52,8 @@ mqr_qreg_mboost <- function(data,
   ## to-do
   ## -- clear up auto-cv
   ## -- rolling window
-  ## -- data.table, dependency with BadData?
-  ## -- boosting control?
+  ## -- dependency with BadData?
+  ## -- boosting control? use ... to pass mboost::boost_control()?
   ## -- check single quantiles warning
   
   if(length(quantiles)<2){

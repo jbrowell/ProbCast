@@ -24,7 +24,7 @@
 #' lower limits given by \code{list(U=upperlim,L=lowerlim)}.
 #' @param save_models_path Path to save models. Model details and file extension pasted onto this string. 
 #' Defaults to \code{NULL}, i.e. no model save.
-#' @param ... extra hyper-parameters to be passed to \code{gbm()}.
+#' @param ... Additional arguments passed to \code{gbm()}.
 #' @details The returned predictive quantiles are those produced out-of-sample for each
 #' cross-validation fold (using models trained on the remaining folds but not "Test" data).
 #' Predictive quantiles corresponding to "Test" data are produced using models trained on all

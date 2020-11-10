@@ -1,15 +1,17 @@
 ########################### temporary example file to test functions and ensure updates are ok
 
 
+  
 rm(list=ls())
+.rs.restartR()
 
-library(foreach)
+# library(foreach)
 library(devtools)
 
 load_all("./", TRUE)
 
 
-# Wind <- ProbCast::Wind
+Wind <- ProbCast::Wind
 
 Wind$WS100 <- sqrt(Wind$U100^2+Wind$V100^2)
 Wind$Power <- pmin(Wind$WS100,11)^3
@@ -405,25 +407,195 @@ lapply(names(test1)[-1][c(1,3,4,6,7,2,5)],function(x){
 
 
 
+#################################################################################
+### Parametric Regression using GAMLSS ####
+#################################################################################
+
+
+
+load_all("./", TRUE)
+
+test1<-list(data=Wind)
+
+# library(gamlss)
+## test in series
+test1$ppd <- ppd_gamlss(data = test1$data,
+                         formula = TARGETVAR~bs(WS100,df=3),
+                         sigma.formula = ~WS100,
+                         nu.formula = ~WS100,
+                         tau.formula = ~WS100,
+                         family =  BEINF,
+                         method = mixed(20,10))
+
+summary(test1$ppd$Test)
+
+
+
+# test with modified hyperppdmeters
+test1$ppd2 <- ppd_gamlss(data = test1$data,
+                         formula = TARGETVAR~bs(WS100,df=3),
+                         sigma.formula = ~WS100,
+                         nu.formula = ~WS100,
+                         tau.formula = ~WS100,
+                         family =  BEINF,
+                         sigma.start = 0.05,#NO,  #
+                         method = mixed(20,10))
+
+summary(test1$ppd2$Test)
+
+identical(coef(test1$ppd2$Test),coef(test1$ppd$Test))
+
+
+
+# test in pllel ---> should equal model 1
+test1$ppd3 <- ppd_gamlss(data = test1$data,
+                         formula = TARGETVAR~bs(WS100,df=3),
+                         sigma.formula = ~WS100,
+                         nu.formula = ~WS100,
+                         tau.formula = ~WS100,
+                         family =  BEINF,
+                         method = mixed(20,10),
+                         cores = 6)
+
+summary(test1$ppd3$Test)
+
+identical(coef(test1$ppd3$Test),coef(test1$ppd$Test))
+
+
+
+# test with save model function 1 worker
+tmp <- ppd_gamlss(data = test1$data,
+                   formula = TARGETVAR~bs(WS100,df=3),
+                   sigma.formula = ~WS100,
+                   nu.formula = ~WS100,
+                   tau.formula = ~WS100,
+                   family =  BEINF,
+                   method = mixed(20,10),
+                   save_models_path = "./tmp")
+rm(tmp)
+
+file.remove(list.files(pattern = "*.rda"))
+
+# test with save model function 8 workers
+tmp <-  ppd_gamlss(data = test1$data,
+                    formula = TARGETVAR~bs(WS100,df=3),
+                    sigma.formula = ~WS100,
+                    nu.formula = ~WS100,
+                    tau.formula = ~WS100,
+                    family =  BEINF,
+                    method = mixed(20,10),
+                    cores=8L,
+                    save_models_path = "./tmp")
+
+file.remove(list.files(pattern = "*.rda"))
+rm(tmp)
 
 
 
 
 
+#####################
+
+## back compatibility test
+## test in series
+# library(gamlss)
+test1$ppd4 <- Para_gamlss(data = test1$data,
+                              formula = TARGETVAR~bs(WS100,df=3),
+                              sigma.formula = ~WS100,
+                              nu.formula = ~WS100,
+                              tau.formula = ~WS100,
+                              family =  BEINF,
+                              method = mixed(20,10))
+
+identical(coef(test1$ppd4$Test),coef(test1$ppd$Test))
+
+
+
+# test with modified hyperparameters
+test1$ppd5 <- Para_gamlss(data = test1$data,
+                          formula = TARGETVAR~bs(WS100,df=3),
+                          sigma.formula = ~WS100,
+                          nu.formula = ~WS100,
+                          tau.formula = ~WS100,
+                          family =  BEINF,
+                          sigma.start=0.05,
+                          method = mixed(20,10))
+
+identical(coef(test1$ppd5$Test),coef(test1$ppd2$Test))
+
+
+# test in parallel ---> should equal model 1
+test1$ppd6 <- Para_gamlss(data = test1$data,
+                          formula = TARGETVAR~bs(WS100,df=3),
+                          sigma.formula = ~WS100,
+                          nu.formula = ~WS100,
+                          tau.formula = ~WS100,
+                          family =  BEINF,
+                          method = mixed(20,10),
+                          parallel = TRUE,
+                          cores = 6)
+
+identical(coef(test1$ppd6$Test),coef(test1$ppd$Test))
+
+
+### default
 
 
 
 
+test1$ppd7 <- ppd_gamlss(data = test1$data,
+                         formula = TARGETVAR~bs(WS100,df=3),
+                         sigma.formula = ~WS100,
+                         nu.formula = ~WS100,
+                         tau.formula = ~WS100,
+                         family =  BEINF)
+
+test1$ppd8 <- Para_gamlss(data = test1$data,
+                          formula = TARGETVAR~bs(WS100,df=3),
+                          sigma.formula = ~WS100,
+                          nu.formula = ~WS100,
+                          tau.formula = ~WS100,
+                          family =  BEINF)
 
 
+
+identical(coef(test1$ppd7$Test),coef(test1$ppd8$Test))
 
 
 
 
 
 #################################################################################
-### Multiple Quantile Regression using QGAM ####
+### Parametric Regression using gamboostLSS ####
 #################################################################################
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 index <- 54
