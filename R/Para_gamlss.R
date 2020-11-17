@@ -32,16 +32,16 @@
 #' @importFrom foreach %dopar%
 #' @export
 ppd_gamlss <- function(data,
-                        formula,
-                        cv_folds=NULL,
-                        sigma.formula= ~1,
-                        nu.formula = ~1,
-                        tau.formula = ~1,
-                        family=NO(),
-                        cores = 1,
-                        pckgs = NULL,
-                        save_models_path=NULL,
-                        ... = NULL){
+                       formula,
+                       cv_folds=NULL,
+                       sigma.formula= ~1,
+                       nu.formula = ~1,
+                       tau.formula = ~1,
+                       family = gamlss.dist::NO(),
+                       cores = 1,
+                       pckgs = NULL,
+                       save_models_path=NULL,
+                       ... = NULL){
   
   
   ## to-do
@@ -171,7 +171,7 @@ Para_gamlss <- function(data,formula,
                         sigma.formula= ~1,
                         nu.formula = ~1,
                         tau.formula = ~1,
-                        family=NO(),
+                        family=gamlss.dist::NO(),
                         parallel = F,
                         cores = NULL,
                         pckgs = NULL,

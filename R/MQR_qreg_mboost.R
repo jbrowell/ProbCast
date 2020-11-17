@@ -14,8 +14,6 @@
 #' of an ~ operator, and the terms, separated by + operators, on the right.
 #' @param quantiles A vector with length>=2 containing the quantiles to fit models for.
 #' @param cv_folds Control for cross-validation if not supplied in \code{data}.
-#' @param bc_mstop for boosting control, the number of boosting iterations
-#' @param bc_nu for boosting control, the shrinkage or step size with a value between 0 and 1
 #' @param w an optional numeric vector of weights to be used in the fitting process.
 #' @param cores the number of available cores. Defaults to one, i.e. no parallelisation, although in 
 #' this case the user must still specify \code{pckgs} if applicable.
@@ -27,6 +25,7 @@
 #' @param save_models_path Path to save models. Model details and file extension pasted onto this string.
 #' Defaults to \code{NULL}, i.e. no model save.
 #' @param ... extra hyper-parameters to be passed to \code{mboost()}.
+#' e.g. use \code{control = mboost::boost_control()} to specify boosting steps and shrinkage.
 #' @details The returned predictive quantiles are those produced out-of-sample for each
 #' cross-validation fold (using models trained on the remaining folds but not "Test" data).
 #' Predictive quantiles corresponding to "Test" data are produced using models trained on all
@@ -39,8 +38,6 @@ mqr_qreg_mboost <- function(data,
                             formula,
                             quantiles=c(0.25,0.5,0.75),
                             cv_folds=NULL,
-                            bc_mstop=100,
-                            bc_nu=0.1,
                             w=rep(1,nrow(data)),
                             cores = 1,
                             pckgs = NULL,
@@ -53,7 +50,6 @@ mqr_qreg_mboost <- function(data,
   ## -- clear up auto-cv
   ## -- rolling window
   ## -- dependency with BadData?
-  ## -- boosting control? use ... to pass mboost::boost_control()?
   ## -- check single quantiles warning
   
   if(length(quantiles)<2){
@@ -117,8 +113,6 @@ mqr_qreg_mboost <- function(data,
       temp_model <- mboost::mboost(formula=formula,
                                    data=data[data$kfold!=fold & data$kfold!="Test" & data$BadData==F & !is.na(data[[formula[[2]]]]),],
                                    family = mboost::QuantReg(tau=q),
-                                   control= mboost::boost_control(mstop = bc_mstop,
-                                                                  nu = bc_nu),
                                    weights=w[data$kfold!=fold & data$kfold!="Test" & data$BadData==F & !is.na(data[[formula[[2]]]])],
                                    ...)
       
@@ -245,8 +239,8 @@ MQR_qreg_mboost <- function(data,
                                    formula = formula,
                                    quantiles=quantiles,
                                    cv_folds=CVfolds,
-                                   bc_mstop=bc_mstop,
-                                   bc_nu=bc_nu,
+                                   control = mboost::boost_control(mstop = bc_mstop,
+                                                                   nu = bc_nu),
                                    w=w,
                                    cores = cores,
                                    pckgs = pckgs,
@@ -263,8 +257,8 @@ MQR_qreg_mboost <- function(data,
                                    formula = formula,
                                    quantiles=quantiles,
                                    cv_folds=CVfolds,
-                                   bc_mstop=bc_mstop,
-                                   bc_nu=bc_nu,
+                                   control = mboost::boost_control(mstop = bc_mstop,
+                                                                   nu = bc_nu),
                                    w=w,
                                    cores = 1,
                                    pckgs = pckgs,

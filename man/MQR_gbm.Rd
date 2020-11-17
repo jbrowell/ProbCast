@@ -2,7 +2,7 @@
 % Please edit documentation in R/MQR_gbm.R
 \name{MQR_gbm}
 \alias{MQR_gbm}
-\title{Multiple Quantile Regression Using Gradient Boosted Decision Trees}
+\title{Multiple Quantile Regression Using Gradient Boosted Decision Trees (depreciated)}
 \usage{
 MQR_gbm(
   data,
@@ -60,8 +60,8 @@ of an ~ operator, and the terms, separated by + operators, on the right}
 Quantile forecasts in a \code{MultiQR} object.
 }
 \description{
-This function fits multiple boosted quantile regreesion trees 
-using \code{gbm} with facilities for cross-validation.
+This function is now depreciated and may be removed in future versions of this package.
+Use \code{mqr_qreg_gbm()} instead.
 }
 \details{
 The returned predictive quantiles are those produced out-of-sample for each
