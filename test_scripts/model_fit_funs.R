@@ -94,18 +94,18 @@ file.remove(list.files(pattern = "*.rda"))
 
 # test with save model function 8 workers
 tmp <- mqr_qreg_gbm(data = test1$data,
-                               formula = TARGETVAR~U100+V100+U10+V10+(sqrt((U100^2+V100^2))),
-                               interaction.depth = 3,
-                               n.trees = 100,
-                               shrinkage = 0.05,
-                               n.minobsinnode = 20,
-                               bag.fraction = 1,
-                               keep.data = F,
-                               quantiles = seq(0.1,0.9,by=0.1),
-                               sort = T,
-                               sort_limits = list(U=0.999,L=0.001),
-                               pred_ntree = 100,
-                               save_models_path = "./tmp",
+                    formula = TARGETVAR~U100+V100+U10+V10+(sqrt((U100^2+V100^2))),
+                    interaction.depth = 3,
+                    n.trees = 100,
+                    shrinkage = 0.05,
+                    n.minobsinnode = 20,
+                    bag.fraction = 1,
+                    keep.data = F,
+                    quantiles = seq(0.1,0.9,by=0.1),
+                    sort = T,
+                    sort_limits = list(U=0.999,L=0.001),
+                    pred_ntree = 100,
+                    save_models_path = "./tmp",
                     cores=8L)
 
 file.remove(list.files(pattern = "*.rda"))
@@ -172,6 +172,41 @@ test1$gbm_mqr7 <- mqr_qreg_gbm(data = test1$data,
                                sort = T,
                                sort_limits = list(U=0.999,L=0.001),
                                pred_ntree = 100)
+
+
+##### OPERATIONAL MODEL
+
+
+test1$gbm_mqr8 <- mqr_qreg_gbm(data = test1$data,
+                              formula = TARGETVAR~U100+V100+U10+V10+(sqrt((U100^2+V100^2))),
+                              interaction.depth = 3,
+                              n.trees = 100,
+                              shrinkage = 0.05,
+                              n.minobsinnode = 20,
+                              bag.fraction = 1,
+                              keep.data = F,
+                              quantiles = seq(0.1,0.9,by=0.1),
+                              sort = T,
+                              sort_limits = list(U=0.999,L=0.001),
+                              pred_ntree = 100,
+                              return_op_model = TRUE)
+
+### register s3 method?!
+### compare with results from prev
+tmp <- predict.pc_gbm(test1$gbm_mqr8$op_mod,
+                      newdata = test1$data,
+                      pred_ntree = 100,
+                      sort = T,
+                      sort_limits = list(U=0.999,L=0.001))
+
+
+
+
+
+
+
+
+##### auto cv
 
 
 
