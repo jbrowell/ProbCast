@@ -24,7 +24,7 @@
 #' lower limits given by \code{list(U=upperlim,L=lowerlim)}.
 #' @param save_models_path Path to save models. Model details and file extension pasted onto this string. 
 #' Defaults to \code{NULL}, i.e. no model save.
-#' @param return_op_model return an operational model trained on **all available data** for prediction? see \code{predict.pc_gbm()}.
+#' @param return_op_model return an operational model trained on \strong{all available data} for prediction? see \code{predict.pc_gbm()}.
 #' @param ... Additional arguments passed to \code{gbm()}.
 #' @details The returned predictive quantiles are those produced out-of-sample for each
 #' cross-validation fold (using models trained on the remaining folds but not "Test" data).
@@ -53,8 +53,9 @@ mqr_qreg_gbm <- function(data,
                          ...){
   
   # to-do
-  ## clear up auto-cv
-  ### issue/target/fold indexed mqr object?
+  ## clear up auto-cv --- cv_folds = NULL and no-kfold in data? convert to function
+  ### no kfold capability?
+  #### issue/target/fold indexed mqr object?
   
   # Set-up Cross-validation
   TEST<-F # Flag for Training (with CV) AND Test output
@@ -307,7 +308,7 @@ MQR_gbm <- function(data,
 #' @param quantiles The quantiles to predict. Default is all the quantiles present in \code{object}
 #' @param pred_ntree predict using a user-specified tree.
 #' If unspecified an out-of-the bag estimate will be used unless internal
-#' gbm cross-validation folds are specified in \code{mqr_qreg_gbm()}}
+#' gbm cross-validation folds are specified in \code{mqr_qreg_gbm()}
 #' @param perf.plot plot GBM performance if \code{pred_ntree = NULL}?
 #' @param sort sort quantiles using \code{SortQuantiles()}?
 #' @param sort_limits \code{Limits} argument to be passed to \code{SortQuantiles()}. Constrains quantiles to upper and 

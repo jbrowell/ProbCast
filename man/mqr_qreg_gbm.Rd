@@ -16,6 +16,7 @@ mqr_qreg_gbm(
   sort = T,
   sort_limits = NULL,
   save_models_path = NULL,
+  return_op_model = FALSE,
   ...
 )
 }
@@ -32,7 +33,7 @@ numbered/labeled folds and "Test" for test data.}
 
 \item{pred_ntree}{predict using a user-specified tree.
 If unspecified an out-of-the bag estimate will be used unless internal
-gbm cross-validation folds are specified in \code{gbm_params}.}
+gbm cross-validation folds are specified in \code{...}.}
 
 \item{cores}{the number of available cores. Defaults to one, i.e. no parallelisation, although in this case the user
 must still specify \code{pckgs} if applicable.}
@@ -48,13 +49,16 @@ lower limits given by \code{list(U=upperlim,L=lowerlim)}.}
 \item{save_models_path}{Path to save models. Model details and file extension pasted onto this string. 
 Defaults to \code{NULL}, i.e. no model save.}
 
+\item{return_op_model}{return an operational model trained on \strong{all available data} for prediction? see \code{predict.pc_gbm()}.}
+
 \item{...}{Additional arguments passed to \code{gbm()}.}
 
 \item{formala}{A \code{formula} object with the response on the left
 of an ~ operator, and the terms, separated by + operators, on the right}
 }
 \value{
-Quantile forecasts in a \code{MultiQR} object.
+Quantile forecasts in a \code{MultiQR} object. Optionally a list containing a \code{MultiQR}
+object and a model for operational prediction
 }
 \description{
 This function fits multiple boosted quantile regression trees 
@@ -64,7 +68,10 @@ using \code{gbm} with facilities for cross-validation.
 The returned predictive quantiles are those produced out-of-sample for each
 cross-validation fold (using models trained on the remaining folds but not "Test" data).
 Predictive quantiles corresponding to "Test" data are produced using models trained on all
-non-test data.
+non-test data. 
+
+When \code{return_op_model = TRUE} the function returns a list containing the \code{MultiQR} object
+and an operational model for generating predictions.
 }
 \author{
 Jethro Browell, \email{jethro.browell@strath.ac.uk}; Ciaran Gilbert, \email{ciaran.gilbert@strath.ac.uk}
