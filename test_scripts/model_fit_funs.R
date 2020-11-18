@@ -106,7 +106,8 @@ tmp <- mqr_qreg_gbm(data = test1$data,
                     sort_limits = list(U=0.999,L=0.001),
                     pred_ntree = 100,
                     save_models_path = "./tmp",
-                    cores=8L)
+                    cores=8L,
+                    return_op_model = TRUE)
 
 file.remove(list.files(pattern = "*.rda"))
 rm(tmp)
@@ -191,8 +192,6 @@ test1$gbm_mqr8 <- mqr_qreg_gbm(data = test1$data,
                               pred_ntree = 100,
                               return_op_model = TRUE)
 
-### register s3 method?!
-### compare with results from prev
 tmp <- predict.pc_gbm(test1$gbm_mqr8$op_mod,
                       newdata = test1$data,
                       pred_ntree = 100,
@@ -200,13 +199,35 @@ tmp <- predict.pc_gbm(test1$gbm_mqr8$op_mod,
                       sort_limits = list(U=0.999,L=0.001))
 
 
+tmp <- predict.pc_gbm(test1$gbm_mqr8$op_mod,
+                      newdata = test1$data,
+                      pred_ntree = 1,
+                      quantiles = c(.1,.5,.9))
 
 
 
-
+length(test1$gbm_mqr8$op_mod$q10$fit)==length(na.omit(test1$data$TARGETVAR))
 
 
 ##### auto cv
+##### need to fix autocv set-up! - setting cv_folds to NULL here results in error...
+test1$data$kfold <- NULL
+test1$gbm_mqr9 <- mqr_qreg_gbm(data = test1$data,
+                               formula = TARGETVAR~U100+V100+U10+V10+(sqrt((U100^2+V100^2))),
+                               cv_folds = 5, 
+                               interaction.depth = 3,
+                               n.trees = 100,
+                               shrinkage = 0.05,
+                               n.minobsinnode = 20,
+                               bag.fraction = 1,
+                               keep.data = F,
+                               quantiles = seq(0.1,0.9,by=0.1),
+                               sort = T,
+                               sort_limits = list(U=0.999,L=0.001),
+                               pred_ntree = 100,
+                               cores=8L)
+
+test1$data$kfold <- Wind$kfold
 
 
 
@@ -247,6 +268,10 @@ plot(test1$gbm_mqr5[which(test1$data$ISSUEdtm==i_ts),],xlab="Time Index [Hours]"
 lines(test1$data$TARGETVAR[which(test1$data$ISSUEdtm==i_ts)],lwd=3)
 
 
+plot(tmp[which(test1$data$ISSUEdtm==i_ts),],xlab="Time Index [Hours]",ylab="Power [Capacity Factor]",axes=F,Legend = 1,ylim=c(0,1)); axis(1,1:24,pos=-0.07); axis(2,las=1)
+lines(test1$data$TARGETVAR[which(test1$data$ISSUEdtm==i_ts)],lwd=3)
+
+
 
 lapply(names(test1)[-1][c(1,3,4,6,7,2,5)],function(x){
   
@@ -256,6 +281,7 @@ lapply(names(test1)[-1][c(1,3,4,6,7,2,5)],function(x){
   
   
 })
+
 
 
 lapply(names(test1)[-1][c(1,3,4,6,7,2,5)],function(x){
