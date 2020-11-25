@@ -5,12 +5,18 @@
 #' 
 #' @author Jethro Browell, \email{jethro.browell@@strath.ac.uk}; Ciaran Gilbert, \email{ciaran.gilbert@@strath.ac.uk}
 #' @param data A \code{data.frame} containing target and explanatory
-#' variables. May optionally contain a column called "kfold" with
-#' numbered/labeled folds and "Test" for test data.
+#' variables. May optionally contain a column with labeled folds and "Test" for test data. See \code{cv_folds}.
 #' @param formala A \code{formula} object with the response on the left
 #' of an ~ operator, and the terms, separated by + operators, on the right
 #' @param quantiles The quantiles to fit models for.
-#' @param cv_folds Control for cross-validation if not supplied in \code{data}.
+#' @param cv_folds Control for cross-validation with various options, either:
+#' \itemize{
+#'  \item the column name of the fold index supplied in data. Observations and inputs 
+#'   in the index labeled "Test" will serve as test data and held out in model training.
+#'  \item an integer giving the number of cross validation folds to generate. Folds are constructed as block chunks. 
+#'  Default behaviour is 5 folds.
+#'  \item NULL indicates that no cross validation should be performed and the returned model is trained on all \code{data}.
+#' }
 #' @param perf.plot Plot GBM performance?
 #' @param pred_ntree predict using a user-specified tree.
 #' If unspecified an out-of-the bag estimate will be used unless internal
@@ -24,72 +30,48 @@
 #' lower limits given by \code{list(U=upperlim,L=lowerlim)}.
 #' @param save_models_path Path to save models. Model details and file extension pasted onto this string. 
 #' Defaults to \code{NULL}, i.e. no model save.
-#' @param return_op_model return an operational model trained on \strong{all available data} for prediction? see \code{predict.pc_gbm()}.
+#' @param only_mqr return only the out-of-sample predictions? 
 #' @param ... Additional arguments passed to \code{gbm()}.
 #' @details The returned predictive quantiles are those produced out-of-sample for each
 #' cross-validation fold (using models trained on the remaining folds but not "Test" data).
 #' Predictive quantiles corresponding to "Test" data are produced using models trained on all
-#' non-test data. 
+#' non-test data.
 #' 
-#' When \code{return_op_model = TRUE} the function returns a list containing the \code{MultiQR} object
-#' and an operational model for generating predictions.
-#' @return Quantile forecasts in a \code{MultiQR} object. Optionally a list containing a \code{MultiQR}
-#' object and a model for operational prediction
+#' The returned models are in a named list corresponding to the model for each fold and 
+#' and can be used for further prediction or evaluation. See \code{predict.qreg_gbm()}.
+#' 
+#' @return by default a named list containing fitted models as a list of \code{qreg_gbm} objects, 
+#' and out-of-sample cross validation  forecasts as an \code{MultiQR} object. The output list depends on \code{cv_kfolds}.
+#' 
+#' Alternatively returns only the out-of-sample cross validation forecasts as an \code{MultiQR} 
+#' object when \code{only_mqr} is \code{TRUE}
 #' @keywords Quantile Regression
 #' @importFrom foreach %dopar%
 #' @export
 mqr_qreg_gbm <- function(data,
                          formula,
                          quantiles = c(0.25,0.5,0.75),
-                         cv_folds = NULL,
-                         perf.plot = F,
+                         cv_folds = 5,
+                         perf.plot = FALSE,
                          pred_ntree = NULL,
                          cores = 1,
                          pckgs = NULL,
-                         sort = T,
+                         sort = TRUE,
                          sort_limits = NULL,
                          save_models_path = NULL,
-                         return_op_model = FALSE,
+                         only_mqr = FALSE,
                          ...){
   
   # to-do
-  ## clear up auto-cv --- cv_folds = NULL and no-kfold in data? convert to function
-  ### no kfold capability?
-  #### issue/target/fold indexed mqr object?
+  ## issue/target/fold indexed mqr object?
+
   
-  # Set-up Cross-validation
-  TEST<-F # Flag for Training (with CV) AND Test output
-  if("kfold" %in% colnames(data)){
-    if(!is.null(cv_folds)){warning("Using column \"kfold\" from data. Argument \"cv_folds\" is not used.")}
-    
-    if("Test" %in% data$kfold){
-      TEST<-T
-      nkfold <- length(unique(data$kfold))-1
-    }else{
-      nkfold <- length(unique(data$kfold))
-    }
-  }else if(is.null(cv_folds)){
-    data$kfold <- rep(1,nrow(data))
-    nkfold <- 1
-  }else{
-    data$kfold <- sort(rep(1:cv_folds,length.out=nrow(data)))
-    nkfold <- cv_folds
-  }
+  # set-up cv folds
+  cv_labs <- cv_control(data = data,cv_folds = cv_folds)
+  data$kfold <- cv_labs$idx
+  fold_mods <- cv_labs$fold_loop
   
-  
-  # model folds check -> as.character for op model option
-  if(is.numeric(data$kfold)){
-    data$kfold <- as.character(data$kfold)
-  }
-  
-  # model training folds
-  if(return_op_model){
-    fold_mods <- c(unique(data$kfold),"op_model")
-  } else{
-    fold_mods <- unique(data$kfold)
-  }
-  
-  
+
   # set up parallel workers, defaults to one worker....
   cl <- parallel::makeCluster(cores)
   doSNOW::registerDoSNOW(cl)
@@ -100,38 +82,24 @@ mqr_qreg_gbm <- function(data,
   opts <- list(progress = progress)
   gc()
   
-  # fit the models returns list quantile --> kfold
+  # fit the models: returns list quantile --> kfold
   q_mods <- foreach::foreach(q = quantiles,.packages = c("gbm",pckgs),.options.snow = opts) %dopar% {
     
     temp_gbm <- list()
     
     for(fold in fold_mods){
       
-      if(fold=="op_model"){
-        
-        # need to define as object for save option
-        temp <- gbm::gbm(formula=formula,
-                         data = data[!is.na(data[[formula[[2]]]]),],
-                         distribution = list(name="quantile",alpha=q),
-                         ...)
-        
-        
-      } else{
-        
-        temp <- gbm::gbm(formula=formula,
-                         data = data[data$kfold!=fold & data$kfold!="Test" & !is.na(data[[formula[[2]]]]),],
-                         distribution = list(name="quantile",alpha=q),
-                         ...)
-      }
-      
+
+      temp <- gbm::gbm(formula=formula,
+                       data = data[data$kfold!=fold & data$kfold!="Test" & !is.na(data[[formula[[2]]]]),],
+                       distribution = list(name="quantile",alpha=q),
+                       ...)
+
       
       # save model?
       if(!is.null(save_models_path)){
-        if(fold=="op_model"){
-          try(save(temp,file = paste0(save_models_path,"_q",100*q,"_",fold,".rda")))}
-        else{
-          try(save(temp,file = paste0(save_models_path,"_q",100*q,"_fold",fold,".rda")))
-        }
+          try(save(temp,file = paste0(save_models_path,"_q",100*q,"_",fold,".rda")))
+
       }
       
       temp_gbm[[fold]] <- temp
@@ -150,43 +118,51 @@ mqr_qreg_gbm <- function(data,
   
   
   # re-arrange structure so  kfold --> quantiles
-  # assign new class to each kfold sub model
   q_mods <- lapply(fold_mods,function(x){
     foldmod <- lapply(q_mods,function(z){
       z[[x]]
     })
-    class(foldmod) <- "pc_gbm"
+    class(foldmod) <- "qreg_gbm"
     return(foldmod)
   })
   names(q_mods) <- fold_mods
   
-
-
-  ### create container for cv output
-  predqs <- data.frame(matrix(NA,ncol = length(quantiles), nrow = nrow(data)))
-  colnames(predqs) <- paste0("q",100*quantiles)
   
-  for(fold in unique(data$kfold)){
+  # get cross validation mqr predictions, unless cv_folds = NULL
+  predqs <- NULL
+  if(sum(fold_mods=="all_data")==0){
+
+    #create container for cv output
+    predqs <- data.frame(matrix(NA,ncol = length(quantiles), nrow = nrow(data)))
+    colnames(predqs) <- paste0("q",100*quantiles)
     
-    predqs[data$kfold==fold,] <- predict(q_mods[[fold]],
-                                         newdata = data[data$kfold==fold,],
-                                         quantiles = NULL,
-                                         pred_ntree = pred_ntree,
-                                         perf.plot = perf.plot,
-                                         sort = sort,
-                                         sort_limits = sort_limits)
+    for(fold in fold_mods){
+      
+      predqs[data$kfold==fold,] <- predict(q_mods[[fold]],
+                                           newdata = data[data$kfold==fold,],
+                                           quantiles = NULL,
+                                           pred_ntree = pred_ntree,
+                                           perf.plot = perf.plot,
+                                           sort = sort,
+                                           sort_limits = sort_limits)
+      
+    }
     
+    # class of new cv object
+    class(predqs) <- c("MultiQR","data.frame")
+  
   }
-  
-  # class of new cv object
-  class(predqs) <- c("MultiQR","data.frame")
  
   
-  if(return_op_model){
-    return(list(cv_mqr = predqs,
-                op_mod = q_mods[["op_model"]]))
-  } else{
+  if(only_mqr){
+    
     return(predqs)
+
+  } else{
+    
+    return(list(mqr_pred = predqs,
+                fit_mods = q_mods))
+
   }
   
   
@@ -246,6 +222,16 @@ MQR_gbm <- function(data,
   
   warning("function depreciated and may be removed in future updates. Update to ProbCast::mqr_qreg_gbm()")
   
+  if(is.null(CVfolds)){
+    
+    fold_cont <- "kfold"
+    
+  } else{
+    
+    fold_cont <- CVfolds
+    
+  }
+  
   
   if(parallel){
     
@@ -259,14 +245,15 @@ MQR_gbm <- function(data,
     do.call(mqr_qreg_gbm,c(list(data = data, 
                                 formula = formula,
                                 quantiles=quantiles,
-                                cv_folds=CVfolds,
+                                cv_folds=fold_cont,
                                 perf.plot=perf.plot,
                                 pred_ntree = pred_ntree,
                                 cores = cores,
                                 pckgs = pckgs,
                                 sort = Sort,
                                 sort_limits= SortLimits,
-                                save_models_path=NULL),
+                                save_models_path=NULL,
+                                only_mqr = TRUE),
                            gbm_params))
     
     
@@ -276,14 +263,15 @@ MQR_gbm <- function(data,
     do.call(mqr_qreg_gbm,c(list(data = data, 
                                 formula = formula,
                                 quantiles=quantiles,
-                                cv_folds=CVfolds,
+                                cv_folds=fold_cont,
                                 perf.plot=perf.plot,
                                 pred_ntree = pred_ntree,
                                 cores = 1,
                                 pckgs = pckgs,
                                 sort = Sort,
                                 sort_limits= SortLimits,
-                                save_models_path=NULL),
+                                save_models_path=NULL,
+                                only_mqr = TRUE),
                            gbm_params))
     
     
@@ -300,7 +288,7 @@ MQR_gbm <- function(data,
 #' Predict method for Multiple Quantile Regression from Gradient Boosted Decision Trees.
 #'
 #' This function returns multiple quantile predictions as an object of class \code{MultiQR}
-#' based on a ProbCast gbm fitted model. S3 Method for for \code{pc_gbm}
+#' based on a ProbCast gbm fitted model. S3 Method for for \code{qreg_gbm}
 #' 
 #' @author Ciaran Gilbert, \email{ciaran.gilbert@@strath.ac.uk}
 #' @param object 	object of class \code{pc_gbm} obtained from the function \code{mqr_qreg_gbm()}
@@ -319,14 +307,14 @@ MQR_gbm <- function(data,
 #' @return Quantile forecasts in a \code{MultiQR} object.
 #' @keywords Quantile Regression
 #' @export
-predict.pc_gbm <- function(object,
-                           newdata = NULL,
-                           quantiles = NULL,
-                           pred_ntree = NULL,
-                           perf.plot = FALSE,
-                           sort = T,
-                           sort_limits = NULL,
-                           ...) {
+predict.qreg_gbm <- function(object,
+                             newdata = NULL,
+                             quantiles = NULL,
+                             pred_ntree = NULL,
+                             perf.plot = FALSE,
+                             sort = T,
+                             sort_limits = NULL,
+                             ...) {
   
   
   if(is.null(quantiles)){
@@ -335,6 +323,14 @@ predict.pc_gbm <- function(object,
   
   if(is.numeric(quantiles)){
     quantiles <- paste0("q",quantiles*100)
+      
+    if(sum(quantiles%in%names(object))!=length(quantiles)){
+      
+      
+      stop("specified quantiles not in model")
+      
+    }
+    
   }
   
   

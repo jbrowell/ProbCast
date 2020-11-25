@@ -33,50 +33,23 @@ Wind$kfold[Wind$ISSUEdtm>as.POSIXct("2013-06-30",tz="UTC")] <- "Test"
 ### Multiple Quantile Regression using GBM ####
 test1<-list(data=Wind)
 
-# test1$gbm_mqr <- MQR_gbm(data = test1$data,
-#                          formula = TARGETVAR~U100+V100+U10+V10+(sqrt((U100^2+V100^2))),
-#                          gbm_params = list(interaction.depth = 3,
-#                                            n.trees = 1000,
-#                                            shrinkage = 0.05,
-#                                            n.minobsinnode = 20,
-#                                            bag.fraction = 0.5,
-#                                            keep.data = F),
-#                          quantiles = seq(0.1,0.9,by=0.1),
-#                          Sort = T,
-#                          SortLimits = list(U=0.999,L=0.001),
-#                          pred_ntree = 1000)
-# 
-# test1$gbm_mqr <- MQR_gbm(data = test1$data,
-#                          formula = TARGETVAR~U100+V100+U10+V10+(sqrt((U100^2+V100^2))),
-#                          gbm_params = list(interaction.depth = 3,
-#                                            n.trees = 1000,
-#                                            shrinkage = 0.05,
-#                                            n.minobsinnode = 20,
-#                                            bag.fraction = 0.5,
-#                                            keep.data = F),
-#                          parallel = T,
-#                          cores = 3,
-#                          quantiles = seq(0.1,0.9,by=0.1),
-#                          Sort = T,
-#                          SortLimits = list(U=0.999,L=0.001),
-#                          pred_ntree = 1000)
 
+test1$gbm_mqr <- mqr_qreg_gbm(data = test1$data,
+                              formula = TARGETVAR~U100+V100+U10+V10+(sqrt((U100^2+V100^2))),
+                              cv_folds = "kfold",
+                              interaction.depth = 3,
+                              n.trees = 1000,
+                              shrinkage = 0.05,
+                              n.minobsinnode = 20,
+                              bag.fraction = 1,
+                              keep.data = F,
+                              quantiles = seq(0.1,0.9,by=0.05),
+                              sort = T,
+                              sort_limits = list(U=1,L=0),
+                              pred_ntree = 1000,
+                              cores=detectCores(),
+                              only_mqr = TRUE)
 
-test1$gbm_mqr <- MQR_gbm(data = test1$data,
-                         formula = TARGETVAR~U100+V100+U10+V10+(sqrt((U100^2+V100^2))),
-                         gbm_params = list(interaction.depth = 3,
-                                           n.trees = 1000,
-                                           shrinkage = 0.05,
-                                           n.minobsinnode = 20,
-                                           bag.fraction = 0.5,
-                                           keep.data = F),
-                         parallel = T,
-                         cores = detectCores(),
-                         quantiles = seq(0.05,0.95,by=0.05),
-                         Sort = T,
-                         SortLimits = list(U=1,L=0),
-                         pred_ntree = 1000,
-                         para_over_q = T)
 
 
 par(mar=c(3,3,0.5,1))  # Trim margin around plot [b,l,t,r]

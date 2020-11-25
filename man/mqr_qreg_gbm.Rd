@@ -8,26 +8,32 @@ mqr_qreg_gbm(
   data,
   formula,
   quantiles = c(0.25, 0.5, 0.75),
-  cv_folds = NULL,
-  perf.plot = F,
+  cv_folds = 5,
+  perf.plot = FALSE,
   pred_ntree = NULL,
   cores = 1,
   pckgs = NULL,
-  sort = T,
+  sort = TRUE,
   sort_limits = NULL,
   save_models_path = NULL,
-  return_op_model = FALSE,
+  only_mqr = FALSE,
   ...
 )
 }
 \arguments{
 \item{data}{A \code{data.frame} containing target and explanatory
-variables. May optionally contain a column called "kfold" with
-numbered/labeled folds and "Test" for test data.}
+variables. May optionally contain a column with labeled folds and "Test" for test data. See \code{cv_folds}.}
 
 \item{quantiles}{The quantiles to fit models for.}
 
-\item{cv_folds}{Control for cross-validation if not supplied in \code{data}.}
+\item{cv_folds}{Control for cross-validation with various options, either:
+\itemize{
+ \item the column name of the fold index supplied in data. Observations and inputs 
+  in the index labeled "Test" will serve as test data and held out in model training.
+ \item an integer giving the number of cross validation folds to generate. Folds are constructed as block chunks. 
+ Default behaviour is 5 folds.
+ \item NULL indicates that no cross validation should be performed and the returned model is trained on all \code{data}.
+}}
 
 \item{perf.plot}{Plot GBM performance?}
 
@@ -49,7 +55,7 @@ lower limits given by \code{list(U=upperlim,L=lowerlim)}.}
 \item{save_models_path}{Path to save models. Model details and file extension pasted onto this string. 
 Defaults to \code{NULL}, i.e. no model save.}
 
-\item{return_op_model}{return an operational model trained on \strong{all available data} for prediction? see \code{predict.pc_gbm()}.}
+\item{only_mqr}{return only the out-of-sample predictions?}
 
 \item{...}{Additional arguments passed to \code{gbm()}.}
 
@@ -57,8 +63,11 @@ Defaults to \code{NULL}, i.e. no model save.}
 of an ~ operator, and the terms, separated by + operators, on the right}
 }
 \value{
-Quantile forecasts in a \code{MultiQR} object. Optionally a list containing a \code{MultiQR}
-object and a model for operational prediction
+by default a named list containing fitted models as a list of \code{qreg_gbm} objects, 
+and out-of-sample cross validation  forecasts as an \code{MultiQR} object. The output list depends on \code{cv_kfolds}.
+
+Alternatively returns only the out-of-sample cross validation forecasts as an \code{MultiQR} 
+object when \code{only_mqr} is \code{TRUE}
 }
 \description{
 This function fits multiple boosted quantile regression trees 
@@ -68,10 +77,10 @@ using \code{gbm} with facilities for cross-validation.
 The returned predictive quantiles are those produced out-of-sample for each
 cross-validation fold (using models trained on the remaining folds but not "Test" data).
 Predictive quantiles corresponding to "Test" data are produced using models trained on all
-non-test data. 
+non-test data.
 
-When \code{return_op_model = TRUE} the function returns a list containing the \code{MultiQR} object
-and an operational model for generating predictions.
+The returned models are in a named list corresponding to the model for each fold and 
+and can be used for further prediction or evaluation. See \code{predict.qreg_gbm()}.
 }
 \author{
 Jethro Browell, \email{jethro.browell@strath.ac.uk}; Ciaran Gilbert, \email{ciaran.gilbert@strath.ac.uk}

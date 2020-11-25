@@ -34,6 +34,7 @@ test1<-list(data=Wind)
 ## test in series
 test1$gbm_mqr <- mqr_qreg_gbm(data = test1$data,
                               formula = TARGETVAR~U100+V100+U10+V10+(sqrt((U100^2+V100^2))),
+                              cv_folds = "kfold",
                               interaction.depth = 3,
                               n.trees = 100,
                               shrinkage = 0.05,
@@ -48,6 +49,7 @@ test1$gbm_mqr <- mqr_qreg_gbm(data = test1$data,
 # test with modified hyperparameters
 test1$gbm_mqr2 <- mqr_qreg_gbm(data = test1$data,
                                formula = TARGETVAR~U100+V100+U10+V10+(sqrt((U100^2+V100^2))),
+                               cv_folds = "kfold",
                                interaction.depth = 5,
                                n.trees = 100,
                                shrinkage = 0.5,
@@ -62,6 +64,7 @@ test1$gbm_mqr2 <- mqr_qreg_gbm(data = test1$data,
 # test in parallel ---> should equal model 1
 test1$gbm_mqr3 <- mqr_qreg_gbm(data = test1$data,
                                formula = TARGETVAR~U100+V100+U10+V10+(sqrt((U100^2+V100^2))),
+                               cv_folds = "kfold",
                                interaction.depth = 3,
                                n.trees = 100,
                                shrinkage = 0.05,
@@ -77,6 +80,7 @@ test1$gbm_mqr3 <- mqr_qreg_gbm(data = test1$data,
 # test with save model function 1 worker
 tmp <- mqr_qreg_gbm(data = test1$data,
                     formula = TARGETVAR~U100+V100+U10+V10+(sqrt((U100^2+V100^2))),
+                    cv_folds = "kfold",
                     interaction.depth = 3,
                     n.trees = 100,
                     shrinkage = 0.05,
@@ -95,6 +99,7 @@ file.remove(list.files(pattern = "*.rda"))
 # test with save model function 8 workers
 tmp <- mqr_qreg_gbm(data = test1$data,
                     formula = TARGETVAR~U100+V100+U10+V10+(sqrt((U100^2+V100^2))),
+                    cv_folds = "kfold",
                     interaction.depth = 3,
                     n.trees = 100,
                     shrinkage = 0.05,
@@ -107,7 +112,7 @@ tmp <- mqr_qreg_gbm(data = test1$data,
                     pred_ntree = 100,
                     save_models_path = "./tmp",
                     cores=8L,
-                    return_op_model = TRUE)
+                    only_mqr = TRUE)
 
 file.remove(list.files(pattern = "*.rda"))
 rm(tmp)
@@ -163,7 +168,7 @@ test1$gbm_mqr6 <- MQR_gbm(data = test1$data,
                           pred_ntree = 100,
                           cores = 8,
                           parallel = TRUE,
-                          para_over_q = TRUE)
+                          para_over_q = FALSE)
 
 
 ### default
@@ -180,37 +185,45 @@ test1$gbm_mqr7 <- mqr_qreg_gbm(data = test1$data,
 
 test1$gbm_mqr8 <- mqr_qreg_gbm(data = test1$data,
                               formula = TARGETVAR~U100+V100+U10+V10+(sqrt((U100^2+V100^2))),
+                              cv_folds = NULL,
                               interaction.depth = 3,
                               n.trees = 100,
                               shrinkage = 0.05,
                               n.minobsinnode = 20,
                               bag.fraction = 1,
                               keep.data = F,
-                              quantiles = seq(0.1,0.9,by=0.1),
-                              sort = T,
-                              sort_limits = list(U=0.999,L=0.001),
-                              pred_ntree = 100,
-                              return_op_model = TRUE)
+                              quantiles = seq(0.1,0.9,by=0.1))
 
-tmp <- predict.pc_gbm(test1$gbm_mqr8$op_mod,
-                      newdata = test1$data,
-                      pred_ntree = 100,
-                      sort = T,
-                      sort_limits = list(U=0.999,L=0.001))
+tmp <- predict(test1$gbm_mqr8$fit_mods$all_data,
+               newdata = test1$data,
+               pred_ntree = 100,
+               sort = T,
+               sort_limits = list(U=0.999,L=0.001))
 
+data.table(tmp)
 
-tmp <- predict.pc_gbm(test1$gbm_mqr8$op_mod,
-                      newdata = test1$data,
-                      pred_ntree = 1,
-                      quantiles = c(.1,.5,.9))
+tmp <- predict(test1$gbm_mqr8$fit_mods$all_data,
+               newdata = test1$data,
+               pred_ntree = 1,
+               quantiles = c(.1,.55,.9))
 
+data.table(tmp)
 
 
-length(test1$gbm_mqr8$op_mod$q10$fit)==length(na.omit(test1$data$TARGETVAR))
+tmp <- predict(test1$gbm_mqr8$fit_mods$all_data,
+               newdata = test1$data,
+               pred_ntree = 1,
+               quantiles = c(.1,.5,.9))
+
+
+data.table(tmp)
+
+length(test1$gbm_mqr8$fit_mods$all_data$q10$fit)==length(na.omit(test1$data$TARGETVAR))
+
 
 
 ##### auto cv
-##### need to fix autocv set-up! - setting cv_folds to NULL here results in error...
+
 test1$data$kfold <- NULL
 test1$gbm_mqr9 <- mqr_qreg_gbm(data = test1$data,
                                formula = TARGETVAR~U100+V100+U10+V10+(sqrt((U100^2+V100^2))),
@@ -243,10 +256,10 @@ par(xaxs="r",yaxs="r")  # Extend axis limits by 4% ("i" does no extension)
 
 i_ts <- unique(test1$data$ISSUEdtm)[3]
 
-plot(test1$gbm_mqr[which(test1$data$ISSUEdtm==i_ts),],xlab="Time Index [Hours]",ylab="Power [Capacity Factor]",axes=F,Legend = 1,ylim=c(0,1)); axis(1,1:24,pos=-0.07); axis(2,las=1)
+plot(test1$gbm_mqr$mqr_pred[which(test1$data$ISSUEdtm==i_ts),],xlab="Time Index [Hours]",ylab="Power [Capacity Factor]",axes=F,Legend = 1,ylim=c(0,1)); axis(1,1:24,pos=-0.07); axis(2,las=1)
 lines(test1$data$TARGETVAR[which(test1$data$ISSUEdtm==i_ts)],lwd=3)
 
-plot(test1$gbm_mqr3[which(test1$data$ISSUEdtm==i_ts),],xlab="Time Index [Hours]",ylab="Power [Capacity Factor]",axes=F,Legend = 1,ylim=c(0,1)); axis(1,1:24,pos=-0.07); axis(2,las=1)
+plot(test1$gbm_mqr3$mqr_pred[which(test1$data$ISSUEdtm==i_ts),],xlab="Time Index [Hours]",ylab="Power [Capacity Factor]",axes=F,Legend = 1,ylim=c(0,1)); axis(1,1:24,pos=-0.07); axis(2,las=1)
 lines(test1$data$TARGETVAR[which(test1$data$ISSUEdtm==i_ts)],lwd=3)
 
 plot(test1$gbm_mqr4[which(test1$data$ISSUEdtm==i_ts),],xlab="Time Index [Hours]",ylab="Power [Capacity Factor]",axes=F,Legend = 1,ylim=c(0,1)); axis(1,1:24,pos=-0.07); axis(2,las=1)
@@ -255,12 +268,12 @@ lines(test1$data$TARGETVAR[which(test1$data$ISSUEdtm==i_ts)],lwd=3)
 plot(test1$gbm_mqr6[which(test1$data$ISSUEdtm==i_ts),],xlab="Time Index [Hours]",ylab="Power [Capacity Factor]",axes=F,Legend = 1,ylim=c(0,1)); axis(1,1:24,pos=-0.07); axis(2,las=1)
 lines(test1$data$TARGETVAR[which(test1$data$ISSUEdtm==i_ts)],lwd=3)
 
-plot(test1$gbm_mqr7[which(test1$data$ISSUEdtm==i_ts),],xlab="Time Index [Hours]",ylab="Power [Capacity Factor]",axes=F,Legend = 1,ylim=c(0,1)); axis(1,1:24,pos=-0.07); axis(2,las=1)
+plot(test1$gbm_mqr7$mqr_pred[which(test1$data$ISSUEdtm==i_ts),],xlab="Time Index [Hours]",ylab="Power [Capacity Factor]",axes=F,Legend = 1,ylim=c(0,1)); axis(1,1:24,pos=-0.07); axis(2,las=1)
 lines(test1$data$TARGETVAR[which(test1$data$ISSUEdtm==i_ts)],lwd=3)
 
 
 
-plot(test1$gbm_mqr2[which(test1$data$ISSUEdtm==i_ts),],xlab="Time Index [Hours]",ylab="Power [Capacity Factor]",axes=F,Legend = 1,ylim=c(0,1)); axis(1,1:24,pos=-0.07); axis(2,las=1)
+plot(test1$gbm_mqr2$mqr_pred[which(test1$data$ISSUEdtm==i_ts),],xlab="Time Index [Hours]",ylab="Power [Capacity Factor]",axes=F,Legend = 1,ylim=c(0,1)); axis(1,1:24,pos=-0.07); axis(2,las=1)
 lines(test1$data$TARGETVAR[which(test1$data$ISSUEdtm==i_ts)],lwd=3)
 
 
@@ -268,16 +281,30 @@ plot(test1$gbm_mqr5[which(test1$data$ISSUEdtm==i_ts),],xlab="Time Index [Hours]"
 lines(test1$data$TARGETVAR[which(test1$data$ISSUEdtm==i_ts)],lwd=3)
 
 
-plot(tmp[which(test1$data$ISSUEdtm==i_ts),],xlab="Time Index [Hours]",ylab="Power [Capacity Factor]",axes=F,Legend = 1,ylim=c(0,1)); axis(1,1:24,pos=-0.07); axis(2,las=1)
-lines(test1$data$TARGETVAR[which(test1$data$ISSUEdtm==i_ts)],lwd=3)
+
 
 
 
 lapply(names(test1)[-1][c(1,3,4,6,7,2,5)],function(x){
   
-  reliability(qrdata = test1[[x]],
-                        realisations = test1$data$TARGETVAR,
-                        kfolds = test1$data$kfold,main=x)
+  if(class(test1[[x]])[1]!="MultiQR"){
+    
+    reliability(qrdata = test1[[x]]$mqr_pred,
+                realisations = test1$data$TARGETVAR,
+                kfolds = test1$data$kfold,main=x)
+    
+    
+  } else{
+    
+    
+    reliability(qrdata = test1[[x]],
+                realisations = test1$data$TARGETVAR,
+                kfolds = test1$data$kfold,main=x)
+    
+    
+    
+  }
+  
   
   
 })
@@ -286,9 +313,19 @@ lapply(names(test1)[-1][c(1,3,4,6,7,2,5)],function(x){
 
 lapply(names(test1)[-1][c(1,3,4,6,7,2,5)],function(x){
   
-  pinball(qrdata = test1[[x]],
-                    realisations = test1$data$TARGETVAR,
-                    kfolds = test1$data$kfold,main=x)
+  if(class(test1[[x]])[1]!="MultiQR"){
+  
+  pinball(qrdata = test1[[x]]$mqr_pred,
+          realisations = test1$data$TARGETVAR,
+          kfolds = test1$data$kfold,main=x)
+    
+  } else{
+    
+    pinball(qrdata = test1[[x]],
+            realisations = test1$data$TARGETVAR,
+            kfolds = test1$data$kfold,main=x)
+    
+  }
   
   
 })
