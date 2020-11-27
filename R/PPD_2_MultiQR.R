@@ -70,16 +70,16 @@ PPD_2_MultiQR <- function(data,models,quantiles=seq(0.05,0.95,by=0.05),params=F)
   multipleQuantiles <- matrix(NA,nrow=nrow(data),ncol=length(quantiles))
   
   input <- list()
-  if("mu"%in%names(as.list(args(paste0("q",distFamily))))){
+  if("mu"%in%gsub(".link","",names(as.list(args(distFamily))))){
     input$mu=parameters[,1]
   }
-  if("sigma"%in%names(as.list(args(paste0("q",distFamily))))){
+  if("sigma"%in%gsub(".link","",names(as.list(args(distFamily))))){
     input$sigma=parameters[,2]
   }
-  if("nu"%in%names(as.list(args(paste0("q",distFamily))))){
+  if("nu"%in%gsub(".link","",names(as.list(args(distFamily))))){
     input$nu=parameters[,3]
   }
-  if("tau"%in%names(as.list(args(paste0("q",distFamily))))){
+  if("tau"%in%gsub(".link","",names(as.list(args(distFamily))))){
     input$tau=parameters[,4]
   }
   

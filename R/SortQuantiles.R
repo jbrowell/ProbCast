@@ -6,12 +6,12 @@
 #' @param data A \code{MultiQR} containing multiple quantiles
 #' @param Limits A \code{list} of the upper (\code{U}) and lower (\code{L}) limits to apply
 #' to quantiles if the output should be bounded. E.g. \code{list(U=0.999,L=0.001)}/
-#' @details The method use in the produciton of multiple quantiles may not gaurantee
-#' that quantiles are (nonstrictly) increasing, which is necseary if combining quantiles
+#' @details The method use in the production of multiple quantiles may not guarantee
+#' that quantiles are (non-strictly) increasing, which is necessary if combining quantiles
 #' to form a cumulative distribution function. Similarly, the quantiles may not
 #' respect the boundaries of the target variable. This function re-orders quantiles and 
 #' constrains them to the user-specified limits.
-#' @return A \code{MultiQR, data.frame} object with (nonstrictly) increasing quanitles.
+#' @return A \code{MultiQR, data.frame} object with (non-strictly) increasing quanitles.
 #' @keywords Quantile Regression
 #' @export
 SortQuantiles <- function(data,Limits=NULL){
@@ -28,7 +28,15 @@ SortQuantiles <- function(data,Limits=NULL){
   # Need to exclude rows which are all NAs
   all_nas <- which(rowSums(is.na(temp))==ncol(temp))
   
+  if(sum(all_nas)!=0){
+    
   temp[-all_nas,] <- t(apply(temp[-all_nas,],1,sort))
+  
+  } else{
+    
+    temp <- t(apply(temp,1,sort))
+    
+  }
 
   if(!is.null(Limits)){
     temp[temp>Limits$U] <- Limits$U
