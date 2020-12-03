@@ -34,21 +34,21 @@ Wind$kfold[Wind$ISSUEdtm>as.POSIXct("2013-06-30",tz="UTC")] <- "Test"
 test1<-list(data=Wind)
 
 
-test1$gbm_mqr <- mqr_qreg_gbm(data = test1$data,
-                              formula = TARGETVAR~U100+V100+U10+V10+(sqrt((U100^2+V100^2))),
-                              cv_folds = "kfold",
-                              interaction.depth = 3,
-                              n.trees = 1000,
-                              shrinkage = 0.05,
-                              n.minobsinnode = 20,
-                              bag.fraction = .5,
-                              keep.data = F,
-                              quantiles = seq(0.05,0.95,by=0.05),
-                              sort = T,
-                              sort_limits = list(U=1,L=0),
-                              pred_ntree = 1000,
-                              cores=detectCores(),
-                              only_mqr = TRUE)
+test1$gbm_mqr <- qreg_gbm(data = test1$data,
+                          formula = TARGETVAR~U100+V100+U10+V10+(sqrt((U100^2+V100^2))),
+                          cv_folds = "kfold",
+                          interaction.depth = 3,
+                          n.trees = 1000,
+                          shrinkage = 0.05,
+                          n.minobsinnode = 20,
+                          bag.fraction = .5,
+                          keep.data = F,
+                          quantiles = seq(0.05,0.95,by=0.05),
+                          sort = T,
+                          sort_limits = list(U=1,L=0),
+                          pred_ntree = 1000,
+                          cores=detectCores(),
+                          only_mqr = TRUE)
 
 
 

@@ -16,7 +16,7 @@
 )
 }
 \arguments{
-\item{object}{object of class \code{pc_gbm} obtained from the function \code{mqr_qreg_gbm()}}
+\item{object}{object of class \code{qreg_gbm} obtained from the function \code{qreg_gbm()}}
 
 \item{newdata}{data.frame of observations for which to make predictions}
 
@@ -24,7 +24,7 @@
 
 \item{pred_ntree}{predict using a user-specified tree.
 If unspecified an out-of-the bag estimate will be used unless internal
-gbm cross-validation folds are specified in \code{mqr_qreg_gbm()}}
+gbm cross-validation folds are specified in \code{qreg_gbm()}}
 
 \item{perf.plot}{plot GBM performance if \code{pred_ntree = NULL}?}
 
@@ -40,7 +40,7 @@ Quantile forecasts in a \code{MultiQR} object.
 }
 \description{
 This function returns multiple quantile predictions as an object of class \code{MultiQR}
-based on a ProbCast gbm fitted model. S3 Method for for \code{qreg_gbm}
+based on a ProbCast gbm fitted model. S3 Method for for \code{qreg_gbm} objects
 }
 \details{
 this function returns predictive quantiles for each row in \code{newdata},

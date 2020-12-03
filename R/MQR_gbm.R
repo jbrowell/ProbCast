@@ -38,7 +38,7 @@
 #' non-test data.
 #' 
 #' The returned models are in a named list corresponding to the model for each fold and 
-#' and can be used for further prediction or evaluation. See \code{predict.qreg_gbm()}.
+#' and can be extracted for further prediction or evaluation. See \code{predict.qreg_gbm()}.
 #' 
 #' @return by default a named list containing fitted models as a list of \code{qreg_gbm} objects, 
 #' and out-of-sample cross validation  forecasts as an \code{MultiQR} object. The output list depends on \code{cv_kfolds}.
@@ -48,19 +48,19 @@
 #' @keywords Quantile Regression
 #' @importFrom foreach %dopar%
 #' @export
-mqr_qreg_gbm <- function(data,
-                         formula,
-                         quantiles = c(0.25,0.5,0.75),
-                         cv_folds = 5,
-                         perf.plot = FALSE,
-                         pred_ntree = NULL,
-                         cores = 1,
-                         pckgs = NULL,
-                         sort = TRUE,
-                         sort_limits = NULL,
-                         save_models_path = NULL,
-                         only_mqr = FALSE,
-                         ...){
+qreg_gbm <- function(data,
+                     formula,
+                     quantiles = c(0.25,0.5,0.75),
+                     cv_folds = 5,
+                     perf.plot = FALSE,
+                     pred_ntree = NULL,
+                     cores = 1,
+                     pckgs = NULL,
+                     sort = TRUE,
+                     sort_limits = NULL,
+                     save_models_path = NULL,
+                     only_mqr = FALSE,
+                     ...){
   
   # to-do
   ## issue/target/fold indexed mqr object?
@@ -160,8 +160,8 @@ mqr_qreg_gbm <- function(data,
 
   } else{
     
-    return(list(mqr_pred = predqs,
-                fit_mods = q_mods))
+    return(list(mqr_kfold = predqs,
+                qreg_list = q_mods))
 
   }
   
@@ -173,7 +173,7 @@ mqr_qreg_gbm <- function(data,
 #' Multiple Quantile Regression Using Gradient Boosted Decision Trees (depreciated)
 #'
 #' This function is now depreciated and may be removed in future versions of this package.
-#' Use \code{mqr_qreg_gbm()} instead.
+#' Use \code{qreg_gbm()} instead.
 #' 
 #' @author Jethro Browell, \email{jethro.browell@@strath.ac.uk}; Ciaran Gilbert, \email{ciaran.gilbert@@strath.ac.uk}
 #' @param data A \code{data.frame} containing target and explanatory
@@ -220,7 +220,7 @@ MQR_gbm <- function(data,
                     SortLimits = NULL){
   
   
-  warning("function depreciated and may be removed in future updates. Update to ProbCast::mqr_qreg_gbm()")
+  warning("function depreciated and may be removed in future updates. Update to ProbCast::qreg_gbm()")
   
   if(is.null(CVfolds)){
     
@@ -242,37 +242,37 @@ MQR_gbm <- function(data,
     }
   
   
-    do.call(mqr_qreg_gbm,c(list(data = data, 
-                                formula = formula,
-                                quantiles=quantiles,
-                                cv_folds=fold_cont,
-                                perf.plot=perf.plot,
-                                pred_ntree = pred_ntree,
-                                cores = cores,
-                                pckgs = pckgs,
-                                sort = Sort,
-                                sort_limits= SortLimits,
-                                save_models_path=NULL,
-                                only_mqr = TRUE),
-                           gbm_params))
+    do.call(qreg_gbm,c(list(data = data, 
+                            formula = formula,
+                            quantiles=quantiles,
+                            cv_folds=fold_cont,
+                            perf.plot=perf.plot,
+                            pred_ntree = pred_ntree,
+                            cores = cores,
+                            pckgs = pckgs,
+                            sort = Sort,
+                            sort_limits= SortLimits,
+                            save_models_path=NULL,
+                            only_mqr = TRUE),
+                       gbm_params))
     
     
   } else{
     
     
-    do.call(mqr_qreg_gbm,c(list(data = data, 
-                                formula = formula,
-                                quantiles=quantiles,
-                                cv_folds=fold_cont,
-                                perf.plot=perf.plot,
-                                pred_ntree = pred_ntree,
-                                cores = 1,
-                                pckgs = pckgs,
-                                sort = Sort,
-                                sort_limits= SortLimits,
-                                save_models_path=NULL,
-                                only_mqr = TRUE),
-                           gbm_params))
+    do.call(qreg_gbm,c(list(data = data, 
+                            formula = formula,
+                            quantiles=quantiles,
+                            cv_folds=fold_cont,
+                            perf.plot=perf.plot,
+                            pred_ntree = pred_ntree,
+                            cores = 1,
+                            pckgs = pckgs,
+                            sort = Sort,
+                            sort_limits= SortLimits,
+                            save_models_path=NULL,
+                            only_mqr = TRUE),
+                       gbm_params))
     
     
     
@@ -288,15 +288,15 @@ MQR_gbm <- function(data,
 #' Predict method for Multiple Quantile Regression from Gradient Boosted Decision Trees.
 #'
 #' This function returns multiple quantile predictions as an object of class \code{MultiQR}
-#' based on a ProbCast gbm fitted model. S3 Method for for \code{qreg_gbm}
+#' based on a ProbCast gbm fitted model. S3 Method for for \code{qreg_gbm} objects
 #' 
 #' @author Ciaran Gilbert, \email{ciaran.gilbert@@strath.ac.uk}
-#' @param object 	object of class \code{pc_gbm} obtained from the function \code{mqr_qreg_gbm()}
+#' @param object 	object of class \code{qreg_gbm} obtained from the function \code{qreg_gbm()}
 #' @param newdata data.frame of observations for which to make predictions
 #' @param quantiles The quantiles to predict. Default is all the quantiles present in \code{object}
 #' @param pred_ntree predict using a user-specified tree.
 #' If unspecified an out-of-the bag estimate will be used unless internal
-#' gbm cross-validation folds are specified in \code{mqr_qreg_gbm()}
+#' gbm cross-validation folds are specified in \code{qreg_gbm()}
 #' @param perf.plot plot GBM performance if \code{pred_ntree = NULL}?
 #' @param sort sort quantiles using \code{SortQuantiles()}?
 #' @param sort_limits \code{Limits} argument to be passed to \code{SortQuantiles()}. Constrains quantiles to upper and 
