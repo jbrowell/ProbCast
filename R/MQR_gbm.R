@@ -64,7 +64,26 @@ qreg_gbm <- function(data,
   
   # to-do
   ## issue/target/fold indexed mqr object?
-
+  
+  # data = test1$data
+  # formula = TARGETVAR~U100+V100+U10+V10+(sqrt((U100^2+V100^2)))
+  # cv_folds = "kfold"
+  # interaction.depth = 3
+  # n.trees = 100
+  # shrinkage = 0.05
+  # n.minobsinnode = 20
+  # bag.fraction = 1
+  # keep.data = F
+  # quantiles = seq(0.1,0.9,by=0.1)
+  # sort = T
+  # sort_limits = list(U=0.999,L=0.001)
+  # pred_ntree = 100
+  # cores = 1
+  # pckgs = NULL
+  # save_models_path = NULL
+  # only_mqr = FALSE
+  # rm(data,formula,cv_folds,interaction.depth,n.trees,shrinkage,n.minobsinnode,bag.fraction,keep.data,
+  # quantiles,sort,sort_limits,pred_ntree,cores,pckgs,only_mqr,save_models_path)
   
   # set-up cv folds
   cv_labs <- cv_control(data = data,cv_folds = cv_folds)
@@ -122,10 +141,10 @@ qreg_gbm <- function(data,
     foldmod <- lapply(q_mods,function(z){
       z[[x]]
     })
-    class(foldmod) <- "qreg_gbm"
     return(foldmod)
   })
   names(q_mods) <- fold_mods
+  class(q_mods) <- "qreg_gbm"
   
   
   # get cross validation mqr predictions, unless cv_folds = NULL
@@ -138,13 +157,14 @@ qreg_gbm <- function(data,
     
     for(fold in fold_mods){
       
-      predqs[data$kfold==fold,] <- predict(q_mods[[fold]],
-                                           newdata = data[data$kfold==fold,],
-                                           quantiles = NULL,
-                                           pred_ntree = pred_ntree,
-                                           perf.plot = perf.plot,
-                                           sort = sort,
-                                           sort_limits = sort_limits)
+      predqs[data$kfold==fold,] <- predict.qreg_gbm(q_mods,
+                                                    newdata = data[data$kfold==fold,],
+                                                    quantiles = NULL,
+                                                    which_model = fold,
+                                                    pred_ntree = pred_ntree,
+                                                    perf.plot = perf.plot,
+                                                    sort = sort,
+                                                    sort_limits = sort_limits)
       
     }
     
@@ -291,9 +311,11 @@ MQR_gbm <- function(data,
 #' based on a ProbCast gbm fitted model. S3 Method for for \code{qreg_gbm} objects
 #' 
 #' @author Ciaran Gilbert, \email{ciaran.gilbert@@strath.ac.uk}
-#' @param object 	object of class \code{qreg_gbm} obtained from the function \code{qreg_gbm()}
+#' @param object 	object of class \code{qreg_gbm} obtained from the function \code{qreg_gbm()}.
 #' @param newdata data.frame of observations for which to make predictions
 #' @param quantiles The quantiles to predict. Default is all the quantiles present in \code{object}
+#' @param which_model If \code{qreg_gbm()} is used for kfold analysis, specify the name of the fold. The default 
+#' is the "Test" model if present, else it throws a warning.
 #' @param pred_ntree predict using a user-specified tree.
 #' If unspecified an out-of-the bag estimate will be used unless internal
 #' gbm cross-validation folds are specified in \code{qreg_gbm()}
@@ -310,11 +332,42 @@ MQR_gbm <- function(data,
 predict.qreg_gbm <- function(object,
                              newdata = NULL,
                              quantiles = NULL,
+                             which_model = NULL,
                              pred_ntree = NULL,
                              perf.plot = FALSE,
                              sort = T,
                              sort_limits = NULL,
                              ...) {
+  
+  # re-define object to be a single model if kfold etc. present 
+  if(is.null(which_model)){
+    
+    if(length(names(object))==1){
+      
+      object <- object[[names(object)]]
+      
+    } else{if("Test"%in%names(object)){
+      
+      
+      object <- object[["Test"]]
+      
+    } else{
+      
+      warning(paste0("predicting using model --- ",tail(names(object),n=1)))
+      object <- object[[tail(names(object),n=1)]]
+      
+      
+    }
+    }
+  } else{
+    
+    if(which_model%in%names(object)){
+    
+    object <- object[[which_model]]
+    
+    } else{stop(paste0(which_model," not in names(object)"))}
+    
+  }
   
   
   if(is.null(quantiles)){

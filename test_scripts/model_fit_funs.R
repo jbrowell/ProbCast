@@ -179,6 +179,38 @@ test1$gbm_mqr7 <- qreg_gbm(data = test1$data,
                            sort_limits = list(U=0.999,L=0.001),
                            pred_ntree = 100)
 
+class(test1$gbm_mqr7$qreg_list)
+names(test1$gbm_mqr7$qreg_list)
+
+
+tmp <- predict(test1$gbm_mqr7$qreg_list,
+               newdata = test1$data,
+               pred_ntree = 100,
+               sort = T,
+               sort_limits = list(U=0.999,L=0.001))
+
+data.table(tmp)
+
+
+tmp <- predict(test1$gbm_mqr7$qreg_list,
+               newdata = test1$data,
+               which_model = "fold1",
+               pred_ntree = 100,
+               sort = T,
+               sort_limits = list(U=0.999,L=0.001))
+
+data.table(tmp)
+
+
+tmp <- predict(test1$gbm_mqr7$qreg_list,
+               newdata = test1$data,
+               which_model = "Fold X",
+               pred_ntree = 100,
+               sort = T,
+               sort_limits = list(U=0.999,L=0.001))
+
+
+
 
 ##### OPERATIONAL MODEL
 test1$gbm_mqr8 <- qreg_gbm(data = test1$data,
@@ -192,11 +224,11 @@ test1$gbm_mqr8 <- qreg_gbm(data = test1$data,
                            keep.data = F,
                            quantiles = seq(0.1,0.9,by=0.1))
 
-## models are stored in sublists due to kfoldness compatibility, hmmm
-class(test1$gbm_mqr8$qreg_list$all_data)
+
+class(test1$gbm_mqr8$qreg_list)
 
 
-tmp <- predict(test1$gbm_mqr8$qreg_list$all_data,
+tmp <- predict(test1$gbm_mqr8$qreg_list,
                newdata = test1$data,
                pred_ntree = 100,
                sort = T,
@@ -204,13 +236,24 @@ tmp <- predict(test1$gbm_mqr8$qreg_list$all_data,
 
 data.table(tmp)
 
-tmp <- predict(test1$gbm_mqr8$qreg_list$all_data,
+
+
+tmp <- predict(test1$gbm_mqr8$qreg_list,
+               newdata = test1$data,
+               which_model = "all_data",
+               pred_ntree = 100,
+               sort = T,
+               sort_limits = list(U=0.999,L=0.001))
+
+data.table(tmp)
+
+tmp <- predict(test1$gbm_mqr8$qreg_list,
                newdata = test1$data,
                pred_ntree = 1,
                quantiles = c(.1,.55,.9))
 
 
-tmp <- predict(test1$gbm_mqr8$qreg_list$all_data,
+tmp <- predict(test1$gbm_mqr8$qreg_list,
                newdata = test1$data,
                pred_ntree = 1,
                quantiles = c(.1,.5,.9))
@@ -283,7 +326,7 @@ lines(test1$data$TARGETVAR[which(test1$data$ISSUEdtm==i_ts)],lwd=3)
 
 
 
-lapply(names(test1)[-1][c(1,3,4,6,7,2,5)],function(x){
+rel <- rbindlist(lapply(names(test1)[-1][c(1,3,4,6,7,2,5)],function(x){
   
   if(class(test1[[x]])[1]!="MultiQR"){
     
@@ -305,11 +348,11 @@ lapply(names(test1)[-1][c(1,3,4,6,7,2,5)],function(x){
   
   
   
-})
+}),idcol="model")
 
 
 
-lapply(names(test1)[-1][c(1,3,4,6,7,2,5)],function(x){
+pball <- rbindlist(lapply(names(test1)[-1][c(1,3,4,6,7,2,5)],function(x){
   
   if(class(test1[[x]])[1]!="MultiQR"){
   
@@ -326,9 +369,14 @@ lapply(names(test1)[-1][c(1,3,4,6,7,2,5)],function(x){
   }
   
   
-})
+}),idcol="model")
 
 
+fwrite(rel,"reltest.csv")
+
+fwrite(pball,"pballtest.csv")
+
+file.remove(list.files(pattern = "*.csv"))
 
 #################################################################################
 ### Multiple Quantile Regression using QGAM ####
