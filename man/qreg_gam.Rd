@@ -38,7 +38,7 @@ are used as features in linear quantile regression.}
 
 \item{use_bam}{If \code{TRUE} (default) then GAM is fit using (\code{bam()}) in stead of \code{gam()}. \code{bam} is better suited to large datasets but not all \code{gam} model options are available with \code{bam}. See \code{bam()} documentation for further details.}
 
-\item{...}{Additional agruments passter to \code{gam()} or (\code{bam()}).}
+\item{...}{Additional agruments passter to \code{gam()} (or \code{bam()}).}
 
 \item{formala}{A \code{formula} object with the response on the left
 of an ~ operator, and the terms, separated by + operators, on the right passed to \code{gam()}

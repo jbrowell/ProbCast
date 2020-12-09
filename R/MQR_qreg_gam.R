@@ -23,7 +23,7 @@
 #' @param gbm_params List of parameters to be passed to \code{fit.gbm()}.
 #' @param cv_folds Control for cross-validation if not supplied in \code{data}.
 #' @param Sort \code{boolean} Sort quantiles using \code{SortQuantiles()}?
-#' @param ... Additional agruments passter to \code{gam()} or (\code{bam()}).
+#' @param ... Additional agruments passter to \code{gam()} (or \code{bam()}).
 #' @param use_bam If \code{TRUE} (default) then GAM is fit using (\code{bam()}) in stead of \code{gam()}. \code{bam} is better suited to large datasets but not all \code{gam} model options are available with \code{bam}. See \code{bam()} documentation for further details.
 #' @param w Weights on the contribution of data to model fit. See \code{gam()}.
 #' @param SortLimits \code{Limits} argument to be passed to \code{SortQuantiles()}. Constrains quantiles to upper and lower limits given by \code{list(U=upperlim,L=lowerlim)}.
@@ -42,7 +42,7 @@ qreg_gam <- function(data,
                      formula_res2 = formula,
                      quantiles=c(0.25,0.5,0.75),
                      cv_folds=NULL,
-                     use_bam=T,
+                     use_bam=T, # descrete =T
                      # w=rep(1,nrow(data)), # Not working...
                      sort=T,sort_limits=NULL,
                      ...){
@@ -98,8 +98,13 @@ qreg_gam <- function(data,
                                                 formula = formula,...)
     # GAM for squared residuals
     if(model_res2){ 
-      OUTPUT_MODEL$gams[[paste0(fold,"_r")]] <- gam_fit_method(data=cbind(data[kfold!=fold & kfold!="Test" & BadData==F,],data.table(gam_res2=residuals(OUTPUT_MODEL$gams[[fold]])^2)),
+      temp_gam_res2 <- data.table(gam_res2=(OUTPUT_MODEL$gam_pred[kfold!=fold & kfold!="Test" & BadData==F,y] - 
+                                              predict(OUTPUT_MODEL$gams[[fold]],
+                                                      newdata = data[kfold!=fold & kfold!="Test" & BadData==F,]))^2)  
+      
+      OUTPUT_MODEL$gams[[paste0(fold,"_r")]] <- gam_fit_method(data=cbind(data[kfold!=fold & kfold!="Test" & BadData==F,],temp_gam_res2),
                                                                formula = formula_res2,...)
+      rm(temp_gam_res2)
     }
     
     
@@ -150,16 +155,17 @@ qreg_gam <- function(data,
         colnames(train2) <- paste0(colnames(train2),"_r")
         train <- cbind(train,train2); rm(train2)
       }
-      train <- cbind(as.data.table(train),data[kfold!=fold & kfold!="Test" & BadData==F,.(gam_resid)])
+      train <- cbind(data.table(train),data[kfold!=fold & kfold!="Test" & BadData==F,.(gam_resid)])
       
       ## Out-of-sample data
-      test_cv <- as.data.table(predict(OUTPUT_MODEL$gams[[fold]],newdata = data[kfold==fold,],type = "terms"))
+      test_cv <- predict(OUTPUT_MODEL$gams[[fold]],newdata = data[kfold==fold,],type = "terms")
       if(model_res2){
-        test_cv2 <- as.data.table(predict(OUTPUT_MODEL$gams[[paste0(fold,"_r")]],newdata = data[kfold==fold,],type = "terms"))
+        test_cv2 <- predict(OUTPUT_MODEL$gams[[paste0(fold,"_r")]],newdata = data[kfold==fold,],type = "terms")
         test_cv2 <- test_cv2[,grep("\\(",colnames(test_cv2)),drop=F]
         colnames(test_cv2) <- paste0(colnames(test_cv2),"_r")
         test_cv <- cbind(test_cv,test_cv2); rm(test_cv2)
       }
+      test_cv <- data.table(test_cv)
       
       for(i in 1:length(quantiles)){
         ## Fit QR model
@@ -248,20 +254,20 @@ predict.qreg_gam <- function(object,
     }
   }else{
     ## QR with features from GAM
-    newdata_terms <- as.data.table(predict(object$gams[[cv_fold]],newdata = newdata,type = "terms"))
-    if(!is.null(object$formula_res2)){
-      newdata_terms2 <- as.data.table(predict(object$gams[[paste0(cv_fold,"_r")]],newdata = newdata,type = "terms"))
+    newdata_terms <- predict(object$gams[[cv_fold]],newdata = newdata,type = "terms")
+    if(!is.null(object$call$formula_res2)){
+      newdata_terms2 <- predict(object$gams[[paste0(cv_fold,"_r")]],newdata = newdata,type = "terms")
       newdata_terms2 <- newdata_terms2[,grep("\\(",colnames(newdata_terms2)),drop=F]
       colnames(newdata_terms2) <- paste0(colnames(newdata_terms2),"_r")
       newdata_terms <- cbind(newdata_terms,newdata_terms2); rm(newdata_terms2)
     }
+    newdata_terms <- data.table(newdata_terms)
     
+    ## Make predictions
     for(i in 1:length(quantiles)){
-      ## Make predictions
       predqs[,i] <- OUTPUT$gam_pred +
         predict.rq(object = object$rqs[[cv_fold]][[paste0("q",100*quantiles[i])]],
                    newdata = newdata_terms)
-      
     }
   }
   

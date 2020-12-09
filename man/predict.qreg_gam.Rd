@@ -10,8 +10,7 @@
   quantiles = NULL,
   cv_fold = NULL,
   sort = T,
-  sort_limits = NULL,
-  ...
+  sort_limits = NULL
 )
 }
 \description{
