@@ -160,7 +160,7 @@ qreg_gbm <- function(data,
       predqs[data$kfold==fold,] <- predict.qreg_gbm(q_mods,
                                                     newdata = data[data$kfold==fold,],
                                                     quantiles = NULL,
-                                                    which_model = fold,
+                                                    cv_fold = fold,
                                                     pred_ntree = pred_ntree,
                                                     perf.plot = perf.plot,
                                                     sort = sort,
@@ -314,7 +314,7 @@ MQR_gbm <- function(data,
 #' @param object 	object of class \code{qreg_gbm} obtained from the function \code{qreg_gbm()}.
 #' @param newdata data.frame of observations for which to make predictions
 #' @param quantiles The quantiles to predict. Default is all the quantiles present in \code{object}
-#' @param which_model If \code{qreg_gbm()} is used for kfold analysis, specify the name of the fold. The default 
+#' @param cv_fold If \code{qreg_gbm()} is used for kfold analysis, specify the name of the fold. The default 
 #' is the "Test" model if present, else it throws a warning.
 #' @param pred_ntree predict using a user-specified tree.
 #' If unspecified an out-of-the bag estimate will be used unless internal
@@ -332,15 +332,19 @@ MQR_gbm <- function(data,
 predict.qreg_gbm <- function(object,
                              newdata = NULL,
                              quantiles = NULL,
-                             which_model = NULL,
+                             cv_fold = NULL,
                              pred_ntree = NULL,
                              perf.plot = FALSE,
                              sort = T,
                              sort_limits = NULL,
                              ...) {
   
+  
+  
+  if(class(object)!="qreg_gbm"){stop("object of wrong class, expecting \"qreg_gbm\"")}
+  
   # re-define object to be a single model if kfold etc. present 
-  if(is.null(which_model)){
+  if(is.null(cv_fold)){
     
     if(length(names(object))==1){
       
@@ -353,19 +357,19 @@ predict.qreg_gbm <- function(object,
       
     } else{
       
-      warning(paste0("predicting using model --- ",tail(names(object),n=1)))
-      object <- object[[tail(names(object),n=1)]]
+      warning(paste0("predicting using model --- ",head(names(object),n=1)))
+      object <- object[[head(names(object),n=1)]]
       
       
     }
     }
   } else{
     
-    if(which_model%in%names(object)){
+    if(cv_fold%in%names(object)){
     
-    object <- object[[which_model]]
+    object <- object[[cv_fold]]
     
-    } else{stop(paste0(which_model," not in names(object)"))}
+    } else{stop(paste0(cv_fold," not in names(object)"))}
     
   }
   

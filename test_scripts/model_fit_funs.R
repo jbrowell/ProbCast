@@ -20,9 +20,9 @@ Wind$WS100 <- sqrt(Wind$U100^2+Wind$V100^2)
 Wind$Power <- pmin(Wind$WS100,11)^3
 
 ## Set-up simple kfold CV. NB --- For scenario forecasting make sure the CV folds don't cross issue times
-Wind$kfold <- "Fold 1"
-Wind$kfold[Wind$ISSUEdtm>as.POSIXct("2012-06-30",tz="UTC")] <- "Fold 2"
-Wind$kfold[Wind$ISSUEdtm>as.POSIXct("2012-12-31",tz="UTC")] <- "Fold 3"
+Wind$kfold <- "fold1"
+Wind$kfold[Wind$ISSUEdtm>as.POSIXct("2012-06-30",tz="UTC")] <- "fold2"
+Wind$kfold[Wind$ISSUEdtm>as.POSIXct("2012-12-31",tz="UTC")] <- "fold3"
 Wind$kfold[Wind$ISSUEdtm>as.POSIXct("2013-06-30",tz="UTC")] <- "Test"
 
 #################################################################################
@@ -194,7 +194,7 @@ data.table(tmp)
 
 tmp <- predict(test1$gbm_mqr7$qreg_list,
                newdata = test1$data,
-               which_model = "fold1",
+               cv_fold = "fold1",
                pred_ntree = 100,
                sort = T,
                sort_limits = list(U=0.999,L=0.001))
@@ -204,10 +204,12 @@ data.table(tmp)
 
 tmp <- predict(test1$gbm_mqr7$qreg_list,
                newdata = test1$data,
-               which_model = "Fold X",
+               cv_fold = "fold5",
                pred_ntree = 100,
                sort = T,
                sort_limits = list(U=0.999,L=0.001))
+
+data.table(tmp)
 
 
 
@@ -240,7 +242,7 @@ data.table(tmp)
 
 tmp <- predict(test1$gbm_mqr8$qreg_list,
                newdata = test1$data,
-               which_model = "all_data",
+               cv_fold = "all_data",
                pred_ntree = 100,
                sort = T,
                sort_limits = list(U=0.999,L=0.001))
@@ -249,17 +251,19 @@ data.table(tmp)
 
 tmp <- predict(test1$gbm_mqr8$qreg_list,
                newdata = test1$data,
-               pred_ntree = 1,
+               pred_ntree = 100,
                quantiles = c(.1,.55,.9))
 
 
 tmp <- predict(test1$gbm_mqr8$qreg_list,
                newdata = test1$data,
-               pred_ntree = 1,
+               pred_ntree = 100,
                quantiles = c(.1,.5,.9))
 
 
 data.table(tmp)
+
+
 
 length(test1$gbm_mqr8$qreg_list$all_data$q10$fit)==length(na.omit(test1$data$TARGETVAR))
 
@@ -845,10 +849,10 @@ identical(coef(test1$ppd7$Test),coef(test1$ppd8$Test))
 # }
 # 
 # ### this should be the mean of the subset of data as below! But they're all the same
-# GAMLSSmodelList$`Fold 1`$mu$offset
+# GAMLSSmodelList$`fold1`$mu$offset
 # GAMLSSmodelList$Test$mu$offset
 # 
-# mean(tempdata[tempdata$kfold!="Fold 1" & tempdata$kfold != "Test",]$TARGETVAR,na.rm=T)
+# mean(tempdata[tempdata$kfold!="fold1" & tempdata$kfold != "Test",]$TARGETVAR,na.rm=T)
 # mean(tempdata[tempdata$kfold != "Test",]$TARGETVAR,na.rm=T)
 #
 # the models contain all the correct subsets of data though, think it comes down to the <<family>> object we defined updating with a default...
