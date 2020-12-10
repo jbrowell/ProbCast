@@ -36,21 +36,20 @@ are used as features in linear quantile regression.}
 
 \item{cv_folds}{Control for cross-validation if not supplied in \code{data}.}
 
-\item{use_bam}{If \code{TRUE} (default) then GAM is fit using (\code{bam()}) in stead of \code{gam()}. \code{bam} is better suited to large datasets but not all \code{gam} model options are available with \code{bam}. See \code{bam()} documentation for further details.}
+\item{use_bam}{If \code{TRUE} (default) then GAM is fit using (\code{bam()}) in stead
+of \code{gam()}. \code{bam} is better suited to large datasets but not all
+\code{gam} model options are available with \code{bam}. See \code{bam()}
+documentation for further details.}
+
+\item{sort}{\code{boolean} Sort quantiles using \code{SortQuantiles()}?}
+
+\item{sort_limits}{\code{Limits} argument to be passed to \code{SortQuantiles()}. Constrains quantiles to upper and lower limits given by \code{list(U=upperlim,L=lowerlim)}.}
 
 \item{...}{Additional agruments passter to \code{gam()} (or \code{bam()}).}
 
 \item{formala}{A \code{formula} object with the response on the left
 of an ~ operator, and the terms, separated by + operators, on the right passed to \code{gam()}
 or \code{bam()} from \code{mgcv}.}
-
-\item{gbm_params}{List of parameters to be passed to \code{fit.gbm()}.}
-
-\item{Sort}{\code{boolean} Sort quantiles using \code{SortQuantiles()}?}
-
-\item{w}{Weights on the contribution of data to model fit. See \code{gam()}.}
-
-\item{SortLimits}{\code{Limits} argument to be passed to \code{SortQuantiles()}. Constrains quantiles to upper and lower limits given by \code{list(U=upperlim,L=lowerlim)}.}
 }
 \value{
 Returns a \code{list} containing predictive quantiles (in a \code{MultiQR} object), GAM models, and deterministic predictions

@@ -20,13 +20,14 @@
 #' @param model_res2 If \code{TRUE} also model squared residuals of GAM using a GAM. Defaults to \code{FALSE}.
 #' @param formula_res2 Formula for GAM to predict squared residuals.
 #' @param quantiles The quantiles to fit models for.
-#' @param gbm_params List of parameters to be passed to \code{fit.gbm()}.
 #' @param cv_folds Control for cross-validation if not supplied in \code{data}.
-#' @param Sort \code{boolean} Sort quantiles using \code{SortQuantiles()}?
+#' @param use_bam If \code{TRUE} (default) then GAM is fit using (\code{bam()}) in stead
+#' of \code{gam()}. \code{bam} is better suited to large datasets but not all
+#' \code{gam} model options are available with \code{bam}. See \code{bam()}
+#' documentation for further details.
+#' @param sort \code{boolean} Sort quantiles using \code{SortQuantiles()}?
+#' @param sort_limits \code{Limits} argument to be passed to \code{SortQuantiles()}. Constrains quantiles to upper and lower limits given by \code{list(U=upperlim,L=lowerlim)}.
 #' @param ... Additional agruments passter to \code{gam()} (or \code{bam()}).
-#' @param use_bam If \code{TRUE} (default) then GAM is fit using (\code{bam()}) in stead of \code{gam()}. \code{bam} is better suited to large datasets but not all \code{gam} model options are available with \code{bam}. See \code{bam()} documentation for further details.
-#' @param w Weights on the contribution of data to model fit. See \code{gam()}.
-#' @param SortLimits \code{Limits} argument to be passed to \code{SortQuantiles()}. Constrains quantiles to upper and lower limits given by \code{list(U=upperlim,L=lowerlim)}.
 #' @details The returned predictive quantiles and GAM predictions are those produced out-of-sample for each
 #' cross-validation fold (using models trained on the remaining folds but not "Test" data).
 #' Predictive quantiles corresponding to "Test" data are produced using models trained on all
@@ -80,7 +81,8 @@ qreg_gam <- function(data,
   
   OUTPUT_MODEL <- list(call=list(formula=formula,
                                  formula_qr=formula_qr,
-                                 formula_res2 = if(model_res2){formula_res2}else{NULL}),
+                                 formula_res2 = if(model_res2){formula_res2}else{NULL},
+                                 use_bam=use_bam),
                        gam_pred=data.table::copy(data[,.(BadData,kfold,y=get(as.character(formula[[2]])))]),
                        gams = list(),
                        rqs = list())
@@ -190,17 +192,20 @@ qreg_gam <- function(data,
   
   class(predqs) <- c("MultiQR",class(predqs))
   
-  ### ADD DEFAULT MODEL FOR PREDICT FUNCTION
-  OUTPUT_MODEL[["default_model"]] <- if("Test"%in%unique(data$kfold)){"Test"}else{unique(data$kfold)[1]}
-  class(OUTPUT_MODEL) <- c("qreg_gam",class(OUTPUT_MODEL))
+  
   
   if(sort){
     predqs <- SortQuantiles(data = predqs,Limits = sort_limits)
   }
   
   
-  return(list(mqr_pred=predqs,
-              fit_mods=OUTPUT_MODEL))
+  FINAL_OUTPUT <- list(mqr_pred=predqs,
+                       models=OUTPUT_MODEL)
+  FINAL_OUTPUT[["default_model"]] <- if("Test"%in%unique(data$kfold)){"Test"}else{unique(data$kfold)[1]}
+  
+  class(FINAL_OUTPUT) <- c("qreg_gam",class(FINAL_OUTPUT))
+  
+  return(FINAL_OUTPUT)
   
 }
 
@@ -208,14 +213,27 @@ qreg_gam <- function(data,
 #' Predict from model based on Generalised Additive Model and Linear Quantile Regression
 #'
 #' This function predicts from multiple conditional linear quantile regression models of the residuals of
-#' a generalised additive model fit using \code{mqr_qreg_gam}.
+#' a generalised additive model fit using \code{qreg_gam}.
 #' 
 #' @author Jethro Browell, \email{jethro.browell@@strath.ac.uk}
+#' @param object An \code{qreg_gam} object containing the model to predict from.
+#' @param newdata A data frame or data table containing the values of the model
+#' covariates at which predictions are required. 
+#' @param quantiles The probability levels at which quantile predictions should
+#' be produced.
+#' @param model_name The name of the model in \code{object} to be used for prediction. E.g.
+#' Specific cross-vlaidation fold, test model or some other version.
+#' @param sort \code{boolean} Sort quantiles using \code{SortQuantiles()}?
+#' @param sort_limits \code{Limits} argument to be passed to \code{SortQuantiles()}. 
+#' Constrains quantiles to upper and lower limits given by \code{list(U=upperlim,L=lowerlim)}.
+#' @details Predict method for multiple quantile regression models of the class \code{qreg_gam}. 
+#' @return A list with elements \code{gam_pred}, deterministic predictions (conditional expectation) from
+#' main GAM model, and \code{mqr_pred}, multiple predictive quantiles in a \code{MultiQR} object.
 #' @export
 predict.qreg_gam <- function(object,
                              newdata = NULL,
                              quantiles = NULL,
-                             cv_fold=NULL, ### USE DEFAULT
+                             model_name=NULL, ### USE DEFAULT
                              sort = T,
                              sort_limits = NULL){
   
@@ -225,14 +243,14 @@ predict.qreg_gam <- function(object,
   # Availability of quantile models
   
   ## Use default modeul unless specified
-  if(is.null(cv_fold)){
-    cv_fold <- object$default_model
+  if(is.null(model_name)){
+    model_name <- object$default_model
   }
   
   if(is.null(quantiles)){
-    quantiles <- as.numeric(gsub(pattern = "q",replacement = "",names(object$rqs[[cv_fold]])))/100
+    quantiles <- as.numeric(gsub(pattern = "q",replacement = "",names(object$models$rqs[[model_name]])))/100
   }
-  if(!all(quantiles %in% (as.numeric(gsub(pattern = "q",replacement = "",names(object$rqs[[cv_fold]])))/100))){
+  if(!all(quantiles %in% (as.numeric(gsub(pattern = "q",replacement = "",names(object$models$rqs[[model_name]])))/100))){
     stop("Models not availalbe for all requested quantiles.")
   }
   
@@ -240,23 +258,23 @@ predict.qreg_gam <- function(object,
   predqs <- data.table(matrix(as.numeric(NA),ncol = length(quantiles), nrow = nrow(newdata)))
   colnames(predqs) <- paste0("q",100*quantiles)
   
-  OUTPUT <- list(gam_pred=predict(object$gams[[cv_fold]],newdata = newdata),
+  OUTPUT <- list(gam_pred=predict(object$models$gams[[model_name]],newdata = newdata),
                  mqr_pred=NULL)
   newdata[,gam_pred:=OUTPUT$gam_pred]
   
   ## Qunatile regression
-  if(!is.null(object$call$formula_qr)){
+  if(!is.null(object$models$call$formula_qr)){
     ## Use user-specified model equation for quantile regression
     for(i in 1:length(quantiles)){
       predqs[,i] <- OUTPUT$gam_pred +
-        predict.rq(object = object$rqs[[cv_fold]][[paste0("q",100*quantiles[i])]],
+        predict.rq(object = object$models$rqs[[model_name]][[paste0("q",100*quantiles[i])]],
                    newdata = newdata)
     }
   }else{
     ## QR with features from GAM
-    newdata_terms <- predict(object$gams[[cv_fold]],newdata = newdata,type = "terms")
-    if(!is.null(object$call$formula_res2)){
-      newdata_terms2 <- predict(object$gams[[paste0(cv_fold,"_r")]],newdata = newdata,type = "terms")
+    newdata_terms <- predict(object$models$gams[[model_name]],newdata = newdata,type = "terms")
+    if(!is.null(object$models$call$formula_res2)){
+      newdata_terms2 <- predict(object$models$gams[[paste0(model_name,"_r")]],newdata = newdata,type = "terms")
       newdata_terms2 <- newdata_terms2[,grep("\\(",colnames(newdata_terms2)),drop=F]
       colnames(newdata_terms2) <- paste0(colnames(newdata_terms2),"_r")
       newdata_terms <- cbind(newdata_terms,newdata_terms2); rm(newdata_terms2)
@@ -266,7 +284,7 @@ predict.qreg_gam <- function(object,
     ## Make predictions
     for(i in 1:length(quantiles)){
       predqs[,i] <- OUTPUT$gam_pred +
-        predict.rq(object = object$rqs[[cv_fold]][[paste0("q",100*quantiles[i])]],
+        predict.rq(object = object$models$rqs[[model_name]][[paste0("q",100*quantiles[i])]],
                    newdata = newdata_terms)
     }
   }
@@ -288,7 +306,46 @@ predict.qreg_gam <- function(object,
 
 
 
-
+#' Predict from model based on Generalised Additive Model and Linear Quantile Regression
+#'
+#' This function predicts from multiple conditional linear quantile regression models of the residuals of
+#' a generalised additive model fit using \code{qreg_gam}.
+#' 
+#' @author Jethro Browell, \email{jethro.browell@@strath.ac.uk}
+#' @param object An \code{qreg_gam} object containing the model to update.
+#' @param newdata A data frame or data table containing the values of the model
+#' covariates and target variable required to update the model. 
+#' @param model_name The name of the model in \code{object} to be updated.
+#' @details Update the \code{bam} component of an \code{qreg_gam} model. 
+#' @return An updated \code{qreg_gam} model.
+#' @export
+qreg_gam.update <- function(object,newdata,model_name=NULL){
+  
+  
+  ## Check class of object
+  if(class(object)[1]!="qreg_gam"){stop("object of wrong class, expecting \"qreg_gam\"")}
+  
+  ## Check GAMs were fit using bam()
+  if(!object$models$call$use_bam){
+    stop("Only suitable for bam(). Select \"use_bam=T\" when fitting.")
+  }
+  
+  ## Use default model unless specified
+  if(is.null(model_name)){
+    model_name <- object$default_model
+  }
+  
+  ## Check model can be updated (from bam.update with extra explanation)
+  if(is.null(object$models$gams[[model_name]]$qrx)){
+    stop("Model can not be updated. Possible reason: bam option descrete=T, must be =F for updating.")
+  }
+  
+  object$models$gams[[model_name]] <- bam.update(b = object$models$gams[[model_name]],
+                                                 data = newdata)
+  
+  return(object)
+  
+} 
 
 
 
