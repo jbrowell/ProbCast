@@ -8,6 +8,7 @@
   object,
   newdata = NULL,
   quantiles = NULL,
+  model_name = NULL,
   pred_ntree = NULL,
   perf.plot = FALSE,
   sort = T,
@@ -16,15 +17,18 @@
 )
 }
 \arguments{
-\item{object}{object of class \code{qreg_gbm} obtained from the function \code{qreg_gbm()}}
+\item{object}{object of class \code{qreg_gbm} obtained from the function \code{qreg_gbm()}.}
 
 \item{newdata}{data.frame of observations for which to make predictions}
 
-\item{quantiles}{The quantiles to predict. Default is all the quantiles present in \code{object}}
+\item{quantiles}{the quantiles to predict. Default is all the quantiles present in \code{object}}
+
+\item{model_name}{the name of the model to be used for prediction.
+Unless specified, \code{object$default_model} is used.}
 
 \item{pred_ntree}{predict using a user-specified tree.
-If unspecified an out-of-the bag estimate will be used unless internal
-gbm cross-validation folds are specified in \code{qreg_gbm()}}
+If NULL \code{gbm::gbm.perf()} is used to estimate the best tree via out-of-the-bag estimates,
+unless internal gbm cross-validation folds are specified via the \code{...} argument in \code{qreg_gbm()}.}
 
 \item{perf.plot}{plot GBM performance if \code{pred_ntree = NULL}?}
 

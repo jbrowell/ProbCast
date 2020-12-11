@@ -3,7 +3,7 @@
 
   
 rm(list=ls())
-.rs.restartR()
+# .rs.restartR()
 
 # library(foreach)
 library(devtools)
@@ -11,6 +11,7 @@ library(rstudioapi)
 
 setwd(dirname(getActiveDocumentContext()$path))
 
+document(pkg = "../")
 load_all("../", TRUE)
 
 
@@ -29,6 +30,27 @@ Wind$kfold[Wind$ISSUEdtm>as.POSIXct("2013-06-30",tz="UTC")] <- "Test"
 ### Multiple Quantile Regression using GBM ####
 #################################################################################
 
+
+# data = test1$data
+# formula = TARGETVAR~U100+V100+U10+V10+(sqrt((U100^2+V100^2)))
+# cv_folds = 5
+# interaction.depth = 3
+# n.trees = 100
+# shrinkage = 0.05
+# n.minobsinnode = 20
+# bag.fraction = 1
+# keep.data = F
+# quantiles = seq(0.1,0.9,by=0.1)
+# sort = T
+# sort_limits = list(U=0.999,L=0.001)
+# pred_ntree = 100
+# cores = 1
+# pckgs = NULL
+# save_models_path = NULL
+# only_mqr = FALSE
+# rm(data,formula,cv_folds,interaction.depth,n.trees,shrinkage,n.minobsinnode,bag.fraction,keep.data,
+# quantiles,sort,sort_limits,pred_ntree,cores,pckgs,only_mqr,save_models_path)
+
 test1<-list(data=Wind)
 
 ## test in series
@@ -45,6 +67,32 @@ test1$gbm_mqr <- qreg_gbm(data = test1$data,
                           sort = T,
                           sort_limits = list(U=0.999,L=0.001),
                           pred_ntree = 100)
+
+
+
+print(test1$gbm_mqr)
+summary(test1$gbm_mqr)
+
+
+tmp <- predict(test1$gbm_mqr,
+               newdata = test1$data,
+               pred_ntree = 100,
+               sort = T,
+               sort_limits = list(U=0.999,L=0.001))
+
+data.table(tmp)
+
+
+tmp <- predict(test1$gbm_mqr,
+               newdata = test1$data,
+               model_name = "fold1",
+               pred_ntree = 100,
+               sort = T,
+               sort_limits = list(U=0.999,L=0.001))
+
+data.table(tmp)
+
+
 
 # test with modified hyperparameters
 test1$gbm_mqr2 <- qreg_gbm(data = test1$data,
@@ -171,101 +219,80 @@ test1$gbm_mqr6 <- MQR_gbm(data = test1$data,
                           para_over_q = FALSE)
 
 
-### default - autocv
+### default operational model
 test1$gbm_mqr7 <- qreg_gbm(data = test1$data,
                            formula = TARGETVAR~U100+V100+U10+V10+(sqrt((U100^2+V100^2))),
                            quantiles = seq(0.1,0.9,by=0.1),
                            sort = T,
-                           sort_limits = list(U=0.999,L=0.001),
-                           pred_ntree = 100)
+                           sort_limits = list(U=0.999,L=0.001))
 
-class(test1$gbm_mqr7$qreg_list)
-names(test1$gbm_mqr7$qreg_list)
+class(test1$gbm_mqr)
+print(test1$gbm_mqr7)
+summary(test1$gbm_mqr7)
 
 
-tmp <- predict(test1$gbm_mqr7$qreg_list,
+tmp <- predict(test1$gbm_mqr7,
                newdata = test1$data,
-               pred_ntree = 100,
                sort = T,
                sort_limits = list(U=0.999,L=0.001))
 
 data.table(tmp)
 
-
-tmp <- predict(test1$gbm_mqr7$qreg_list,
-               newdata = test1$data,
-               cv_fold = "fold1",
-               pred_ntree = 100,
-               sort = T,
-               sort_limits = list(U=0.999,L=0.001))
-
-data.table(tmp)
+length(test1$gbm_mqr7$models$all_data$q10$fit)==length(na.omit(test1$data$TARGETVAR))
 
 
-tmp <- predict(test1$gbm_mqr7$qreg_list,
-               newdata = test1$data,
-               cv_fold = "fold5",
-               pred_ntree = 100,
-               sort = T,
-               sort_limits = list(U=0.999,L=0.001))
-
-data.table(tmp)
-
-
-
-
-##### OPERATIONAL MODEL
+##### auto cv
+## supress warnings?
 test1$gbm_mqr8 <- qreg_gbm(data = test1$data,
+                           quantiles = seq(0.1,0.9,by=0.1),
                            formula = TARGETVAR~U100+V100+U10+V10+(sqrt((U100^2+V100^2))),
-                           cv_folds = NULL,
-                           interaction.depth = 3,
-                           n.trees = 100,
-                           shrinkage = 0.05,
-                           n.minobsinnode = 20,
-                           bag.fraction = 1,
-                           keep.data = F,
-                           quantiles = seq(0.1,0.9,by=0.1))
+                           cv_folds =  5, # probcast cv folds
+                           cores = 8)
 
-
-class(test1$gbm_mqr8$qreg_list)
-
-
-tmp <- predict(test1$gbm_mqr8$qreg_list,
+### use OOB estimate for tree
+tmp <- predict(test1$gbm_mqr8,
                newdata = test1$data,
-               pred_ntree = 100,
                sort = T,
-               sort_limits = list(U=0.999,L=0.001))
+               sort_limits = list(U=0.999,L=0.001),
+               perf.plot = TRUE)
 
 data.table(tmp)
 
-
-
-tmp <- predict(test1$gbm_mqr8$qreg_list,
-               newdata = test1$data,
-               cv_fold = "all_data",
-               pred_ntree = 100,
-               sort = T,
-               sort_limits = list(U=0.999,L=0.001))
-
-data.table(tmp)
-
-tmp <- predict(test1$gbm_mqr8$qreg_list,
-               newdata = test1$data,
-               pred_ntree = 100,
-               quantiles = c(.1,.55,.9))
-
-
-tmp <- predict(test1$gbm_mqr8$qreg_list,
+# specify the tree number for prediction
+tmp <- predict(test1$gbm_mqr8,
                newdata = test1$data,
                pred_ntree = 100,
                quantiles = c(.1,.5,.9))
 
+data.table(tmp)
+
+
+### use gbm internal cv to estimate the best tree
+# bug in internal gbm cv where formulas like (log(var)) in formula don't work
+test1$gbm_mqr9 <- qreg_gbm(data = test1$data,
+                           # formula = TARGETVAR~U100+V100+U10+V10+(sqrt((U100^2+V100^2))),
+                           formula = TARGETVAR~U100+V100+U10+V10,
+                           cv_folds =  5, # probcast cv folds
+                           cores = 5,
+                           cv.folds=5, # gbm internal folds for n.tree
+                           perf.plot = FALSE)
+
+
+class(test1$gbm_mqr9)
+print(test1$gbm_mqr9)
+summary(test1$gbm_mqr9)
+
+
+### use gbm internal cv to estimate the best tree
+tmp <- predict(test1$gbm_mqr9,
+               newdata = test1$data,
+               sort = T,
+               sort_limits = list(U=0.999,L=0.001),
+               perf.plot = TRUE)
 
 data.table(tmp)
 
 
-
-length(test1$gbm_mqr8$qreg_list$all_data$q10$fit)==length(na.omit(test1$data$TARGETVAR))
 
 
 
@@ -283,7 +310,7 @@ test1$gbm_mqr9 <- qreg_gbm(data = test1$data,
                            sort = T,
                            sort_limits = list(U=0.999,L=0.001),
                            pred_ntree = 100,
-                           cores=8L,
+                           cores=5L,
                            only_mqr = TRUE)
 
 
@@ -301,10 +328,10 @@ par(xaxs="r",yaxs="r")  # Extend axis limits by 4% ("i" does no extension)
 
 i_ts <- unique(test1$data$ISSUEdtm)[3]
 
-plot(test1$gbm_mqr$mqr_kfold[which(test1$data$ISSUEdtm==i_ts),],xlab="Time Index [Hours]",ylab="Power [Capacity Factor]",axes=F,Legend = 1,ylim=c(0,1)); axis(1,1:24,pos=-0.07); axis(2,las=1)
+plot(test1$gbm_mqr$mqr_pred[which(test1$data$ISSUEdtm==i_ts),],xlab="Time Index [Hours]",ylab="Power [Capacity Factor]",axes=F,Legend = 1,ylim=c(0,1)); axis(1,1:24,pos=-0.07); axis(2,las=1)
 lines(test1$data$TARGETVAR[which(test1$data$ISSUEdtm==i_ts)],lwd=3)
 
-plot(test1$gbm_mqr3$mqr_kfold[which(test1$data$ISSUEdtm==i_ts),],xlab="Time Index [Hours]",ylab="Power [Capacity Factor]",axes=F,Legend = 1,ylim=c(0,1)); axis(1,1:24,pos=-0.07); axis(2,las=1)
+plot(test1$gbm_mqr3$mqr_pred[which(test1$data$ISSUEdtm==i_ts),],xlab="Time Index [Hours]",ylab="Power [Capacity Factor]",axes=F,Legend = 1,ylim=c(0,1)); axis(1,1:24,pos=-0.07); axis(2,las=1)
 lines(test1$data$TARGETVAR[which(test1$data$ISSUEdtm==i_ts)],lwd=3)
 
 plot(test1$gbm_mqr4[which(test1$data$ISSUEdtm==i_ts),],xlab="Time Index [Hours]",ylab="Power [Capacity Factor]",axes=F,Legend = 1,ylim=c(0,1)); axis(1,1:24,pos=-0.07); axis(2,las=1)
@@ -313,12 +340,12 @@ lines(test1$data$TARGETVAR[which(test1$data$ISSUEdtm==i_ts)],lwd=3)
 plot(test1$gbm_mqr6[which(test1$data$ISSUEdtm==i_ts),],xlab="Time Index [Hours]",ylab="Power [Capacity Factor]",axes=F,Legend = 1,ylim=c(0,1)); axis(1,1:24,pos=-0.07); axis(2,las=1)
 lines(test1$data$TARGETVAR[which(test1$data$ISSUEdtm==i_ts)],lwd=3)
 
-plot(test1$gbm_mqr7$mqr_kfold[which(test1$data$ISSUEdtm==i_ts),],xlab="Time Index [Hours]",ylab="Power [Capacity Factor]",axes=F,Legend = 1,ylim=c(0,1)); axis(1,1:24,pos=-0.07); axis(2,las=1)
+plot(test1$gbm_mqr8$mqr_pred[which(test1$data$ISSUEdtm==i_ts),],xlab="Time Index [Hours]",ylab="Power [Capacity Factor]",axes=F,Legend = 1,ylim=c(0,1)); axis(1,1:24,pos=-0.07); axis(2,las=1)
 lines(test1$data$TARGETVAR[which(test1$data$ISSUEdtm==i_ts)],lwd=3)
 
 
 
-plot(test1$gbm_mqr2$mqr_kfold[which(test1$data$ISSUEdtm==i_ts),],xlab="Time Index [Hours]",ylab="Power [Capacity Factor]",axes=F,Legend = 1,ylim=c(0,1)); axis(1,1:24,pos=-0.07); axis(2,las=1)
+plot(test1$gbm_mqr2$mqr_pred[which(test1$data$ISSUEdtm==i_ts),],xlab="Time Index [Hours]",ylab="Power [Capacity Factor]",axes=F,Legend = 1,ylim=c(0,1)); axis(1,1:24,pos=-0.07); axis(2,las=1)
 lines(test1$data$TARGETVAR[which(test1$data$ISSUEdtm==i_ts)],lwd=3)
 
 
@@ -330,11 +357,11 @@ lines(test1$data$TARGETVAR[which(test1$data$ISSUEdtm==i_ts)],lwd=3)
 
 
 
-rel <- rbindlist(lapply(names(test1)[-1][c(1,3,4,6,7,2,5)],function(x){
+rel <- rbindlist(lapply(names(test1)[-1][c(1,3,4,6,8,2,5)],function(x){
   
   if(class(test1[[x]])[1]!="MultiQR"){
     
-    reliability(qrdata = test1[[x]]$mqr_kfold,
+    reliability(qrdata = test1[[x]]$mqr_pred,
                 realisations = test1$data$TARGETVAR,
                 kfolds = test1$data$kfold,main=x)
     
@@ -356,11 +383,11 @@ rel <- rbindlist(lapply(names(test1)[-1][c(1,3,4,6,7,2,5)],function(x){
 
 
 
-pball <- rbindlist(lapply(names(test1)[-1][c(1,3,4,6,7,2,5)],function(x){
+pball <- rbindlist(lapply(names(test1)[-1][c(1,3,4,6,8,2,5)],function(x){
   
   if(class(test1[[x]])[1]!="MultiQR"){
   
-  pinball(qrdata = test1[[x]]$mqr_kfold,
+  pinball(qrdata = test1[[x]]$mqr_pred,
           realisations = test1$data$TARGETVAR,
           kfolds = test1$data$kfold,main=x)
     

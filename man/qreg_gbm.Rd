@@ -8,7 +8,7 @@ qreg_gbm(
   data,
   formula,
   quantiles = c(0.25, 0.5, 0.75),
-  cv_folds = 5,
+  cv_folds = NULL,
   perf.plot = FALSE,
   pred_ntree = NULL,
   cores = 1,
@@ -38,8 +38,8 @@ variables. May optionally contain a column with labeled folds and "Test" for tes
 \item{perf.plot}{Plot GBM performance?}
 
 \item{pred_ntree}{predict using a user-specified tree.
-If unspecified an out-of-the bag estimate will be used unless internal
-gbm cross-validation folds are specified in \code{...}.}
+If NULL \code{gbm::gbm.perf()} is used to estimate the best tree via out-of-the-bag estimates,
+unless internal gbm cross-validation folds are specified in \code{...}.}
 
 \item{cores}{the number of available cores. Defaults to one, i.e. no parallelisation, although in this case the user
 must still specify \code{pckgs} if applicable.}
