@@ -263,13 +263,15 @@ qreg_gam.add_quantiles <- function(object, data, quantiles){
       print(paste0("MQR, kfold=",fold))
       for(i in 1:length(quantiles)){
         
-        object$models$rqs[[fold]][[paste0("q",100*quantiles[i])]] <- 
-          rq(formula_qr,
-             tau = quantiles[i],
-             data = data[kfold!=fold & kfold!="Test" & BadData==F,],
-             method = "br")
+        rq_model <- rq(formula_qr,
+                       tau = quantiles[i],
+                       data = data[kfold!=fold & kfold!="Test" & BadData==F,],
+                       method = "br")
         
-        ## Maybe throw away unneeded entries in "rq" as take up a lot of space!!!
+        ## Throw away unneeded entries in "rq" as take up a lot of space!!!
+        rq_model <- rq_model[c("coefficients","terms")]
+        class(rq_model) <- "rq"
+        object$models$rqs[[fold]][[paste0("q",100*quantiles[i])]] <- rq_model
         
         predqs[data$kfold==fold,i] <- object$models$gam_pred[kfold==fold,gam_pred] +
           predict.rq(object$models$rqs[[fold]][[paste0("q",100*quantiles[i])]],data[kfold==fold,])
