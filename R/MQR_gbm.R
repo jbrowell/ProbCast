@@ -66,6 +66,7 @@ qreg_gbm <- function(data,
   ## issue/target/fold indexed mqr object?
   ### docu. difference between cv_folds from probcast and cv.folds from gbm
   #### suppress warnings for OOB tree estimates?
+  ##### bad data index ---> bad_trainidx? e.g. for solar 0s...
   
   if(is.null(cv_folds) & only_mqr){
       stop("no cross validation via cv_folds and return only_mqr is TRUE")
@@ -77,7 +78,7 @@ qreg_gbm <- function(data,
   
   # set-up cv folds
   cv_labs <- cv_control(data = data,cv_folds = cv_folds)
-  data$kfold <- cv_labs$idx
+  output$kfold_index <- cv_labs$idx
   output$model_names <- cv_labs$fold_loop
   
 
@@ -101,7 +102,7 @@ qreg_gbm <- function(data,
       
 
       temp <- gbm::gbm(formula=formula,
-                       data = data[data$kfold!=fold & data$kfold!="Test" & !is.na(data[[formula[[2]]]]),],
+                       data = data[output$kfold_index!=fold & output$kfold_index!="Test" & !is.na(data[[formula[[2]]]]),],
                        distribution = list(name="quantile",alpha=q),
                        n.cores=1, # prevent issues when cv.folds>1 are in ...
                        ...)
@@ -152,20 +153,26 @@ qreg_gbm <- function(data,
     
     for(fold in output$model_names){
       
-      output$mqr_pred[data$kfold==fold,] <- predict(output,
-                                                    newdata = data[data$kfold==fold,],
-                                                    quantiles = NULL,
-                                                    model_name = fold, 
-                                                    pred_ntree = pred_ntree,
-                                                    perf.plot = perf.plot,
-                                                    sort = sort,
-                                                    sort_limits = sort_limits)
+      output$mqr_pred[output$kfold_index==fold,] <- predict(output,
+                                                            newdata = data[output$kfold_index==fold,],
+                                                            quantiles = NULL,
+                                                            model_name = fold, 
+                                                            pred_ntree = pred_ntree,
+                                                            perf.plot = perf.plot,
+                                                            sort = sort,
+                                                            sort_limits = sort_limits)
       
     }
     
     # class of new cv object
     class(output$mqr_pred) <- c("MultiQR","data.frame")
+    
+    output$mqr_info <- list(sort = sort,
+                            sort_limits = sort_limits)
   
+  } else{
+    # if no cv delete output$kfold_index...
+    output$kfold_index <- NULL
   }
  
   
@@ -445,12 +452,8 @@ summary.qreg_gbm <- function(x, ...){
     
     cat("\n")
     cat("class of kfold predictions: ", class(x$mqr_pred), "\n")
-    cat("sorted quantile predictions?: ", x$call$sort, "\n")
-    
-    if(!is.null(x$call$sort_limits)){
-      cat("sort limits: ", deparse(x$call$sort_limits), "\n")
-    }
-    
+    cat("sorted quantile predictions?: ", x$mqr_info$sort, "\n")
+    cat("sort limits: ", deparse(x$mqr_info$sort_limits), "\n")
     
   }
   

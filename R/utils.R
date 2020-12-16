@@ -28,7 +28,7 @@ cv_control <- function(data,
            
     }
     
-    fold_idx <- data$kfold
+    fold_idx <- data[[cv_folds]]
     
     if(is.numeric(fold_idx)){
       
@@ -40,6 +40,12 @@ cv_control <- function(data,
     if(length(fold_loop)<=1){
       
       stop("number of unique kfolds in data should be > 1. Alternatively, set cv_folds to NULL for no cv operation")
+    }
+    
+    if(sum(is.na(fold_idx))>0){
+      
+      stop(paste0("NAs detected in data$",cv_folds))
+      
     }
     
     

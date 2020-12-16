@@ -93,7 +93,29 @@ tmp <- predict(test1$gbm_mqr,
 data.table(tmp)
 
 
+### change kfold column
 
+test1$data$kfolindx <- test1$data$kfold
+test1$data$kfold <- NULL
+data.table(test1$data)
+
+test1$gbm_mqr <- qreg_gbm(data = test1$data,
+                          formula = TARGETVAR~U100+V100+U10+V10+(sqrt((U100^2+V100^2))),
+                          cv_folds = "kfolindx",
+                          interaction.depth = 3,
+                          n.trees = 100,
+                          shrinkage = 0.05,
+                          n.minobsinnode = 20,
+                          bag.fraction = 1,
+                          keep.data = F,
+                          quantiles = seq(0.1,0.9,by=0.1),
+                          sort = T,
+                          sort_limits = list(U=0.999,L=0.001),
+                          pred_ntree = 100)
+
+
+test1$data <- Wind
+data.table(test1$data)
 # test with modified hyperparameters
 test1$gbm_mqr2 <- qreg_gbm(data = test1$data,
                            formula = TARGETVAR~U100+V100+U10+V10+(sqrt((U100^2+V100^2))),
@@ -226,7 +248,7 @@ test1$gbm_mqr7 <- qreg_gbm(data = test1$data,
                            sort = T,
                            sort_limits = list(U=0.999,L=0.001))
 
-class(test1$gbm_mqr)
+class(test1$gbm_mqr7)
 print(test1$gbm_mqr7)
 summary(test1$gbm_mqr7)
 
@@ -248,6 +270,10 @@ test1$gbm_mqr8 <- qreg_gbm(data = test1$data,
                            formula = TARGETVAR~U100+V100+U10+V10+(sqrt((U100^2+V100^2))),
                            cv_folds =  5, # probcast cv folds
                            cores = 8)
+
+class(test1$gbm_mqr8)
+print(test1$gbm_mqr8)
+summary(test1$gbm_mqr8)
 
 ### use OOB estimate for tree
 tmp <- predict(test1$gbm_mqr8,
