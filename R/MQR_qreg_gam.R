@@ -158,7 +158,9 @@ qreg_gam.add_quantiles <- function(object, data, quantiles){
     quantiles <- quantiles[-which(quantiles %in% (as.numeric(gsub("q","",colnames(object$mqr_pred)))/100))]
     
     if(length(quantiles)==0){
-      stop("All quantiles already exisit are are not re-estimated.")}
+      warning("All quantiles already exisit are are not re-estimated.")
+      return(object)
+      }
     else{
       warning("Some quantiles already exisit and are not re-estimated.")
     }
