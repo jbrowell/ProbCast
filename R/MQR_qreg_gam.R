@@ -77,7 +77,6 @@ qreg_gam <- function(data,
   
   ## GAM for conditional expectation (and possible squared residuals)
   
-  
   FINAL_OUTPUT <- list(mqr_pred=NULL,
                        models=list(call=list(formula=formula,
                                              formula_qr=formula_qr,
@@ -123,93 +122,11 @@ qreg_gam <- function(data,
   
   ## Out-of-sample cross-validation residuals
   FINAL_OUTPUT$models$gam_pred[,gam_resid:=y-gam_pred]
-  # data[,gam_resid := FINAL_OUTPUT$models$gam_pred$gam_resid]
-  # data[,gam_pred := FINAL_OUTPUT$models$gam_pred$gam_pred]
-  
-  
+
   ## Quantile regression ##
   FINAL_OUTPUT <- qreg_gam.add_quantiles(object=FINAL_OUTPUT,
                                          data=data,
                                          quantiles = quantiles)
-  
-  # ## Container for predictive quantiles
-  # predqs <- data.table(matrix(as.numeric(NA),ncol = length(quantiles), nrow = nrow(data)))
-  # colnames(predqs) <- paste0("q",100*quantiles)
-  # 
-  # if(!is.null(formula_qr)){
-  #   ## Use user-specified model equation for quantile regression
-  #   formula_qr <- reformulate(attr(terms(formula_qr),"term.labels"),response = "gam_resid")
-  #   for(fold in unique(data$kfold)){
-  #     print(paste0("MQR, kfold=",fold))
-  #     for(i in 1:length(quantiles)){
-  #       
-  #       FINAL_OUTPUT$models$rqs[[fold]][[paste0("q",100*quantiles[i])]] <- 
-  #         rq(formula_qr,
-  #            tau = quantiles[i],
-  #            data = data[kfold!=fold & kfold!="Test" & BadData==F,],
-  #            method = "br")
-  #       
-  #       ## Maybe throw away unneeded entries in "rq" as take up a lot of space!!!
-  #       
-  #       predqs[data$kfold==fold,i] <- FINAL_OUTPUT$models$gam_pred[kfold==fold,gam_pred] +
-  #         predict.rq(FINAL_OUTPUT$models$rqs[[fold]][[paste0("q",100*quantiles[i])]],data[kfold==fold,])
-  #     }
-  #   }
-  # }else{
-  #   ## QR with features from GAM
-  #   for(fold in unique(data$kfold)){
-  #     print(paste0("MQR, kfold=",fold))
-  #     ## Get training Data
-  #     train <- predict(FINAL_OUTPUT$models$gams[[fold]],newdata = data[kfold!=fold & kfold!="Test" & BadData==F,],type = "terms")
-  #     if(model_res2){
-  #       train2 <- predict(FINAL_OUTPUT$models$gams[[paste0(fold,"_r")]],newdata = data[kfold!=fold & kfold!="Test" & BadData==F,],type = "terms")
-  #       # Only need to retrun smooth terms as linear terms included already...
-  #       train2 <- train2[,grep("\\(",colnames(train2)),drop=F]
-  #       colnames(train2) <- paste0(colnames(train2),"_r")
-  #       train <- cbind(train,train2); rm(train2)
-  #     }
-  #     train <- cbind(data.table(train),data[kfold!=fold & kfold!="Test" & BadData==F,.(gam_resid)])
-  #     
-  #     ## Out-of-sample data
-  #     test_cv <- predict(FINAL_OUTPUT$models$gams[[fold]],newdata = data[kfold==fold,],type = "terms")
-  #     if(model_res2){
-  #       test_cv2 <- predict(FINAL_OUTPUT$models$gams[[paste0(fold,"_r")]],newdata = data[kfold==fold,],type = "terms")
-  #       test_cv2 <- test_cv2[,grep("\\(",colnames(test_cv2)),drop=F]
-  #       colnames(test_cv2) <- paste0(colnames(test_cv2),"_r")
-  #       test_cv <- cbind(test_cv,test_cv2); rm(test_cv2)
-  #     }
-  #     test_cv <- data.table(test_cv)
-  #     
-  #     for(i in 1:length(quantiles)){
-  #       ## Fit QR model
-  #       FINAL_OUTPUT$models$rqs[[fold]][[paste0("q",100*quantiles[i])]] <- 
-  #         rq(formula = gam_resid ~ .,
-  #            tau = quantiles[i],
-  #            data = train,
-  #            method = "br")
-  #       
-  #       ## Make predictions
-  #       predqs[data$kfold==fold,i] <- FINAL_OUTPUT$models$gam_pred[kfold==fold,gam_pred] +
-  #         predict.rq(FINAL_OUTPUT$models$rqs[[fold]][[paste0("q",100*quantiles[i])]],
-  #                    newdata=test_cv)
-  #       
-  #     }
-  #   }
-  # }
-  
-  
-  # data[,gam_resid:=NULL]
-  # data[,gam_pred:=NULL]
-  
-  # class(predqs) <- c("MultiQR",class(predqs))
-  # 
-  # if(sort){
-  #   predqs <- SortQuantiles(data = predqs,Limits = sort_limits)
-  # }
-  # 
-  # ##
-  # 
-  # FINAL_OUTPUT$mqr_pred <- predqs
   
   return(FINAL_OUTPUT)
   
@@ -217,14 +134,18 @@ qreg_gam <- function(data,
 
 
 
-#' Add new qunatile regression models to \code{qreg_gam} model.
+#' Add new qunatile regression models and predictions to \code{qreg_gam} model.
 #'
-#' This function adds new conditional quantile models to an \code{qreg_gam} object.
+#' This function adds new conditional quantile models and associated predictions
+#' to an exisiting \code{qreg_gam} object. This is a much faster approach to add
+#' new quantiles than re-estimating the main GAM using \code{qreg_gam()}. This
+#' function is also called within \code{qreg_gam()}.
 #' 
 #' @author Jethro Browell, \email{jethro.browell@@strath.ac.uk}
 #' @param object An \code{qreg_gam} object.
 #' @param data The data used to fit \code{object}
-#' @param quantiles The new quantiles to be added to \code{object}
+#' @param quantiles The new quantiles to be added to \code{object}. Quantiles already
+#' in \code{object} will not be re-fit and a warning thrown.
 #' @details Fits new qunatiles to \code{qreg_gam} object. 
 #' @return An updated \code{qreg_gam}.
 #' @export
@@ -237,7 +158,7 @@ qreg_gam.add_quantiles <- function(object, data, quantiles){
     quantiles <- quantiles[-which(quantiles %in% (as.numeric(gsub("q","",colnames(object$mqr_pred)))/100))]
     
     if(length(quantiles)==0){
-      stop("All quantiles already exisit anre are not re-estimated.")}
+      stop("All quantiles already exisit are are not re-estimated.")}
     else{
       warning("Some quantiles already exisit and are not re-estimated.")
     }
@@ -383,7 +304,7 @@ predict.qreg_gam <- function(object,
   }
   
   if(is.null(quantiles)){
-    quantiles <- as.numeric(gsub(pattern = "q",replacement = "",names(object$models$rqs[[model_name]])))/100
+    quantiles <- sort(as.numeric(gsub(pattern = "q",replacement = "",names(object$models$rqs[[model_name]])))/100)
   }
   if(!all(quantiles %in% (as.numeric(gsub(pattern = "q",replacement = "",names(object$models$rqs[[model_name]])))/100))){
     stop("Models not availalbe for all requested quantiles.")
