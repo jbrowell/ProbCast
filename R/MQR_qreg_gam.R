@@ -140,6 +140,8 @@ qreg_gam <- function(data,
              data = data[kfold!=fold & kfold!="Test" & BadData==F,],
              method = "br")
         
+        ## Maybe throw away unneeded entries in "rq" as take up a lot of space!!!
+        
         predqs[data$kfold==fold,i] <- OUTPUT_MODEL$gam_pred[kfold==fold,gam_pred] +
           predict.rq(OUTPUT_MODEL$rqs[[fold]][[paste0("q",100*quantiles[i])]],data[kfold==fold,])
       }
@@ -210,6 +212,23 @@ qreg_gam <- function(data,
 }
 
 
+
+#' Add new qunatile regression models to \code{qreg_gam} model.
+#'
+#' This function adds new conditional quantile models to an \code{qreg_gam} object.
+#' 
+#' @author Jethro Browell, \email{jethro.browell@@strath.ac.uk}
+#' @param object An \code{qreg_gam} object.
+#' @param data The data used to fit \code{object}
+#' @param quantiles The new quantiles to be added to \code{object}
+#' @details Fits new qunatiles to \code{qreg_gam} object. 
+#' @return An updated \code{qreg_gam}.
+#' @export
+qreg_gam.add_quantiles <- function(object, data, quantiles){
+  
+}
+
+  
 #' Predict from model based on Generalised Additive Model and Linear Quantile Regression
 #'
 #' This function predicts from multiple conditional linear quantile regression models of the residuals of
