@@ -48,6 +48,9 @@ qreg_gam <- function(data,
                      sort=T,sort_limits=NULL,
                      ...){
   
+  ## To do:
+  # - Add use of "cluster" option
+  
   ### Set-up Cross-validation
   TEST<-F # Flag for Training (with CV) AND Test output
   if("kfold" %in% colnames(data)){
@@ -192,7 +195,7 @@ qreg_gam.add_quantiles <- function(object, data, quantiles){
                        method = "br")
         
         ## Throw away unneeded entries in "rq" as take up a lot of space!!!
-        rq_model <- rq_model[c("coefficients","terms")]
+        rq_model <- rq_model[c("coefficients","terms","xlevels","contrasts")]
         class(rq_model) <- "rq"
         object$models$rqs[[fold]][[paste0("q",100*quantiles[i])]] <- rq_model
         
