@@ -61,7 +61,7 @@ Quantile forecasts in a \code{MultiQR} object.
 }
 \description{
 This function is now depreciated and may be removed in future versions of this package.
-Use \code{mqr_qreg_gbm()} instead.
+Use \code{qreg_gbm()} instead.
 }
 \details{
 The returned predictive quantiles are those produced out-of-sample for each
