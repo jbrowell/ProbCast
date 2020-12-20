@@ -50,6 +50,7 @@ qreg_gam <- function(data,
   
   ## To do:
   # - Add use of "cluster" option
+  # - Add warning if bam() used with default s(bs="tp"), this slows things alot.
   
   ### Set-up Cross-validation
   TEST<-F # Flag for Training (with CV) AND Test output
