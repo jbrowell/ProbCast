@@ -5,6 +5,8 @@
 #'
 #' This function fits multiple conditional linear quantile regression models to the residuals of
 #' a generalised additive model using \code{mgcv} and with facilities for cross-validation.
+#' Quantile regression may be performed using user-specified formula or the design matrix of
+#' the fitted GAM.
 #' 
 #' @author Jethro Browell, \email{jethro.browell@@strath.ac.uk}
 #' @param data A \code{data.frame} containing target and explanatory
@@ -23,8 +25,9 @@
 #' @param cv_folds Control for cross-validation if not supplied in \code{data}.
 #' @param use_bam If \code{TRUE} (default) then GAM is fit using (\code{bam()}) in stead
 #' of \code{gam()}. \code{bam} is better suited to large datasets but not all
-#' \code{gam} model options are available with \code{bam}. See \code{bam()}
-#' documentation for further details.
+#' \code{gam} model options are available with \code{bam}. Alternative smooths, such as
+#' cubic regression splines aid faster estimation than the default smooth \code{bs="tp"}.
+#' See \code{bam()} documentation for further details.
 #' @param sort \code{boolean} Sort quantiles using \code{SortQuantiles()}?
 #' @param sort_limits \code{Limits} argument to be passed to \code{SortQuantiles()}. Constrains quantiles to upper and lower limits given by \code{list(U=upperlim,L=lowerlim)}.
 #' @param ... Additional agruments passter to \code{gam()} (or \code{bam()}).
@@ -43,7 +46,7 @@ qreg_gam <- function(data,
                      formula_res2 = formula,
                      quantiles=c(0.25,0.5,0.75),
                      cv_folds=NULL,
-                     use_bam=T, # descrete =T
+                     use_bam=T,
                      # w=rep(1,nrow(data)), # Not working...
                      sort=T,sort_limits=NULL,
                      ...){
@@ -148,9 +151,9 @@ qreg_gam <- function(data,
 #' @author Jethro Browell, \email{jethro.browell@@strath.ac.uk}
 #' @param object An \code{qreg_gam} object.
 #' @param data The data used to fit \code{object}
-#' @param quantiles The new quantiles to be added to \code{object}. Quantiles already
-#' in \code{object} will not be re-fit and a warning thrown.
-#' @details Fits new qunatiles to \code{qreg_gam} object. 
+#' @param quantiles The new quantiles to be added to \code{object}. Models for quantiles already
+#' in \code{object} will not be re-estimated and a warning will be thrown.
+#' @details Adds new qunatile models to \code{qreg_gam} object. 
 #' @return An updated \code{qreg_gam}.
 #' @export
 qreg_gam.add_quantiles <- function(object, data, quantiles){
@@ -295,11 +298,12 @@ qreg_gam.add_quantiles <- function(object, data, quantiles){
 predict.qreg_gam <- function(object,
                              newdata = NULL,
                              quantiles = NULL,
-                             model_name=NULL, ### USE DEFAULT
+                             model_name=NULL,
                              sort = T,
                              sort_limits = NULL){
   
   ## Checks
+  # Class
   if(class(object)[1]!="qreg_gam"){stop("object of wrong class, expecting \"qreg_gam\"")}
   # Correct columns in newdata
   # Availability of quantile models
@@ -368,10 +372,9 @@ predict.qreg_gam <- function(object,
 
 
 
-#' Predict from model based on Generalised Additive Model and Linear Quantile Regression
+#' Update a GAM with new training data.
 #'
-#' This function predicts from multiple conditional linear quantile regression models of the residuals of
-#' a generalised additive model fit using \code{qreg_gam}.
+#' This function updates a \code{qreg_gam} model with new training data.
 #' 
 #' @author Jethro Browell, \email{jethro.browell@@strath.ac.uk}
 #' @param object An \code{qreg_gam} object containing the model to update.
@@ -457,6 +460,8 @@ MQR_qreg_gam <- function(data,
                          use_bam=T,
                          w=rep(1,nrow(data)),
                          Sort=T,SortLimits=NULL){
+  
+  warning("This function is depreciated and has been replaced by qreg_gam().")
   
   ### Set-up Cross-validation
   TEST<-F # Flag for Training (with CV) AND Test output
