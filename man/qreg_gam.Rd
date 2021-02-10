@@ -38,8 +38,9 @@ are used as features in linear quantile regression.}
 
 \item{use_bam}{If \code{TRUE} (default) then GAM is fit using (\code{bam()}) in stead
 of \code{gam()}. \code{bam} is better suited to large datasets but not all
-\code{gam} model options are available with \code{bam}. See \code{bam()}
-documentation for further details.}
+\code{gam} model options are available with \code{bam}. Alternative smooths, such as
+cubic regression splines aid faster estimation than the default smooth \code{bs="tp"}.
+See \code{bam()} documentation for further details.}
 
 \item{sort}{\code{boolean} Sort quantiles using \code{SortQuantiles()}?}
 
@@ -58,6 +59,8 @@ from GAMs.
 \description{
 This function fits multiple conditional linear quantile regression models to the residuals of
 a generalised additive model using \code{mgcv} and with facilities for cross-validation.
+Quantile regression may be performed using user-specified formula or the design matrix of
+the fitted GAM.
 }
 \details{
 The returned predictive quantiles and GAM predictions are those produced out-of-sample for each

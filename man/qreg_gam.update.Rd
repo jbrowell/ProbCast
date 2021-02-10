@@ -2,7 +2,7 @@
 % Please edit documentation in R/MQR_qreg_gam.R
 \name{qreg_gam.update}
 \alias{qreg_gam.update}
-\title{Predict from model based on Generalised Additive Model and Linear Quantile Regression}
+\title{Update a GAM with new training data.}
 \usage{
 qreg_gam.update(object, newdata, model_name = NULL)
 }
@@ -18,8 +18,7 @@ covariates and target variable required to update the model.}
 An updated \code{qreg_gam} model.
 }
 \description{
-This function predicts from multiple conditional linear quantile regression models of the residuals of
-a generalised additive model fit using \code{qreg_gam}.
+This function updates a \code{qreg_gam} model with new training data.
 }
 \details{
 Update the \code{bam} component of an \code{qreg_gam} model.

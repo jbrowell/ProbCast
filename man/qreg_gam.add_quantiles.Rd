@@ -11,8 +11,8 @@ qreg_gam.add_quantiles(object, data, quantiles)
 
 \item{data}{The data used to fit \code{object}}
 
-\item{quantiles}{The new quantiles to be added to \code{object}. Quantiles already
-in \code{object} will not be re-fit and a warning thrown.}
+\item{quantiles}{The new quantiles to be added to \code{object}. Models for quantiles already
+in \code{object} will not be re-estimated and a warning will be thrown.}
 }
 \value{
 An updated \code{qreg_gam}.
@@ -24,7 +24,7 @@ new quantiles than re-estimating the main GAM using \code{qreg_gam()}. This
 function is also called within \code{qreg_gam()}.
 }
 \details{
-Fits new qunatiles to \code{qreg_gam} object.
+Adds new qunatile models to \code{qreg_gam} object.
 }
 \author{
 Jethro Browell, \email{jethro.browell@strath.ac.uk}
