@@ -28,6 +28,10 @@
 #' \code{gam} model options are available with \code{bam}. Alternative smooths, such as
 #' cubic regression splines aid faster estimation than the default smooth \code{bs="tp"}.
 #' See \code{bam()} documentation for further details.
+#' @param exclude_train A column name in \code{data} indicating if a row should be excluded from model
+#' training, i.e. if it contains bad data (will be coerced to \code{logical}). Alterntively,
+#' an \code{integer} or \cpde{logical} vector with length equal to the number of rows in \code{data} indicating
+#' the same. Rows labeled \code{TRUE} are excluded from model training.
 #' @param sort \code{boolean} Sort quantiles using \code{SortQuantiles()}?
 #' @param sort_limits \code{Limits} argument to be passed to \code{SortQuantiles()}. Constrains quantiles to upper and lower limits given by \code{list(U=upperlim,L=lowerlim)}.
 #' @param ... Additional agruments passter to \code{gam()} (or \code{bam()}).
@@ -47,6 +51,7 @@ qreg_gam <- function(data,
                      quantiles=c(0.25,0.5,0.75),
                      cv_folds=NULL,
                      use_bam=T,
+                     exclude_train="BadData",
                      # w=rep(1,nrow(data)), # Not working...
                      sort=T,sort_limits=NULL,
                      ...){
@@ -74,9 +79,29 @@ qreg_gam <- function(data,
     nkfold <- cv_folds
   }
   
-  if(!"BadData" %in% colnames(data)){
+  ## Bad data to be excluded from training
+  # CHECK ADD QUANTILES FUNCTION. MAYBE MAKE THIS BLOCK A FUNCTION?
+  ##
+  if(is.character(exclude_train)){
+    if(exclude_train!="BadData" & "BadData" %in% colnames(data)){
+      stop("BadData is a protected column name, please change or use it as exclude_train.")
+    }
+    if(!exclude_train %in% colnames(data)){
+      warning(paste0("Column \"",exclude_train,"\" not in data. No data excluded from training."))
+      data[,BadData:=F]
+    }else{
+      data[,BadData:=as.logical(get(exclude_train))]
+    }
+  }else if(class(exclude_train)%in%c("integer","logical")){
+    if(length(exclude_train)==nrow(data)){
+      data[,BadData:=as.logical(exclude_train)]
+    }else{
+      stop("Length of exclude_data does not match number of rows in data.")
+    }
+  }else{
     data[,BadData:=F]
   }
+  
   
   # Special names...
   if("gam_resid" %in% names(data)){warning("data$gam_resid will be overwritten!")}
@@ -85,11 +110,10 @@ qreg_gam <- function(data,
   ## GAM for conditional expectation (and possible squared residuals)
   
   FINAL_OUTPUT <- list(mqr_pred=NULL,
-                       models=list(call=list(formula=formula,
-                                             formula_qr=formula_qr,
-                                             formula_res2 = if(model_res2){formula_res2}else{NULL},
-                                             use_bam=use_bam),
-                                   gam_pred=data.table::copy(data[,.(BadData,kfold,y=get(as.character(formula[[2]])))]),
+                       call=match.call(),
+                       kfold_index=NULL, ## TO DO
+                       model_names=data$kfold, ## TO DO
+                       models=list(gam_pred=data.table::copy(data[,.(BadData,kfold,y=get(as.character(formula[[2]])))]),
                                    gams = list(),
                                    rqs = list()),
                        sorted=list(sort=sort,
@@ -129,7 +153,7 @@ qreg_gam <- function(data,
   
   ## Out-of-sample cross-validation residuals
   FINAL_OUTPUT$models$gam_pred[,gam_resid:=y-gam_pred]
-
+  
   ## Quantile regression ##
   FINAL_OUTPUT <- qreg_gam.add_quantiles(object=FINAL_OUTPUT,
                                          data=data,
@@ -167,7 +191,7 @@ qreg_gam.add_quantiles <- function(object, data, quantiles){
     if(length(quantiles)==0){
       warning("All quantiles already exisit are are not re-estimated.")
       return(object)
-      }
+    }
     else{
       warning("Some quantiles already exisit and are not re-estimated.")
     }
