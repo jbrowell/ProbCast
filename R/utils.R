@@ -81,7 +81,57 @@ cv_control <- function(data,
   return(list(idx=fold_idx,fold_loop=fold_loop))
   
 }
+
+
+
+
+
+exclude_fun <- function(data,exclude_train = NULL){
   
+  
+  # exclude from data
+  if(is.character(exclude_train)){
+    
+    if(sum(exclude_train %in% colnames(data))==0){
+      stop(paste0("cannot find column ",exclude," in data."))
+    }
+    
+    exclude_idx <- as.numeric(data[[exclude_train]])
+    
+  # exclude from vector  
+  } else if(!is.null(exclude_train)){
+    
+    if(nrow(data!=length(exclude_train))){
+      stop("nrow(data!=length(exclude_train))")
+    }
+    
+    exclude_idx <- as.numeric(exclude_train)
+    
+  # no exclusion  
+  } else{
+    
+    exclude_idx <- rep(0,nrow(data))
+    
+  }
+  
+  # if indx!%in%c(0,1)
+  if(sum(Negate('%in%')(unique(exclude_idx),c(0,1)))!=0){
+    
+    stop(paste0("exclude_train should be a binary or boolean vector"))
+    
+  }
+  
+  
+  if(sum(is.na(exclude_idx))>0){
+    
+    stop(paste0("NAs detected in exlude_train"))
+    
+  }
+  
+  return(exclude_idx) 
+  
+}
+
   
   
   

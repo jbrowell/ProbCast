@@ -17,6 +17,7 @@ qreg_gbm(
   sort_limits = NULL,
   save_models_path = NULL,
   only_mqr = FALSE,
+  exclude_train = NULL,
   ...
 )
 }

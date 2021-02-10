@@ -46,8 +46,6 @@ each worker (e.g. c("data.table) if data stored as such)}
 
 \item{formaula}{A \code{formula} object with the response on the left
 of an ~ operator, and the terms, separated by + operators, on the right.}
-
-\item{model_params}{List of parameters to be passed to \code{fit.gbm()}.}
 }
 \value{
 Quantile forecasts in a \code{MultiQR} object.

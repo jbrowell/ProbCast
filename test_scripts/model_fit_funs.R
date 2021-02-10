@@ -443,12 +443,67 @@ load_all("./", TRUE)
 
 test1<-list(data=Wind)
 
+
+
+# data = test1$data
+# formula = TARGETVAR~bbs(WS100,knots=8)
+# cv_folds = 5
+# quantiles = seq(0.1,0.9,by=0.1)
+# sort = T
+# sort_limits = list(U=0.999,L=0.001)
+# pred_ntree = 100
+# cores = 1
+# pckgs = NULL
+# save_models_path = NULL
+# only_mqr = FALSE
+# exclude_train = NULL
+# w = rep(1,nrow(data))
+
+rm(data,formula,cv_folds,interaction.depth,n.trees,shrinkage,n.minobsinnode,bag.fraction,keep.data,
+quantiles,sort,sort_limits,pred_ntree,cores,pckgs,only_mqr,save_models_path,cl,cv_labs,opts,output,pb,exclude_idx,exclude_train)
+
+
+
+
 ## test in series
-test1$gam_mqr <- mqr_qreg_mboost(data = test1$data,
-                                formula = TARGETVAR~bbs(WS100,knots=8),
-                                quantiles = seq(0.1,0.9,by=0.1),
-                                sort = T,
-                                sort_limits = list(U=0.999,L=0.001))
+test1$gam_mqr <- qreg_mboost(data = test1$data,
+                             cv_folds = "kfold",
+                             formula = TARGETVAR~bbs(WS100,knots=8),
+                             quantiles = seq(0.1,0.9,by=0.1),
+                             sort = T,
+                             sort_limits = list(U=0.999,L=0.001))
+
+
+class(test1$gam_mqr)
+print(test1$gam_mqr)
+summary(test1$gam_mqr)
+
+
+### check exclude train
+
+
+
+tmp <- predict(test1$gam_mqr,
+               newdata = test1$data,
+               sort = T,
+               sort_limits = list(U=0.999,L=0.001))
+
+data.table(tmp)
+
+
+tmp <- predict(test1$gam_mqr,
+               newdata = test1$data,
+               model_name = "fold1",
+               sort = T,
+               sort_limits = list(U=0.999,L=0.001))
+
+data.table(tmp)
+
+
+
+
+
+
 
 # test with modified hyperparameters
 test1$gam_mqr2 <- mqr_qreg_mboost(data = test1$data,

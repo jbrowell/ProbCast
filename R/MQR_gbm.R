@@ -60,13 +60,15 @@ qreg_gbm <- function(data,
                      sort_limits = NULL,
                      save_models_path = NULL,
                      only_mqr = FALSE,
+                     exclude_train = NULL,
                      ...){
   
   # to-do
   ## issue/target/fold indexed mqr object?
   ### docu. difference between cv_folds from probcast and cv.folds from gbm
   #### suppress warnings for OOB tree estimates?
-  ##### bad data index ---> bad_trainidx? e.g. for solar 0s...
+  #### **gbm doesn't accept non constant weights for quantile regression**
+  
   
   if(is.null(cv_folds) & only_mqr){
       stop("no cross validation via cv_folds and return only_mqr is TRUE")
@@ -76,10 +78,13 @@ qreg_gbm <- function(data,
   output <- list()
   output$call <- match.call()
   
-  # set-up cv folds
+  # set-up cv folds & do checks
   cv_labs <- cv_control(data = data,cv_folds = cv_folds)
   output$kfold_index <- cv_labs$idx
   output$model_names <- cv_labs$fold_loop
+  
+  # exclude points from training? & do checks
+  exclude_idx <- exclude_fun(data = data,exclude_train = exclude_train)
   
 
   # set up parallel workers, defaults to one worker....
@@ -102,7 +107,7 @@ qreg_gbm <- function(data,
       
 
       temp <- gbm::gbm(formula=formula,
-                       data = data[output$kfold_index!=fold & output$kfold_index!="Test" & !is.na(data[[formula[[2]]]]),],
+                       data = data[output$kfold_index!=fold & output$kfold_index!="Test" & exclude_idx==0 & !is.na(data[[formula[[2]]]]),],
                        distribution = list(name="quantile",alpha=q),
                        n.cores=1, # prevent issues when cv.folds>1 are in ...
                        ...)
