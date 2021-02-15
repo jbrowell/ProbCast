@@ -90,12 +90,12 @@ qreg_gam <- function(data,
                                    rqs = list()),
                        sorted=list(sort=sort,
                                    sort_limits=sort_limits),
-                       default_model=if("Test"%in%unique(data$kfold)){"Test"}else{unique(data$kfold)[1]})
+                       default_model=if("Test"%in%cv_labs$fold_loop){"Test"}else{cv_labs$fold_loop[1]})
   
   class(FINAL_OUTPUT) <- c("qreg_gam",class(FINAL_OUTPUT))
   
   formula_res2 <- reformulate(attr(terms(formula_res2),"term.labels"),response = "gam_res2")
-  # for(fold in unique(data$kfold)){
+  
   for(fold in FINAL_OUTPUT$model_names){
     
     print(paste0("GAM, kfold=",fold))
@@ -119,8 +119,8 @@ qreg_gam <- function(data,
     
     
     ## Out-of-sample cross-validation predictions
-    FINAL_OUTPUT$models$gam_pred[kfold==fold,
-                                 gam_pred:=predict(FINAL_OUTPUT$models$gams[[fold]],newdata = data[FINAL_OUTPUT$kfold==fold,])]  
+    FINAL_OUTPUT$models$gam_pred[FINAL_OUTPUT$kfold_index==fold,
+                                 gam_pred:=predict(FINAL_OUTPUT$models$gams[[fold]],newdata = data[FINAL_OUTPUT$kfold_index==fold,])]  
     
   }
   
@@ -201,8 +201,8 @@ qreg_gam.add_quantiles <- function(object, data, quantiles){
         class(rq_model) <- "rq"
         object$models$rqs[[fold]][[paste0("q",100*quantiles[i])]] <- rq_model
         
-        predqs[data$kfold==fold,i] <- object$models$gam_pred[kfold==fold,gam_pred] +
-          predict.rq(object$models$rqs[[fold]][[paste0("q",100*quantiles[i])]],data[kfold==fold,])
+        predqs[object$kfold_index==fold,i] <- object$models$gam_pred[object$kfold_index,gam_pred] +
+          predict.rq(object$models$rqs[[fold]][[paste0("q",100*quantiles[i])]],data[object$kfold_index==fold,])
       }
     }
   }else{
@@ -221,9 +221,9 @@ qreg_gam.add_quantiles <- function(object, data, quantiles){
       train <- cbind(data.table(train),data[object$kfold_index!=fold & object$kfold_index!="Test" & object$exclude_index==0,.(gam_resid)])
       
       ## Out-of-sample data
-      test_cv <- predict(object$models$gams[[fold]],newdata = data[object$kfold==fold,],type = "terms")
+      test_cv <- predict(object$models$gams[[fold]],newdata = data[object$kfold_index==fold,],type = "terms")
       if(!is.null(object$models$call$formula_res2)){
-        test_cv2 <- predict(object$models$gams[[paste0(fold,"_r")]],newdata = data[object$kfold==fold,],type = "terms")
+        test_cv2 <- predict(object$models$gams[[paste0(fold,"_r")]],newdata = data[object$kfold_index==fold,],type = "terms")
         test_cv2 <- test_cv2[,grep("\\(",colnames(test_cv2)),drop=F]
         colnames(test_cv2) <- paste0(colnames(test_cv2),"_r")
         test_cv <- cbind(test_cv,test_cv2); rm(test_cv2)
@@ -239,7 +239,7 @@ qreg_gam.add_quantiles <- function(object, data, quantiles){
              method = "br")
         
         ## Make predictions
-        predqs[data$kfold==fold,i] <- object$models$gam_pred[object$kfold==fold,gam_pred] +
+        predqs[object$kfold_index==fold,i] <- object$models$gam_pred[object$kfold_index==fold,gam_pred] +
           predict.rq(object$models$rqs[[fold]][[paste0("q",100*quantiles[i])]],
                      newdata=test_cv)
         
