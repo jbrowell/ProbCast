@@ -25,20 +25,25 @@ Wind$WS10 <- sqrt(Wind$U10^2+Wind$V10^2)
 Wind$Power <- pmin(Wind$WS100,11)^3
 
 ## Set-up simple kfold CV. NB --- For scenario forecasting make sure the CV folds don't cross issue times
-Wind$kfold <- "Fold 1"
-Wind$kfold[Wind$ISSUEdtm>as.POSIXct("2012-06-30",tz="UTC")] <- "Fold 2"
-Wind$kfold[Wind$ISSUEdtm>as.POSIXct("2012-12-31",tz="UTC")] <- "Fold 3"
+Wind$kfold <- "fold 1"
+Wind$kfold[Wind$ISSUEdtm>as.POSIXct("2012-06-30",tz="UTC")] <- "fold 2"
+Wind$kfold[Wind$ISSUEdtm>as.POSIXct("2012-12-31",tz="UTC")] <- "fold 3"
 Wind$kfold[Wind$ISSUEdtm>as.POSIXct("2013-06-30",tz="UTC")] <- "Test"
+Wind$BadData <- runif(n = nrow(Wind))<0.005
 
 
 ## GAM model with some quantiles
 Model_1 <- qreg_gam(data = Wind,
                     formula = TARGETVAR ~ te(WS100,WS10,k=5) + te(U100,V100,k=12),
                     formula_qr = NULL,
-                    cv_folds = NULL,
-                    # cv_folds = "kfold",
+                    # cv_folds = NULL,
+                    cv_folds = "kfold",
+                    # cv_folds = Wind$kfold,
                     model_res2 = F,
                     #formula_res2 = ~s(WS100,k=20),
+                    exclude_train = NULL,
+                    # exclude_train = "BadData",
+                    # exclude_train = Wind$BadData,
                     quantiles = c(0.05,0.25,0.5,0.75,0.95),sort_limits = list(U=1,L=0),
                     discrete=F)
 

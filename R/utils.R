@@ -101,7 +101,7 @@ exclude_fun <- function(data,exclude_train = NULL){
     # exclude from vector  
   } else if(!is.null(exclude_train)){
     
-    if(nrow(data!=length(exclude_train))){
+    if(nrow(data)!=length(exclude_train)){
       stop("nrow(data!=length(exclude_train))")
     }
     

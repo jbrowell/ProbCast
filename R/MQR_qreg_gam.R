@@ -229,16 +229,20 @@ qreg_gam.add_quantiles <- function(object, data, quantiles){
       train <- cbind(data.table(train),data[object$kfold_index!=fold & object$kfold_index!="Test" & object$exclude_index==0,.(gam_resid)])
       
       ## Out-of-sample data
-      if(!is.null(object$call$cv_folds)){
-        test_cv <- predict(object$models$gams[[fold]],newdata = data[object$kfold_index==fold,],type = "terms")
+      
+        test_cv <- predict(object$models$gams[[fold]],
+                           newdata = if(is.null(object$call$cv_folds)){data}else{data[object$kfold_index==fold,]},
+                           type = "terms")
         if(!is.null(object$models$call$formula_res2)){
-          test_cv2 <- predict(object$models$gams[[paste0(fold,"_r")]],newdata = data[object$kfold_index==fold,],type = "terms")
+          test_cv2 <- predict(object$models$gams[[paste0(fold,"_r")]],
+                              newdata = if(is.null(object$call$cv_folds)){data}else{data[object$kfold_index==fold,]},
+                              type = "terms")
           test_cv2 <- test_cv2[,grep("\\(",colnames(test_cv2)),drop=F]
           colnames(test_cv2) <- paste0(colnames(test_cv2),"_r")
           test_cv <- cbind(test_cv,test_cv2); rm(test_cv2)
         }
         test_cv <- data.table(test_cv)
-      }
+      
       
       for(i in 1:length(quantiles)){
         ## Fit QR model
@@ -252,7 +256,7 @@ qreg_gam.add_quantiles <- function(object, data, quantiles){
         if(is.null(object$call$cv_folds)){
           predqs[,i] <- object$models$gam_pred[,gam_pred] +
             predict.rq(object$models$rqs[[fold]][[paste0("q",100*quantiles[i])]],
-                       newdata=train)
+                       newdata=test_cv)
         }else{
           predqs[object$kfold_index==fold,i] <- object$models$gam_pred[object$kfold_index==fold,gam_pred] +
             predict.rq(object$models$rqs[[fold]][[paste0("q",100*quantiles[i])]],
