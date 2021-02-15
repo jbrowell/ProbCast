@@ -51,7 +51,7 @@ qreg_gam <- function(data,
                      quantiles=c(0.25,0.5,0.75),
                      cv_folds=NULL,
                      use_bam=T,
-                     exclude_train="BadData",
+                     exclude_train=NULL,
                      # w=rep(1,nrow(data)), # Not working...
                      sort=T,sort_limits=NULL,
                      ...){
@@ -60,47 +60,11 @@ qreg_gam <- function(data,
   # - Add use of "cluster" option
   # - Add warning if bam() used with default s(bs="tp"), this slows things alot.
   
-  ### Set-up Cross-validation
-  TEST<-F # Flag for Training (with CV) AND Test output
-  if("kfold" %in% colnames(data)){
-    if(!is.null(cv_folds)){warning("Using column \"kfold\" from data. Argument \"cv_folds\" is not used.")}
-    
-    if("Test" %in% data$kfold){
-      TEST<-T
-      nkfold <- length(unique(data$kfold))-1
-    }else{
-      nkfold <- length(unique(data$kfold))
-    }
-  }else if(is.null(cv_folds)){
-    data$kfold <- rep(1,nrow(data))
-    nkfold <- 1
-  }else{
-    data$kfold <- sort(rep(1:cv_folds,length.out=nrow(data)))
-    nkfold <- cv_folds
-  }
+  # set-up cv folds & do checks
+  cv_labs <- cv_control(data = data,cv_folds = cv_folds)
   
-  ## Bad data to be excluded from training
-  # CHECK ADD QUANTILES FUNCTION. MAYBE MAKE THIS BLOCK A FUNCTION?
-  ##
-  if(is.character(exclude_train)){
-    if(exclude_train!="BadData" & "BadData" %in% colnames(data)){
-      stop("BadData is a protected column name, please change or use it as exclude_train.")
-    }
-    if(!exclude_train %in% colnames(data)){
-      warning(paste0("Column \"",exclude_train,"\" not in data. No data excluded from training."))
-      data[,BadData:=F]
-    }else{
-      data[,BadData:=as.logical(get(exclude_train))]
-    }
-  }else if(class(exclude_train)%in%c("integer","logical")){
-    if(length(exclude_train)==nrow(data)){
-      data[,BadData:=as.logical(exclude_train)]
-    }else{
-      stop("Length of exclude_data does not match number of rows in data.")
-    }
-  }else{
-    data[,BadData:=F]
-  }
+  # exclude points from training? & do checks
+  exclude_idx <- exclude_fun(data = data,exclude_train = exclude_train)
   
   
   # Special names...
@@ -111,8 +75,9 @@ qreg_gam <- function(data,
   
   FINAL_OUTPUT <- list(mqr_pred=NULL,
                        call=match.call(),
-                       kfold_index=NULL, ## TO DO
-                       model_names=data$kfold, ## TO DO
+                       kfold_index = cv_labs$idx,
+                       model_names = cv_labs$fold_loop,
+                       exclude_index = exclude_idx,
                        models=list(gam_pred=data.table::copy(data[,.(BadData,kfold,y=get(as.character(formula[[2]])))]),
                                    gams = list(),
                                    rqs = list()),
@@ -123,7 +88,8 @@ qreg_gam <- function(data,
   class(FINAL_OUTPUT) <- c("qreg_gam",class(FINAL_OUTPUT))
   
   formula_res2 <- reformulate(attr(terms(formula_res2),"term.labels"),response = "gam_res2")
-  for(fold in unique(data$kfold)){
+  # for(fold in unique(data$kfold)){
+  for(fold in FINAL_OUTPUT$model_names){
     
     print(paste0("GAM, kfold=",fold))
     
@@ -131,15 +97,15 @@ qreg_gam <- function(data,
     gam_fit_method <- if(use_bam){bam}else{gam}
     
     # GAM for conditional expectation
-    FINAL_OUTPUT$models$gams[[fold]] <- gam_fit_method(data=data[kfold!=fold & kfold!="Test" & BadData==F,],
+    FINAL_OUTPUT$models$gams[[fold]] <- gam_fit_method(data=data[FINAL_OUTPUT$kfold_index!=fold & FINAL_OUTPUT$kfold_index!="Test" & FINAL_OUTPUT$exclude_index==0,],
                                                        formula = formula,...)
     # GAM for squared residuals
     if(model_res2){ 
-      temp_gam_res2 <- data.table(gam_res2=(FINAL_OUTPUT$models$gam_pred[kfold!=fold & kfold!="Test" & BadData==F,y] - 
+      temp_gam_res2 <- data.table(gam_res2=(FINAL_OUTPUT$models$gam_pred[FINAL_OUTPUT$kfold_index!=fold & FINAL_OUTPUT$kfold_index!="Test" & FINAL_OUTPUT$exclude_index==0,y] - 
                                               predict(FINAL_OUTPUT$models$gams[[fold]],
-                                                      newdata = data[kfold!=fold & kfold!="Test" & BadData==F,]))^2)  
+                                                      newdata = data[FINAL_OUTPUT$kfold_index!=fold & FINAL_OUTPUT$kfold_index!="Test" & FINAL_OUTPUT$exclude_index==0,]))^2)  
       
-      FINAL_OUTPUT$models$gams[[paste0(fold,"_r")]] <- gam_fit_method(data=cbind(data[kfold!=fold & kfold!="Test" & BadData==F,],temp_gam_res2),
+      FINAL_OUTPUT$models$gams[[paste0(fold,"_r")]] <- gam_fit_method(data=cbind(data[FINAL_OUTPUT$kfold_index!=fold & FINAL_OUTPUT$kfold_index!="Test" & FINAL_OUTPUT$exclude_index==0,],temp_gam_res2),
                                                                       formula = formula_res2,...)
       rm(temp_gam_res2)
     }
@@ -147,7 +113,7 @@ qreg_gam <- function(data,
     
     ## Out-of-sample cross-validation predictions
     FINAL_OUTPUT$models$gam_pred[kfold==fold,
-                                 gam_pred:=predict(FINAL_OUTPUT$models$gams[[fold]],newdata = data[kfold==fold,])]  
+                                 gam_pred:=predict(FINAL_OUTPUT$models$gams[[fold]],newdata = data[FINAL_OUTPUT$kfold==fold,])]  
     
   }
   
@@ -213,13 +179,14 @@ qreg_gam.add_quantiles <- function(object, data, quantiles){
   if(!is.null(object$models$call$formula_qr)){
     ## Use user-specified model equation for quantile regression
     formula_qr <- reformulate(attr(terms(object$models$call$formula_qr),"term.labels"),response = "gam_resid")
-    for(fold in unique(data$kfold)){
+  
+    for(fold in object$model_names){
       print(paste0("MQR, kfold=",fold))
       for(i in 1:length(quantiles)){
         
         rq_model <- rq(formula_qr,
                        tau = quantiles[i],
-                       data = data[kfold!=fold & kfold!="Test" & BadData==F,],
+                       data = data[object$kfold_index!=fold & object$kfold_index!="Test" & object$exclude_index==0,],
                        method = "br")
         
         ## Throw away unneeded entries in "rq" as take up a lot of space!!!
@@ -233,23 +200,23 @@ qreg_gam.add_quantiles <- function(object, data, quantiles){
     }
   }else{
     ## QR with features from GAM
-    for(fold in unique(data$kfold)){
+    for(fold in FINAL_OUTPUT$model_names){
       print(paste0("MQR, kfold=",fold))
       ## Get training Data
-      train <- predict(object$models$gams[[fold]],newdata = data[kfold!=fold & kfold!="Test" & BadData==F,],type = "terms")
+      train <- predict(object$models$gams[[fold]],newdata = data[object$kfold_index!=fold & object$kfold_index!="Test" & object$exclude_index==0,],type = "terms")
       if(!is.null(object$models$call$formula_res2)){
-        train2 <- predict(object$models$gams[[paste0(fold,"_r")]],newdata = data[kfold!=fold & kfold!="Test" & BadData==F,],type = "terms")
+        train2 <- predict(object$models$gams[[paste0(fold,"_r")]],newdata = data[object$kfold_index!=fold & object$kfold_index!="Test" & object$exclude_index==0,],type = "terms")
         # Only need to retrun smooth terms as linear terms included already...
         train2 <- train2[,grep("\\(",colnames(train2)),drop=F]
         colnames(train2) <- paste0(colnames(train2),"_r")
         train <- cbind(train,train2); rm(train2)
       }
-      train <- cbind(data.table(train),data[kfold!=fold & kfold!="Test" & BadData==F,.(gam_resid)])
+      train <- cbind(data.table(train),data[object$kfold_index!=fold & object$kfold_index!="Test" & object$exclude_index==0,.(gam_resid)])
       
       ## Out-of-sample data
-      test_cv <- predict(object$models$gams[[fold]],newdata = data[kfold==fold,],type = "terms")
+      test_cv <- predict(object$models$gams[[fold]],newdata = data[object$kfold==fold,],type = "terms")
       if(!is.null(object$models$call$formula_res2)){
-        test_cv2 <- predict(object$models$gams[[paste0(fold,"_r")]],newdata = data[kfold==fold,],type = "terms")
+        test_cv2 <- predict(object$models$gams[[paste0(fold,"_r")]],newdata = data[object$kfold==fold,],type = "terms")
         test_cv2 <- test_cv2[,grep("\\(",colnames(test_cv2)),drop=F]
         colnames(test_cv2) <- paste0(colnames(test_cv2),"_r")
         test_cv <- cbind(test_cv,test_cv2); rm(test_cv2)
@@ -265,7 +232,7 @@ qreg_gam.add_quantiles <- function(object, data, quantiles){
              method = "br")
         
         ## Make predictions
-        predqs[data$kfold==fold,i] <- object$models$gam_pred[kfold==fold,gam_pred] +
+        predqs[data$kfold==fold,i] <- object$models$gam_pred[object$kfold==fold,gam_pred] +
           predict.rq(object$models$rqs[[fold]][[paste0("q",100*quantiles[i])]],
                      newdata=test_cv)
         
