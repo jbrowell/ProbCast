@@ -22,7 +22,14 @@
 #' @param model_res2 If \code{TRUE} also model squared residuals of GAM using a GAM. Defaults to \code{FALSE}.
 #' @param formula_res2 Formula for GAM to predict squared residuals.
 #' @param quantiles The quantiles to fit models for.
-#' @param cv_folds Control for cross-validation if not supplied in \code{data}.
+#' @param cv_folds Control for cross-validation with various options, either:
+#' \itemize{
+#'  \item the column name of the fold index supplied in data. Observations and inputs 
+#'   in the index labeled "Test" will serve as test data and held out in model training.
+#'  \item an integer giving the number of cross validation folds to generate. Folds are constructed as block chunks. 
+#'  Default behaviour is 5 folds.
+#'  \item NULL indicates that no cross validation should be performed and the returned model is trained on all \code{data}.
+#' }
 #' @param use_bam If \code{TRUE} (default) then GAM is fit using (\code{bam()}) in stead
 #' of \code{gam()}. \code{bam} is better suited to large datasets but not all
 #' \code{gam} model options are available with \code{bam}. Alternative smooths, such as

@@ -13,6 +13,7 @@ qreg_gam(
   quantiles = c(0.25, 0.5, 0.75),
   cv_folds = NULL,
   use_bam = T,
+  exclude_train = NULL,
   sort = T,
   sort_limits = NULL,
   ...
@@ -34,13 +35,25 @@ are used as features in linear quantile regression.}
 
 \item{quantiles}{The quantiles to fit models for.}
 
-\item{cv_folds}{Control for cross-validation if not supplied in \code{data}.}
+\item{cv_folds}{Control for cross-validation with various options, either:
+\itemize{
+ \item the column name of the fold index supplied in data. Observations and inputs 
+  in the index labeled "Test" will serve as test data and held out in model training.
+ \item an integer giving the number of cross validation folds to generate. Folds are constructed as block chunks. 
+ Default behaviour is 5 folds.
+ \item NULL indicates that no cross validation should be performed and the returned model is trained on all \code{data}.
+}}
 
 \item{use_bam}{If \code{TRUE} (default) then GAM is fit using (\code{bam()}) in stead
 of \code{gam()}. \code{bam} is better suited to large datasets but not all
 \code{gam} model options are available with \code{bam}. Alternative smooths, such as
 cubic regression splines aid faster estimation than the default smooth \code{bs="tp"}.
 See \code{bam()} documentation for further details.}
+
+\item{exclude_train}{A column name in \code{data} indicating if a row should be excluded from model
+training, i.e. if it contains bad data (will be coerced to \code{logical}). Alterntively,
+an \code{integer} or \cpde{logical} vector with length equal to the number of rows in \code{data} indicating
+the same. Rows labeled \code{TRUE} are excluded from model training.}
 
 \item{sort}{\code{boolean} Sort quantiles using \code{SortQuantiles()}?}
 
