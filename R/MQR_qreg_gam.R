@@ -207,7 +207,7 @@ qreg_gam.add_quantiles <- function(object, data, quantiles){
     }
   }else{
     ## QR with features from GAM
-    for(fold in FINAL_OUTPUT$model_names){
+    for(fold in object$model_names){
       print(paste0("MQR, kfold=",fold))
       ## Get training Data
       train <- predict(object$models$gams[[fold]],newdata = data[object$kfold_index!=fold & object$kfold_index!="Test" & object$exclude_index==0,],type = "terms")
