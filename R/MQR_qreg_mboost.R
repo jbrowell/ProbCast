@@ -49,6 +49,7 @@ qreg_mboost <- function(data,
   
   ## to-do
   ## - check single quantiles
+  ### update docs
   
   if(nrow(data)!=length(w)){
     stop("nrow(data)!=length(w)")
