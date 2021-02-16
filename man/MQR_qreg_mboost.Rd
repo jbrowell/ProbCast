@@ -2,7 +2,7 @@
 % Please edit documentation in R/MQR_qreg_mboost.R
 \name{MQR_qreg_mboost}
 \alias{MQR_qreg_mboost}
-\title{Multiple Quantile Regression using \code{mboost}}
+\title{Multiple Quantile Regression using \code{mboost} (depreciated)}
 \usage{
 MQR_qreg_mboost(
   data,
@@ -23,7 +23,7 @@ MQR_qreg_mboost(
 }
 \arguments{
 \item{data}{A \code{data.frame} containing target and explanatory variables.
-May optionally contain a collumn called "kfold" with numbered/labeled folds
+May optionally contain a column called "kfold" with numbered/labeled folds
 and "Test" for test data.}
 
 \item{quantiles}{A vector with length>=2 containing the quantiles to fit models for.}
@@ -44,19 +44,15 @@ each worker (e.g. c("data.table) if data stored as such)}
 
 \item{save_models_path}{Path to save models. Model details and file extension pasted onto this string.}
 
-\item{formaul}{A \code{formula} object with the response on the left
+\item{formaula}{A \code{formula} object with the response on the left
 of an ~ operator, and the terms, separated by + operators, on the right.}
-
-\item{model_params}{List of parameters to be passed to \code{fit.gbm()}.}
 }
 \value{
 Quantile forecasts in a \code{MultiQR} object.
 }
 \description{
-This function fits multiple quantile regreesion models using \code{mboost}, with
-facilities for cross-validation. \code{mboost} accommodates both generalised
-additive models, decision trees and other learners. See \code{?mboost} for more
-details.
+This function is now depreciated and may be removed in future versions of this package.
+Use \code{mqr_qreg_mboost()} instead.
 }
 \details{
 Jethro Browell, \email{jethro.browell@strath.ac.uk}

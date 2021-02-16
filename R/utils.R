@@ -25,7 +25,6 @@ cv_control <- function(data,
     if(sum(cv_folds %in% colnames(data))==0){
       
       stop(paste0("cannot find column ",cv_folds," in data.") )
-      
     }
     
     fold_idx <- data[[cv_folds]]
@@ -98,23 +97,25 @@ exclude_fun <- function(data,exclude_train = NULL){
     
     exclude_idx <- as.numeric(data[[exclude_train]])
     
-    # exclude from vector  
+
+  # exclude from vector  
   } else if(!is.null(exclude_train)){
     
     if(nrow(data)!=length(exclude_train)){
-      stop("nrow(data!=length(exclude_train))")
+      stop("nrow(data)!=length(exclude_train)")
     }
     
     exclude_idx <- as.numeric(exclude_train)
     
-    # no exclusion  
+  # no exclusion  
+
   } else{
     
     exclude_idx <- rep(0,nrow(data))
     
   }
   
-  # if indx!%in%c(0,1)
+  # if !(indx%in%c(0,1))
   if(sum(Negate('%in%')(unique(exclude_idx),c(0,1)))!=0){
     
     stop(paste0("exclude_train should be a binary or boolean vector"))
@@ -131,8 +132,3 @@ exclude_fun <- function(data,exclude_train = NULL){
   return(exclude_idx) 
   
 }
-
-
-
-
-
