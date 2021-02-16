@@ -182,8 +182,8 @@ contCDF <- function(quantiles,kfold=NULL,inverse=F,
     LnomP <- LnomP*Probs[1]
     Lquants <- Lquants-max(Lquants)+quantiles[1]
     
-    plot(c(Lquants,Rquants),c(LnomP,RnomP))
-    points(c(quantiles),c(Probs),col="red")
+    # plot(c(Lquants,Rquants),c(LnomP,RnomP))
+    # points(c(quantiles),c(Probs),col="red")
     
     
   }else{stop("Tail method not recognised.")}

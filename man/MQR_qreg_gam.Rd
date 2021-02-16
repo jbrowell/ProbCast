@@ -2,7 +2,7 @@
 % Please edit documentation in R/MQR_qreg_gam.R
 \name{MQR_qreg_gam}
 \alias{MQR_qreg_gam}
-\title{Multiple Quantile Regression Using Generalised Additive Models and Linear Quantile Regression}
+\title{DEPRECIATED: Multiple Quantile Regression Using Generalised Additive Models and Linear Quantile Regression}
 \usage{
 MQR_qreg_gam(
   data,
@@ -22,7 +22,8 @@ MQR_qreg_gam(
 \arguments{
 \item{data}{A \code{data.frame} containing target and explanatory
 variables. May optionally contain a collumn called "kfold" with
-numbered/labeled folds and "Test" for test data.}
+numbered/labeled folds and "Test" for test data. If \code{data} contains a column called
+"gam_pred" then gam modelling will be skipped and this will be used in quantile regression.}
 
 \item{formula_qr}{Formula for linear quantile regression model for GAM residuals. Term \code{gam_pred}
 is the prediction from the above GAM may be included in this formula.}
@@ -32,8 +33,6 @@ is the prediction from the above GAM may be included in this formula.}
 \item{formula_res2}{Formula for GAM to predict squared residuals.}
 
 \item{quantiles}{The quantiles to fit models for.}
-
-\item{CVfolds}{Control for cross-validation if not supplied in \code{data}.}
 
 \item{...}{Additional agruments passter to \code{gam()} or (\code{bam()}).}
 
@@ -50,13 +49,15 @@ of an ~ operator, and the terms, separated by + operators, on the right passed t
 or \code{bam()} from \code{mgcv}.}
 
 \item{gbm_params}{List of parameters to be passed to \code{fit.gbm()}.}
+
+\item{cv_folds}{Control for cross-validation if not supplied in \code{data}.}
 }
 \value{
 Returns a \code{list} containing predictive quantiles (in a \code{MultiQR} object), GAM models, and deterministic predictions
 from GAMs.
 }
 \description{
-This function fits multiple conditional linear quantile regression models to the residuals of
+OLD VERSION SUPERCEDED BY \code{qreg_gam}. This function fits multiple conditional linear quantile regression models to the residuals of
 a generalised additive model using \code{mgcv} and with facilities for cross-validation.
 }
 \details{
