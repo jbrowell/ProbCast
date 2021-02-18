@@ -17,6 +17,7 @@ variables. May optionally contain a column with labeled folds and "Test" for tes
  \item an integer giving the number of cv evaluations to perform. Folds are constructed as block chunks. 
  Default behaviour is 5 folds.
  \item NULL indicates that no cross validation should be performed and the returned model is trained on all \code{data}.
+ \item vector of length==nrow(data) containing character or numeric fold labels
 }}
 }
 \value{

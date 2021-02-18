@@ -22,17 +22,17 @@ qreg_gbm(
 )
 }
 \arguments{
-\item{data}{A \code{data.frame} containing target and explanatory
-variables. May optionally contain a column with labeled folds and "Test" for test data. See \code{cv_folds}.}
+\item{data}{A \code{data.frame} containing target and explanatory variables.}
 
 \item{quantiles}{The quantiles to fit models for.}
 
 \item{cv_folds}{Control for cross-validation with various options, either:
 \itemize{
  \item the column name of the fold index supplied in data. Observations and inputs 
-  in the index labeled "Test" will serve as test data and held out in model training.
+  in the index labelled "Test" will serve as test data and held out in model training.
  \item an integer giving the number of cross validation folds to generate. Folds are constructed as block chunks. 
  Default behaviour is 5 folds.
+ \item vector of length==nrow(data) containing character or numeric fold labels.
  \item NULL indicates that no cross validation should be performed and the returned model is trained on all \code{data}.
 }}
 
@@ -57,6 +57,13 @@ lower limits given by \code{list(U=upperlim,L=lowerlim)}.}
 Defaults to \code{NULL}, i.e. no model save.}
 
 \item{only_mqr}{return only the out-of-sample predictions?}
+
+\item{exclude_train}{control for exclusion of rows in data for the model training only, with various options, either:
+\itemize{
+ \item the column name of the binary/boolean exclude flag supplied in data.
+ \item a vector of binary/boolean exclusion flags of length nrow(data)
+ \item NULL indicates no exclusion
+}}
 
 \item{...}{Additional arguments passed to \code{gbm()}.}
 

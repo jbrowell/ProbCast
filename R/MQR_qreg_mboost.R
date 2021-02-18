@@ -7,12 +7,18 @@
 #' 
 #' @author Jethro Browell, \email{jethro.browell@@strath.ac.uk}; Ciaran Gilbert, \email{ciaran.gilbert@@strath.ac.uk}
 #' @param data A \code{data.frame} containing target and explanatory variables.
-#' May optionally contain a column called "kfold" with numbered/labeled folds
-#' and "Test" for test data.
 #' @param formaula A \code{formula} object with the response on the left
 #' of an ~ operator, and the terms, separated by + operators, on the right.
-#' @param quantiles A vector with length>=2 containing the quantiles to fit models for.
-#' @param cv_folds Control for cross-validation if not supplied in \code{data}.
+#' @param quantiles The quantiles to fit models for.
+#' @param cv_folds Control for cross-validation with various options, either:
+#' \itemize{
+#'  \item the column name of the fold index supplied in data. Observations and inputs 
+#'   in the index labelled "Test" will serve as test data and held out in model training.
+#'  \item an integer giving the number of cross validation folds to generate. Folds are constructed as block chunks. 
+#'  Default behaviour is 5 folds.
+#'  \item vector of length==nrow(data) containing character or numeric fold labels.
+#'  \item NULL indicates that no cross validation should be performed and the returned model is trained on all \code{data}.
+#' }
 #' @param w an optional numeric vector of weights to be used in the fitting process.
 #' @param cores the number of available cores. Defaults to one, i.e. no parallelisation, although in 
 #' this case the user must still specify \code{pckgs} if applicable.
@@ -23,6 +29,13 @@
 #' to upper and lower limits given by \code{list(U=upperlim,L=lowerlim)}.
 #' @param save_models_path Path to save models. Model details and file extension pasted onto this string.
 #' Defaults to \code{NULL}, i.e. no model save.
+#' @param only_mqr return only the out-of-sample predictions? 
+#' @param exclude_train control for exclusion of rows in data for the model training only, with various options, either:
+#' \itemize{
+#'  \item the column name of the binary/boolean exclude flag supplied in data.
+#'  \item a vector of binary/boolean exclusion flags of length nrow(data)
+#'  \item NULL indicates no exclusion
+#' }
 #' @param ... extra hyper-parameters to be passed to \code{mboost()}.
 #' e.g. use \code{control = mboost::boost_control()} to specify boosting steps and shrinkage.
 #' @details The returned predictive quantiles are those produced out-of-sample for each
@@ -48,8 +61,6 @@ qreg_mboost <- function(data,
                         ...){
   
   ## to-do
-  ## - check single quantiles
-  ### update docs
   
   if(nrow(data)!=length(w)){
     stop("nrow(data)!=length(w)")
@@ -70,7 +81,7 @@ qreg_mboost <- function(data,
   output$model_names <- cv_labs$fold_loop
   
   # exclude points from training? & do checks
-  exclude_idx <- exclude_fun(data = data,exclude_train = exclude_train)
+  output$exclude_index <- exclude_fun(data = data,exclude_train = exclude_train)
   
   
   # set up parallel workers, defaults to one worker....
@@ -93,9 +104,9 @@ qreg_mboost <- function(data,
     for(fold in output$model_names){
       
       temp <- mboost::mboost(formula=formula,
-                             data=data[output$kfold_index!=fold & output$kfold_index!="Test" & exclude_idx==0 & !is.na(data[[formula[[2]]]]),],
+                             data=data[output$kfold_index!=fold & output$kfold_index!="Test" & output$exclude_index==0 & !is.na(data[[formula[[2]]]]),],
                              family = mboost::QuantReg(tau=q),
-                             weights=w[output$kfold_index!=fold & output$kfold_index!="Test" & exclude_idx==0 & !is.na(data[[formula[[2]]]])],
+                             weights=w[output$kfold_index!=fold & output$kfold_index!="Test" & output$exclude_index==0 & !is.na(data[[formula[[2]]]])],
                              ...)
       
       if(!is.null(save_models_path)){

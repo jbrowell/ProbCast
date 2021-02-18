@@ -25,6 +25,7 @@ Wind$kfold <- "fold1"
 Wind$kfold[Wind$ISSUEdtm>as.POSIXct("2012-06-30",tz="UTC")] <- "fold2"
 Wind$kfold[Wind$ISSUEdtm>as.POSIXct("2012-12-31",tz="UTC")] <- "fold3"
 Wind$kfold[Wind$ISSUEdtm>as.POSIXct("2013-06-30",tz="UTC")] <- "Test"
+Wind$bad_data <- runif(n = nrow(Wind))<0.99
 
 #################################################################################
 ### Multiple Quantile Regression using GBM ####
@@ -93,15 +94,23 @@ tmp <- predict(test1$gbm_mqr,
 data.table(tmp)
 
 
-### change kfold column
+### change kfold column & exclude data
 
 test1$data$kfolindx <- test1$data$kfold
 test1$data$kfold <- NULL
 data.table(test1$data)
 
+
 test1$gbm_mqr <- qreg_gbm(data = test1$data,
                           formula = TARGETVAR~U100+V100+U10+V10+(sqrt((U100^2+V100^2))),
                           cv_folds = "kfolindx",
+                          # cv_folds = NULL,
+                          # cv_folds = test1$data$kfolindx,
+                          # cv_folds = rep(1:10,length.out=nrow(test1$data)),
+                          # cv_folds = rep(c("hjjr","gffd",'ptbnm'),length.out=nrow(test1$data)),
+                          # cv_folds = rep(1,length.out=nrow(test1$data)),
+                          exclude_train = "bad_data",
+                          # exclude_train = runif(n = nrow(Wind))<0.001,
                           interaction.depth = 3,
                           n.trees = 100,
                           shrinkage = 0.05,
@@ -112,6 +121,11 @@ test1$gbm_mqr <- qreg_gbm(data = test1$data,
                           sort = T,
                           sort_limits = list(U=0.999,L=0.001),
                           pred_ntree = 100)
+
+summary(test1$gbm_mqr)
+
+plot(test1$gbm_mqr$mqr_pred[1:100,])
+
 
 
 test1$data <- Wind
@@ -459,8 +473,8 @@ test1<-list(data=Wind)
 # exclude_train = NULL
 # w = rep(1,nrow(data))
 
-rm(data,formula,cv_folds,interaction.depth,n.trees,shrinkage,n.minobsinnode,bag.fraction,keep.data,
-quantiles,sort,sort_limits,pred_ntree,cores,pckgs,only_mqr,save_models_path,cl,cv_labs,opts,output,pb,exclude_idx,exclude_train)
+# rm(data,formula,cv_folds,interaction.depth,n.trees,shrinkage,n.minobsinnode,bag.fraction,keep.data,
+# quantiles,sort,sort_limits,pred_ntree,cores,pckgs,only_mqr,save_models_path,cl,cv_labs,opts,output,pb,exclude_idx,exclude_train)
 
 
 
@@ -470,13 +484,18 @@ test1$gam_mqr <- qreg_mboost(data = test1$data,
                              cv_folds = "kfold",
                              formula = TARGETVAR~bbs(WS100,knots=8),
                              quantiles = seq(0.1,0.9,by=0.1),
+                             # quantiles = 0.5,
+                             # exclude_train = "bad_data",
                              sort = T,
-                             sort_limits = list(U=0.999,L=0.001))
+                             sort_limits = list(U=0.999,L=0.001),
+                             cores = 8,
+                             only_mqr = T)
 
 
 class(test1$gam_mqr)
 print(test1$gam_mqr)
 summary(test1$gam_mqr)
+plot(test1$gam_mqr$mqr_pred[1:100,])
 
 
 ### check exclude train
