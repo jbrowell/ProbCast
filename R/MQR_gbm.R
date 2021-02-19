@@ -37,6 +37,7 @@
 #'  \item a vector of binary/boolean exclusion flags of length nrow(data)
 #'  \item NULL indicates no exclusion
 #' }
+#' This option is useful when out-of-sample predictions are required in rows which need excluded during model training
 #' @param ... Additional arguments passed to \code{gbm()}.
 #' @details The returned predictive quantiles are those produced out-of-sample for each
 #' cross-validation fold (using models trained on the remaining folds but not "Test" data).
@@ -47,7 +48,7 @@
 #' and can be extracted for further prediction or evaluation. See \code{predict.qreg_gbm()}.
 #' 
 #' @return by default a named list containing fitted models as a list of \code{qreg_gbm} objects, 
-#' and out-of-sample cross validation  forecasts as an \code{MultiQR} object. The output list depends on \code{cv_kfolds}.
+#' and out-of-sample cross validation  forecasts as an \code{MultiQR} object. The output list depends on \code{cv_folds}.
 #' 
 #' Alternatively returns only the out-of-sample cross validation forecasts as an \code{MultiQR} 
 #' object when \code{only_mqr} is \code{TRUE}

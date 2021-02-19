@@ -109,7 +109,7 @@ test1$gbm_mqr <- qreg_gbm(data = test1$data,
                           # cv_folds = rep(1:10,length.out=nrow(test1$data)),
                           # cv_folds = rep(c("hjjr","gffd",'ptbnm'),length.out=nrow(test1$data)),
                           # cv_folds = rep(1,length.out=nrow(test1$data)),
-                          exclude_train = "bad_data",
+                          # exclude_train = "bad_data",
                           # exclude_train = runif(n = nrow(Wind))<0.001,
                           interaction.depth = 3,
                           n.trees = 100,
@@ -125,6 +125,73 @@ test1$gbm_mqr <- qreg_gbm(data = test1$data,
 summary(test1$gbm_mqr)
 
 plot(test1$gbm_mqr$mqr_pred[1:100,])
+
+
+test1$gam_mqr <- qreg_mboost(data = test1$data,
+                             cv_folds = "kfolindx",
+                             formula = TARGETVAR~bbs(WS100,knots=8),
+                             quantiles = seq(0.1,0.9,by=0.1),
+                             # quantiles = 0.5,
+                             exclude_train = "bad_data",
+                             sort = T,
+                             sort_limits = list(U=0.999,L=0.001),
+                             # only_mqr = T,
+                             cores = 8)
+
+
+class(test1$gam_mqr)
+print(test1$gam_mqr)
+summary(test1$gam_mqr)
+plot(test1$gam_mqr$mqr_pred[1:100,])
+
+test1$gam_mqr$exclude_index
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

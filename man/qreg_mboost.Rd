@@ -58,7 +58,8 @@ Defaults to \code{NULL}, i.e. no model save.}
  \item the column name of the binary/boolean exclude flag supplied in data.
  \item a vector of binary/boolean exclusion flags of length nrow(data)
  \item NULL indicates no exclusion
-}}
+}
+This option is useful when out-of-sample predictions are required in rows which need excluded during model training}
 
 \item{...}{extra hyper-parameters to be passed to \code{mboost()}.
 e.g. use \code{control = mboost::boost_control()} to specify boosting steps and shrinkage.}
@@ -67,7 +68,11 @@ e.g. use \code{control = mboost::boost_control()} to specify boosting steps and 
 of an ~ operator, and the terms, separated by + operators, on the right.}
 }
 \value{
-Quantile forecasts in a \code{MultiQR} object.
+by default a named list containing fitted models as a list of \code{qreg_mboost} objects, 
+and out-of-sample cross validation  forecasts as an \code{MultiQR} object. The output list depends on \code{cv_folds}.
+
+Alternatively returns only the out-of-sample cross validation forecasts as an \code{MultiQR} 
+object when \code{only_mqr} is \code{TRUE}
 }
 \description{
 This function fits multiple quantile regression models using \code{mboost}, with
@@ -80,6 +85,9 @@ The returned predictive quantiles are those produced out-of-sample for each
 cross-validation fold (using models trained on the remaining folds but not "Test" data).
 Predictive quantiles corresponding to "Test" data are produced using models trained on all
 non-test data.
+
+The returned models are in a named list corresponding to the model for each fold and 
+and can be extracted for further prediction or evaluation. See \code{predict.qreg_mboost()}.
 }
 \author{
 Jethro Browell, \email{jethro.browell@strath.ac.uk}; Ciaran Gilbert, \email{ciaran.gilbert@strath.ac.uk}

@@ -45,8 +45,10 @@ ppd_gamlss <- function(data,
   
   
   ## to-do
-  ## -- clear up auto-cv
-  ## -- rolling window
+  ## -- construct return list
+  ## -- new class to standardise the ppd models? like multiQR - params+cdf/pdf/q_fun?
+  ## -- only ppd argument (back compat)
+  ## -- s3: predict function, summary, print etc.
   
   ### Set-up Cross-validation
   TEST<-F # Flag for Training (with CV) AND Test output
