@@ -2,12 +2,12 @@
 % Please edit documentation in R/Para_gamboostLSS.R
 \name{Para_gamboostLSS}
 \alias{Para_gamboostLSS}
-\title{Fit boosted \code{gamlss}-type semi-paramertirc models}
+\title{Fit boosted \code{gamlss}-type semi-parametric models (depreciated)}
 \usage{
 Para_gamboostLSS(
   data,
   formula,
-  families = GaussianLSS(),
+  families = gamboostLSS::GaussianLSS(),
   parallel = F,
   cores = NULL,
   pckgs = NULL,
@@ -16,7 +16,7 @@ Para_gamboostLSS(
 }
 \arguments{
 \item{data}{A \code{data.frame} containing target and explanatory variables.
-May optionally contain a collumn called "kfold" with numbered/labeled
+May optionally contain a column called "kfold" with numbered/labeled
 folds and "Test" for test data.}
 
 \item{formula}{A formula or list of formulas for differences
@@ -26,22 +26,21 @@ between formulas for location, scale, shape etc..(see \code{?gamboostLSS})}
 distribution and the link functions of the various parameters.}
 
 \item{parallel}{\code{boolean} parallelize cross-validation process?
-Parallelisation is over cross-validatoin folds.}
+Parallelisation is over cross-validation folds.}
 
 \item{pckgs}{if parallel is TRUE then  specify packages required for
 each worker (e.g. c("data.table) if data stored as such)}
 
-\item{...}{Additonal arguments passed to \code{gamboostLSS()}.}
+\item{...}{Additional arguments passed to \code{gamboostLSS()}.}
 }
 \value{
 A list of \code{gamboostlss} objects. Each list element
-corresponsds to a cross-validation fold and contains a \code{gamlss} model
+corresponds to a cross-validation fold and contains a \code{gamlss} model
 trained on all other folds.
 }
 \description{
-This function is a wrapper for the function \code{gamboostLSS}, which
-fits semi-parametric regression models for predictive disributions with up to
-four parameters (location, scale, shape1, shape2) via gradient boosting.
+This function is now depreciated and may be removed in future versions of this package.
+Use \code{ppd_gamboostlss()} instead.
 }
 \author{
 Ciaran Gilbert, \email{ciaran.gilbert@strath.ac.uk}

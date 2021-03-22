@@ -3,7 +3,19 @@ Title: Flexible Probabilistic Forecasting
 Version: 0.0.0.9000
 Authors@R: c(person("Jethro", "Browell", email = "jethro.browell@strath.ac.uk", role = c("aut", "cre")), person("Ciaran", "Gilbert", email = "ciaran.gilbert@strath.ac.uk", role = c("aut")))
 Description: Estimate models, produce and evaluate forecasts, and visualise the results. ProbCast provides facilities for porbabilistic forecasting based on parametric and non-paramertric density forecasting, and multi-variate forecasts using the Gaussian Copula. Central to ProbCast is the class "MultiQR", for storing the results of multiple quantile regression, and methods for working with this data.
-Depends: R (>= 3.5.0), gbm, gamlss, foreach, parallel, doSNOW, gamboostLSS, mvnfast, data.table, fst, evgam
+Depends: R (>= 3.5.0),
+	gamlss (>= 5.1),
+	foreach (>= 1.5.1),
+	parallel (>= 3.5),
+	doSNOW (>= 1.0.19),
+	gamboostLSS (>= 2.0-1.1),
+	mvnfast (>= 0.2.5.1),
+	data.table (>= 1.12.8),
+	fst (>= 0.9.4),
+	evgam (>= 0.1.2),
+	mgcv (>= 1.8),
+	quantreg (>= 5.0)
+Imports: gbm (>= 2.1.0)
 License: file LICENSE
 Encoding: UTF-8
 LazyData: true
