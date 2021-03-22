@@ -464,7 +464,7 @@ summary.qreg_gbm <- function(x, ...){
     cat("\n")
     cat("class of kfold predictions: ", class(x$mqr_pred), "\n")
     cat("sorted quantile predictions?: ", x$mqr_info$sort, "\n")
-    cat("sort limits: ", deparse(x$mqr_info$sort_limits), "\n")
+    if(x$mqr_info$sort){cat("sort limits: ", deparse(x$mqr_info$sort_limits), "\n")}
     
   }
   

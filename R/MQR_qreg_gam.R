@@ -430,9 +430,66 @@ qreg_gam.update <- function(object,newdata,model_name=NULL){
 } 
 
 
+#' Print \code{qreg_gbm} object
+#' 
+#' @author Jethro Browell, \email{jethro.browell@@strath.ac.uk}
+#' @param x object of class \code{qreg_gam} obtained from the function \code{qreg_gbm()}.
+#' @details this function prints details of the call to \code{qreg_gam()},
+#' @keywords Quantile Regression
+#' @method print qreg_gam
+#' @export    
+print.qreg_gam <- function(x, ...){
+  cat("\n")
+  cat("\t Multiple Quantile regression via GBM \n")
+  cat("\n")
+  cat("Call:\n", deparse(x$call), "\n\n", sep = "")
+  
+  cat("\n")
+  cat("Names of models fitted: ", x$model_names,"\n")
+  cat("Default prediction model: ", x$default_model,"\n")
+  cat("Quantiles fitted for each model: ", names(x$mqr_pred),"\n")
+  cat("\n")
+  invisible(x)
+}
 
 
+#' Summary \code{qreg_gbm} object
+#' 
+#' @author Jethro Browell, \email{jethro.browell@@strath.ac.uk}
+#' @param x object of class \code{qreg_gam} obtained from the function \code{qreg_gbm()}.
+#' @details this function gives a more detailed summary of, \code{x}, a \code{qreg_gam} object,
+#' than \code{print()}
+#' @keywords Quantile Regression
+#' @method summary qreg_gbm
+#' @export
+summary.qreg_gam <- function(x, ...){
+  
+  print(x)
+  
+  cat("\n")
+  
+  if(!is.null(x$mqr_pred)){
+    cat("out-of-sample kfold cross validation predictions:\n")
+    print(data.table::data.table(x$mqr_pred))
+    
+    cat("\n")
+    cat("class of kfold predictions: ", class(x$mqr_pred), "\n")
+    cat("sorted quantile predictions?: ", x$sorted$sort, "\n")
+    if(x$sorted$sort){cat("sort limits: ", deparse(x$sorted$sort_limits), "\n")}
+    
+  }
+  
+  cat("\n-----\n\n")
+  cat("Summary of default gam model:")
+  cat("\n")
+  print(summary(x$models$gams[[x$default_model]]))
+  cat("\n")
+  cat("For more diagnostics see gam.check()")
+  cat("\n-----\n")
+  
+}
 
+## DEPRECIATED ####
 #' DEPRECIATED: Multiple Quantile Regression Using Generalised Additive Models and Linear Quantile Regression
 #'
 #' OLD VERSION SUPERCEDED BY \code{qreg_gam}. This function fits multiple conditional linear quantile regression models to the residuals of

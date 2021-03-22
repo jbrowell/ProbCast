@@ -48,6 +48,8 @@ Model_1 <- qreg_gam(data = Wind,
                     discrete=F)
 
 
+summary(Model_1)
+
 ## Check GAM fits...
 # gam.check(Model_1$models$gams$`Fold 1`)
 # gam.check(Model_1$models$gams$`Fold 1_r`)
