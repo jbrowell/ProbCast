@@ -407,15 +407,17 @@ qreg_gam.update <- function(object,newdata,model_name=NULL){
   ## Check class of object
   if(class(object)[1]!="qreg_gam"){stop("object of wrong class, expecting \"qreg_gam\"")}
   
-  ## Check GAMs were fit using bam()
-  if(!object$models$call$use_bam){
-    stop("Only suitable for bam(). Select \"use_bam=T\" when fitting.")
-  }
-  
   ## Use default model unless specified
   if(is.null(model_name)){
     model_name <- object$default_model
   }
+  
+  ## Check GAMs were fit using bam()
+  if(!"bam" %in% class(object$models$gams[[model_name]])){
+    stop("Only suitable for bam(). Select \"use_bam=T\" when fitting.")
+  }
+  
+  
   
   ## Check model can be updated (from bam.update with extra explanation)
   if(is.null(object$models$gams[[model_name]]$qrx)){
