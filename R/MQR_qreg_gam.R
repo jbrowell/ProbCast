@@ -186,9 +186,9 @@ qreg_gam.add_quantiles <- function(object, data, quantiles){
   predqs <- data.table(matrix(as.numeric(NA),ncol = length(quantiles), nrow = nrow(data)))
   colnames(predqs) <- paste0("q",100*quantiles)
   
-  if(!is.null(object$models$call$formula_qr)){
+  if(!is.null(object$call$formula_qr)){
     ## Use user-specified model equation for quantile regression
-    formula_qr <- reformulate(attr(terms(object$models$call$formula_qr),"term.labels"),response = "gam_resid")
+    formula_qr <- reformulate(attr(terms(as.formula(object$call$formula_qr)),"term.labels"),response = "gam_resid")
     
     for(fold in object$model_names){
       print(paste0("MQR, kfold=",fold))
@@ -219,7 +219,7 @@ qreg_gam.add_quantiles <- function(object, data, quantiles){
       print(paste0("MQR, kfold=",fold))
       ## Get training Data
       train <- predict(object$models$gams[[fold]],newdata = data[object$kfold_index!=fold & object$kfold_index!="Test" & object$exclude_index==0,],type = "terms")
-      if(!is.null(object$models$call$formula_res2)){
+      if(!is.null(object$call$formula_res2)){
         train2 <- predict(object$models$gams[[paste0(fold,"_r")]],newdata = data[object$kfold_index!=fold & object$kfold_index!="Test" & object$exclude_index==0,],type = "terms")
         # Only need to retrun smooth terms as linear terms included already...
         train2 <- train2[,grep("\\(",colnames(train2)),drop=F]
@@ -233,7 +233,7 @@ qreg_gam.add_quantiles <- function(object, data, quantiles){
         test_cv <- predict(object$models$gams[[fold]],
                            newdata = if(is.null(object$call$cv_folds)){data}else{data[object$kfold_index==fold,]},
                            type = "terms")
-        if(!is.null(object$models$call$formula_res2)){
+        if(!is.null(object$call$formula_res2)){
           test_cv2 <- predict(object$models$gams[[paste0(fold,"_r")]],
                               newdata = if(is.null(object$call$cv_folds)){data}else{data[object$kfold_index==fold,]},
                               type = "terms")
@@ -346,7 +346,7 @@ predict.qreg_gam <- function(object,
   newdata[,gam_pred:=OUTPUT$gam_pred]
   
   ## Qunatile regression
-  if(!is.null(object$models$call$formula_qr)){
+  if(!is.null(object$call$formula_qr)){
     ## Use user-specified model equation for quantile regression
     for(i in 1:length(quantiles)){
       predqs[,i] <- OUTPUT$gam_pred +
@@ -356,7 +356,7 @@ predict.qreg_gam <- function(object,
   }else{
     ## QR with features from GAM
     newdata_terms <- predict(object$models$gams[[model_name]],newdata = newdata,type = "terms")
-    if(!is.null(object$models$call$formula_res2)){
+    if(!is.null(object$call$formula_res2)){
       newdata_terms2 <- predict(object$models$gams[[paste0(model_name,"_r")]],newdata = newdata,type = "terms")
       newdata_terms2 <- newdata_terms2[,grep("\\(",colnames(newdata_terms2)),drop=F]
       colnames(newdata_terms2) <- paste0(colnames(newdata_terms2),"_r")
@@ -447,9 +447,9 @@ print.qreg_gam <- function(x, ...){
   cat("Call:\n", deparse(x$call), "\n\n", sep = "")
   
   cat("\n")
-  cat("Names of models fitted: ", x$model_names,"\n")
+  cat("Names of models fitted: ", paste0(x$model_names,collapse = ", "),"\n")
   cat("Default prediction model: ", x$default_model,"\n")
-  cat("Quantiles fitted for each model: ", names(x$mqr_pred),"\n")
+  cat("Quantiles fitted for each model: ", paste0(names(x$mqr_pred),collapse = ", "),"\n")
   cat("\n")
   invisible(x)
 }
@@ -462,7 +462,7 @@ print.qreg_gam <- function(x, ...){
 #' @details this function gives a more detailed summary of, \code{x}, a \code{qreg_gam} object,
 #' than \code{print()}
 #' @keywords Quantile Regression
-#' @method summary qreg_gbm
+#' @method summary qreg_gam
 #' @export
 summary.qreg_gam <- function(x, ...){
   
@@ -471,7 +471,7 @@ summary.qreg_gam <- function(x, ...){
   cat("\n")
   
   if(!is.null(x$mqr_pred)){
-    cat("out-of-sample kfold cross validation predictions:\n")
+    cat("Out-of-sample kfold cross validation predictions:\n")
     print(data.table::data.table(x$mqr_pred))
     
     cat("\n")

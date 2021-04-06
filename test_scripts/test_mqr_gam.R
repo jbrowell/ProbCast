@@ -35,7 +35,8 @@ Wind$BadData <- runif(n = nrow(Wind))<0.005
 ## GAM model with some quantiles
 Model_1 <- qreg_gam(data = Wind,
                     formula = TARGETVAR ~ te(WS100,WS10,k=5) + te(U100,V100,k=12),
-                    formula_qr = NULL,
+                    # formula_qr = NULL,
+                    formula_qr = ~ WS100 + WS10,
                     # cv_folds = NULL,
                     cv_folds = "kfold",
                     # cv_folds = Wind$kfold,
@@ -49,6 +50,7 @@ Model_1 <- qreg_gam(data = Wind,
 
 
 summary(Model_1)
+
 
 ## Check GAM fits...
 # gam.check(Model_1$models$gams$`Fold 1`)

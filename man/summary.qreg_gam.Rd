@@ -4,7 +4,7 @@
 \alias{summary.qreg_gam}
 \title{Summary \code{qreg_gbm} object}
 \usage{
-\method{summary}{qreg_gbm}(x, ...)
+\method{summary}{qreg_gam}(x, ...)
 }
 \arguments{
 \item{x}{object of class \code{qreg_gam} obtained from the function \code{qreg_gbm()}.}
