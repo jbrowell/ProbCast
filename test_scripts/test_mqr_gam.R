@@ -31,17 +31,20 @@ Wind$kfold[Wind$ISSUEdtm>as.POSIXct("2012-12-31",tz="UTC")] <- "fold 3"
 Wind$kfold[Wind$ISSUEdtm>as.POSIXct("2013-06-30",tz="UTC")] <- "Test"
 Wind$BadData <- runif(n = nrow(Wind))<0.005
 
+QR_form <- ~ gam_pred + WS100 + WS10
+R2_form <- ~ WS100 + WS10
 
 ## GAM model with some quantiles
 Model_1 <- qreg_gam(data = Wind,
                     formula = TARGETVAR ~ te(WS100,WS10,k=5) + te(U100,V100,k=12),
                     formula_qr = NULL,
-                    formula_qr =  ~ gam_pred + WS100 + WS10,
+                    # formula_qr = ~ gam_pred + WS100 + WS10,
+                    # formula_qr =  QR_form,
                     # cv_folds = NULL,
                     cv_folds = "kfold",
                     # cv_folds = Wind$kfold,
-                    model_res2 = F,
-                    # formula_res2 = ~s(WS100,k=20),
+                    # model_res2 = T,
+                    # formula_res2 = R2_form,
                     exclude_train = NULL,
                     # exclude_train = "BadData",
                     # exclude_train = Wind$BadData,

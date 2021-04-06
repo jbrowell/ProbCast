@@ -70,7 +70,9 @@ qreg_gam <- function(data,
   # Check compatible options:
   if(!is.null(formula_qr) & model_res2){
     stop("Additinal GAM effects for modelling squared residuals only available if quantile regression is based on effects of main GAM, i.e. \"formula_qr=NULL\"")}
-  
+  if(!model_res2 & !is.null(formula_res2)){
+    stop("formula_res2 not required as model_res2==F")
+  }
   # set-up cv folds & do checks
   cv_labs <- cv_control(data = data,cv_folds = cv_folds)
   
@@ -192,7 +194,8 @@ qreg_gam.add_quantiles <- function(object, data, quantiles){
   
   if(!is.null(object$call$formula_qr)){
     ## Use user-specified model equation for quantile regression
-    formula_qr <- reformulate(attr(terms(as.formula(object$call$formula_qr)),"term.labels"),response = "gam_resid")
+    formula_qr <- eval(object$call$formula_qr,envir = environment())
+    formula_qr <- reformulate(attr(terms(as.formula(formula_qr)),"term.labels"),response = "gam_resid")
     
     for(fold in object$model_names){
       print(paste0("MQR, kfold=",fold))
@@ -227,25 +230,31 @@ qreg_gam.add_quantiles <- function(object, data, quantiles){
         train2 <- predict(object$models$gams[[paste0(fold,"_r")]],newdata = data[object$kfold_index!=fold & object$kfold_index!="Test" & object$exclude_index==0,],type = "terms")
         # Only need to retrun smooth terms as linear terms included already...
         train2 <- train2[,grep("\\(",colnames(train2)),drop=F]
-        colnames(train2) <- paste0(colnames(train2),"_r")
-        train <- cbind(train,train2); rm(train2)
+        if(ncol(train2)>0){
+          colnames(train2) <- paste0(colnames(train2),"_r")
+          train <- cbind(train,train2)
+        }
+        rm(train2)
       }
       train <- cbind(data.table(train),data[object$kfold_index!=fold & object$kfold_index!="Test" & object$exclude_index==0,.(gam_resid)])
       
       ## Out-of-sample data
       
-        test_cv <- predict(object$models$gams[[fold]],
-                           newdata = if(is.null(object$call$cv_folds)){data}else{data[object$kfold_index==fold,]},
-                           type = "terms")
-        if(!is.null(object$call$formula_res2)){
-          test_cv2 <- predict(object$models$gams[[paste0(fold,"_r")]],
-                              newdata = if(is.null(object$call$cv_folds)){data}else{data[object$kfold_index==fold,]},
-                              type = "terms")
-          test_cv2 <- test_cv2[,grep("\\(",colnames(test_cv2)),drop=F]
+      test_cv <- predict(object$models$gams[[fold]],
+                         newdata = if(is.null(object$call$cv_folds)){data}else{data[object$kfold_index==fold,]},
+                         type = "terms")
+      if(!is.null(object$call$formula_res2)){
+        test_cv2 <- predict(object$models$gams[[paste0(fold,"_r")]],
+                            newdata = if(is.null(object$call$cv_folds)){data}else{data[object$kfold_index==fold,]},
+                            type = "terms")
+        test_cv2 <- test_cv2[,grep("\\(",colnames(test_cv2)),drop=F]
+        if(ncol(test_cv2)>0){
           colnames(test_cv2) <- paste0(colnames(test_cv2),"_r")
-          test_cv <- cbind(test_cv,test_cv2); rm(test_cv2)
+          test_cv <- cbind(test_cv,test_cv2)
         }
-        test_cv <- data.table(test_cv)
+        rm(test_cv2)
+      }
+      test_cv <- data.table(test_cv)
       
       
       for(i in 1:length(quantiles)){
