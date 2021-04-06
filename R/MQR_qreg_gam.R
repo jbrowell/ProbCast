@@ -67,6 +67,10 @@ qreg_gam <- function(data,
   # - Add use of "cluster" option
   # - Add warning if bam() used with default s(bs="tp"), this slows things alot.
   
+  # Check compatible options:
+  if(!is.null(formula_qr) & model_res2){
+    stop("Additinal GAM effects for modelling squared residuals only available if quantile regression is based on effects of main GAM, i.e. \"formula_qr=NULL\"")}
+  
   # set-up cv folds & do checks
   cv_labs <- cv_control(data = data,cv_folds = cv_folds)
   
