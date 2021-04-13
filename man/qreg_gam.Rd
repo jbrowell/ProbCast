@@ -9,11 +9,12 @@ qreg_gam(
   formula,
   formula_qr = NULL,
   model_res2 = F,
-  formula_res2 = formula,
+  formula_res2 = NULL,
   quantiles = c(0.25, 0.5, 0.75),
   cv_folds = NULL,
   use_bam = T,
   exclude_train = NULL,
+  w = NULL,
   sort = T,
   sort_limits = NULL,
   ...
@@ -54,6 +55,8 @@ See \code{bam()} documentation for further details.}
 training, i.e. if it contains bad data (will be coerced to \code{logical}). Alterntively,
 an \code{integer} or \cpde{logical} vector with length equal to the number of rows in \code{data} indicating
 the same. Rows labeled \code{TRUE} are excluded from model training.}
+
+\item{w}{Weights on the contribution of the data to log likelihood in \code{gam/bam} models ONLY (and not quantile loss for quantile regressions). See \code{?gam, ?bam} for more details.}
 
 \item{sort}{\code{boolean} Sort quantiles using \code{SortQuantiles()}?}
 

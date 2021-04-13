@@ -45,9 +45,9 @@ Model_1 <- qreg_gam(data = Wind,
                     # cv_folds = Wind$kfold,
                     # model_res2 = T,
                     # formula_res2 = R2_form,
-                    exclude_train = NULL,
+                    # exclude_train = NULL,
                     # exclude_train = "BadData",
-                    # exclude_train = Wind$BadData,
+                    exclude_train = Wind$BadData,
                     quantiles = c(0.05,0.25,0.5,0.75,0.95),sort_limits = list(U=1,L=0),
                     discrete=F)
 

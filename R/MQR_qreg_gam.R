@@ -39,6 +39,7 @@
 #' training, i.e. if it contains bad data (will be coerced to \code{logical}). Alterntively,
 #' an \code{integer} or \cpde{logical} vector with length equal to the number of rows in \code{data} indicating
 #' the same. Rows labeled \code{TRUE} are excluded from model training.
+#' @param w Weights on the contribution of the data to log likelihood in \code{gam/bam} models ONLY (and not quantile loss for quantile regressions). See \code{?gam, ?bam} for more details.
 #' @param sort \code{boolean} Sort quantiles using \code{SortQuantiles()}?
 #' @param sort_limits \code{Limits} argument to be passed to \code{SortQuantiles()}. Constrains quantiles to upper and lower limits given by \code{list(U=upperlim,L=lowerlim)}.
 #' @param ... Additional agruments passter to \code{gam()} (or \code{bam()}).
@@ -54,12 +55,12 @@ qreg_gam <- function(data,
                      formula,
                      formula_qr=NULL,
                      model_res2=F,
-                     formula_res2 = formula,
+                     formula_res2 = NULL,
                      quantiles=c(0.25,0.5,0.75),
                      cv_folds=NULL,
                      use_bam=T,
                      exclude_train=NULL,
-                     # w=rep(1,nrow(data)), # Not working...
+                     w=NULL,
                      sort=T,sort_limits=NULL,
                      ...){
   
@@ -70,9 +71,23 @@ qreg_gam <- function(data,
   # Check compatible options:
   if(!is.null(formula_qr) & model_res2){
     stop("Additinal GAM effects for modelling squared residuals only available if quantile regression is based on effects of main GAM, i.e. \"formula_qr=NULL\"")}
+  if(model_res2 & is.null(formula_res2)){
+    formula_res2 <- formula
+  }
   if(!model_res2 & !is.null(formula_res2)){
     stop("formula_res2 not required as model_res2==F")
   }
+  
+  
+  # Weights
+  if(is.null(w)){
+    w <- rep(1,nrow(data))
+  }
+  if(sum(w<0)>0){
+    stop("Weights, w, must all be positive.")
+  }
+  
+  
   # set-up cv folds & do checks
   cv_labs <- cv_control(data = data,cv_folds = cv_folds)
   
@@ -100,8 +115,6 @@ qreg_gam <- function(data,
   
   class(FINAL_OUTPUT) <- c("qreg_gam",class(FINAL_OUTPUT))
   
-  formula_res2 <- reformulate(attr(terms(formula_res2),"term.labels"),response = "gam_res2")
-  
   for(fold in FINAL_OUTPUT$model_names){
     
     print(paste0("GAM, kfold=",fold))
@@ -110,19 +123,25 @@ qreg_gam <- function(data,
     gam_fit_method <- if(use_bam){bam}else{gam}
     
     # GAM for conditional expectation
+    weights_123 <<- w[FINAL_OUTPUT$kfold_index!=fold & FINAL_OUTPUT$kfold_index!="Test" & FINAL_OUTPUT$exclude_index==0]
     FINAL_OUTPUT$models$gams[[fold]] <- gam_fit_method(data=data[FINAL_OUTPUT$kfold_index!=fold & FINAL_OUTPUT$kfold_index!="Test" & FINAL_OUTPUT$exclude_index==0,],
+                                                       weights=weights_123,
                                                        formula = formula,...)
     # GAM for squared residuals
-    if(model_res2){ 
+    if(model_res2){
+      
+      formula_res2 <- reformulate(attr(terms(formula_res2),"term.labels"),response = "gam_res2")
+      
       temp_gam_res2 <- data.table(gam_res2=(FINAL_OUTPUT$models$gam_pred[FINAL_OUTPUT$kfold_index!=fold & FINAL_OUTPUT$kfold_index!="Test" & FINAL_OUTPUT$exclude_index==0,y] - 
                                               predict(FINAL_OUTPUT$models$gams[[fold]],
                                                       newdata = data[FINAL_OUTPUT$kfold_index!=fold & FINAL_OUTPUT$kfold_index!="Test" & FINAL_OUTPUT$exclude_index==0,]))^2)  
       
       FINAL_OUTPUT$models$gams[[paste0(fold,"_r")]] <- gam_fit_method(data=cbind(data[FINAL_OUTPUT$kfold_index!=fold & FINAL_OUTPUT$kfold_index!="Test" & FINAL_OUTPUT$exclude_index==0,],temp_gam_res2),
+                                                                      weights=weights_123,
                                                                       formula = formula_res2,...)
       rm(temp_gam_res2)
     }
-    
+    rm(weights_123,envir = as.environment(1))
     
     ## Out-of-sample cross-validation predictions
     if(is.null(cv_folds)){
