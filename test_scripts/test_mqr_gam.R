@@ -1,4 +1,5 @@
 ### StrathCast Extended Example
+rm(list=ls())
 require(devtools)
 require(roxygen2)
 require(rstudioapi)
@@ -36,14 +37,15 @@ R2_form <- ~ WS100 + WS10
 
 ## GAM model with some quantiles
 Model_1 <- qreg_gam(data = Wind,
-                    formula = TARGETVAR ~ te(WS100,WS10,k=5) + te(U100,V100,k=12),
+                    formula = TARGETVAR ~ WS100 + te(WS100,WS10,k=5) + te(U100,V100,k=12),
                     formula_qr = NULL,
-                    # formula_qr = ~ gam_pred + WS100 + WS10,
+                    # formula_qr = ~ gam_pred + WS10,
                     # formula_qr =  QR_form,
                     # cv_folds = NULL,
                     cv_folds = "kfold",
                     # cv_folds = Wind$kfold,
-                    # model_res2 = T,
+                    model_res2 = T,
+                    formula_res2 = ~ WS100 + s(WS100),
                     # formula_res2 = R2_form,
                     exclude_train = NULL,
                     # exclude_train = "BadData",
@@ -51,9 +53,7 @@ Model_1 <- qreg_gam(data = Wind,
                     quantiles = c(0.05,0.25,0.5,0.75,0.95),sort_limits = list(U=1,L=0),
                     discrete=F)
 
-
 summary(Model_1)
-
 
 ## Check GAM fits...
 # gam.check(Model_1$models$gams$`Fold 1`)

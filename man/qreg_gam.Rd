@@ -29,9 +29,9 @@ numbered/labeled folds and "Test" for test data. If \code{data} contains a colum
 is the prediction from the above GAM may be included in this formula. If null, the "terms" of the GAM model
 are used as features in linear quantile regression.}
 
-\item{model_res2}{If \code{TRUE} also model squared residuals of GAM using a GAM. Defaults to \code{FALSE}.}
+\item{model_res2}{If \code{TRUE} model squared residuals of GAM using a seperate GAM and pass effects to quantile regression models. Defaults to \code{FALSE}.}
 
-\item{formula_res2}{Formula for GAM to predict squared residuals.}
+\item{formula_res2}{Formula for GAM to predict squared residuals. Effects from this model are added to \code{formula_qr}. Defaults to \code{formula}.}
 
 \item{quantiles}{The quantiles to fit models for.}
 

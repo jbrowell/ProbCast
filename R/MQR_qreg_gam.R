@@ -19,8 +19,8 @@
 #' @param formula_qr Formula for linear quantile regression model for GAM residuals. Term \code{gam_pred}
 #' is the prediction from the above GAM may be included in this formula. If null, the "terms" of the GAM model
 #' are used as features in linear quantile regression.
-#' @param model_res2 If \code{TRUE} also model squared residuals of GAM using a GAM. Defaults to \code{FALSE}.
-#' @param formula_res2 Formula for GAM to predict squared residuals.
+#' @param model_res2 If \code{TRUE} model squared residuals of GAM using a seperate GAM and pass effects to quantile regression models. Defaults to \code{FALSE}.
+#' @param formula_res2 Formula for GAM to predict squared residuals. Effects from this model are added to \code{formula_qr}. Defaults to \code{formula}.
 #' @param quantiles The quantiles to fit models for.
 #' @param cv_folds Control for cross-validation with various options, either:
 #' \itemize{
@@ -54,7 +54,7 @@ qreg_gam <- function(data,
                      formula,
                      formula_qr=NULL,
                      model_res2=F,
-                     formula_res2 = NULL,
+                     formula_res2 = formula,
                      quantiles=c(0.25,0.5,0.75),
                      cv_folds=NULL,
                      use_bam=T,
@@ -68,11 +68,9 @@ qreg_gam <- function(data,
   # - Add warning if bam() used with default s(bs="tp"), this slows things alot.
   
   # Check compatible options:
-  if(!is.null(formula_qr) & model_res2){
-    stop("Additinal GAM effects for modelling squared residuals only available if quantile regression is based on effects of main GAM, i.e. \"formula_qr=NULL\"")}
-  if(model_res2 & is.null(formula_res2)){
-    formula_res2 <- formula
-  }
+  # if(model_res2 & is.null(formula_res2)){
+  #   formula_res2 <- formula
+  # }
   if(!model_res2 & !is.null(formula_res2)){
     stop("formula_res2 not required as model_res2==F")
   }
@@ -200,85 +198,93 @@ qreg_gam.add_quantiles <- function(object, data, quantiles){
     ## Use user-specified model equation for quantile regression
     formula_qr <- eval(object$call$formula_qr,envir = environment())
     formula_qr <- reformulate(attr(terms(as.formula(formula_qr)),"term.labels"),response = "gam_resid")
-    
-    for(fold in object$model_names){
-      print(paste0("MQR, kfold=",fold))
-      for(i in 1:length(quantiles)){
-        
-        rq_model <- rq(formula_qr,
-                       tau = quantiles[i],
-                       data = data[object$kfold_index!=fold & object$kfold_index!="Test" & object$exclude_index==0,],
-                       method = "br")
-        
-        ## Throw away unneeded entries in "rq" as take up a lot of space!!!
-        rq_model <- rq_model[c("coefficients","terms","xlevels","contrasts")]
-        class(rq_model) <- "rq"
-        object$models$rqs[[fold]][[paste0("q",100*quantiles[i])]] <- rq_model
-        
-        if(is.null(object$call$cv_folds)){
-          predqs[,i] <- object$models$gam_pred[,gam_pred] +
-            predict.rq(object$models$rqs[[fold]][[paste0("q",100*quantiles[i])]],data)
-        }else{
-          predqs[object$kfold_index==fold,i] <- object$models$gam_pred[object$kfold_index==fold,gam_pred] +
-            predict.rq(object$models$rqs[[fold]][[paste0("q",100*quantiles[i])]],data[object$kfold_index==fold,])
-        }
-      }
+    if(attributes(terms(QR_form))$intercept!=1){
+      warning("Intercpet always included in qunatile regression.")
     }
-  }else{
-    ## QR with features from GAM
-    for(fold in object$model_names){
-      print(paste0("MQR, kfold=",fold))
-      ## Get training Data
-      train <- predict(object$models$gams[[fold]],newdata = data[object$kfold_index!=fold & object$kfold_index!="Test" & object$exclude_index==0,],type = "terms")
-      if(!is.null(object$call$formula_res2)){
-        train2 <- predict(object$models$gams[[paste0(fold,"_r")]],newdata = data[object$kfold_index!=fold & object$kfold_index!="Test" & object$exclude_index==0,],type = "terms")
-        # Only need to retrun smooth terms as linear terms included already...
-        train2 <- train2[,grep("\\(",colnames(train2)),drop=F]
-        if(ncol(train2)>0){
-          colnames(train2) <- paste0(colnames(train2),"_r")
-          train <- cbind(train,train2)
-        }
-        rm(train2)
-      }
-      train <- cbind(data.table(train),data[object$kfold_index!=fold & object$kfold_index!="Test" & object$exclude_index==0,.(gam_resid)])
+  }
+  
+  for(fold in object$model_names){
+    
+    print(paste0("MQR, kfold=",fold))
+    
+    ## Get training and out-of-sample data (make model matrices)
+    if(!is.null(object$call$formula_qr)){
+      train <- data.table(model.frame(formula_qr,
+                                      data = data[object$kfold_index!=fold & object$kfold_index!="Test" & object$exclude_index==0,],
+                                      na.action=NULL))
+      train <- train[,which(colnames(train)!="gam_resid"),with=F]
       
-      ## Out-of-sample data
+      test_cv <- data.table(model.frame(formula_qr,
+                                        data=if(is.null(object$call$cv_folds)){
+                                          data
+                                        }else{
+                                          data[object$kfold_index==fold,]
+                                        },
+                                        na.action=NULL))
+      test_cv <- test_cv[,which(colnames(test_cv)!="gam_resid"),with=F]
+      
+    }else{
+      train <- predict(object$models$gams[[fold]],newdata = data[object$kfold_index!=fold & object$kfold_index!="Test" & object$exclude_index==0,],type = "terms")
       
       test_cv <- predict(object$models$gams[[fold]],
                          newdata = if(is.null(object$call$cv_folds)){data}else{data[object$kfold_index==fold,]},
                          type = "terms")
-      if(!is.null(object$call$formula_res2)){
-        test_cv2 <- predict(object$models$gams[[paste0(fold,"_r")]],
-                            newdata = if(is.null(object$call$cv_folds)){data}else{data[object$kfold_index==fold,]},
-                            type = "terms")
-        test_cv2 <- test_cv2[,grep("\\(",colnames(test_cv2)),drop=F]
-        if(ncol(test_cv2)>0){
-          colnames(test_cv2) <- paste0(colnames(test_cv2),"_r")
-          test_cv <- cbind(test_cv,test_cv2)
-        }
-        rm(test_cv2)
+    }
+    
+    ## Add gam_resid (i.e. traget variable) to trainig data
+    train <- cbind(data.table(train),data[object$kfold_index!=fold & object$kfold_index!="Test" & object$exclude_index==0,.(gam_resid)])
+    
+    ## Add res2 features if used
+    if(object$call$model_res2=="T"){
+      train2 <- predict(object$models$gams[[paste0(fold,"_r")]],
+                        newdata = data[object$kfold_index!=fold & object$kfold_index!="Test" & object$exclude_index==0,],
+                        type = "terms")
+      
+      # Remove duplicated linear features
+      colnames(train2) <- gsub(x = colnames(train2),pattern = ")$",replacement = ")_r")
+      train2 <- train2[,which(!colnames(train2) %in% colnames(train)),drop=F]
+      
+      if(ncol(train2)>0){
+        train <- cbind(train,train2)
       }
-      test_cv <- data.table(test_cv)
+      rm(train2)
       
+      test_cv2 <- predict(object$models$gams[[paste0(fold,"_r")]],
+                          newdata = if(is.null(object$call$cv_folds)){data}else{data[object$kfold_index==fold,]},
+                          type = "terms")
       
-      for(i in 1:length(quantiles)){
-        ## Fit QR model
-        object$models$rqs[[fold]][[paste0("q",100*quantiles[i])]] <- 
-          rq(formula = gam_resid ~ .,
-             tau = quantiles[i],
-             data = train,
-             method = "br")
-        
-        ## Make predictions
-        if(is.null(object$call$cv_folds)){
-          predqs[,i] <- object$models$gam_pred[,gam_pred] +
-            predict.rq(object$models$rqs[[fold]][[paste0("q",100*quantiles[i])]],
-                       newdata=test_cv)
-        }else{
-          predqs[object$kfold_index==fold,i] <- object$models$gam_pred[object$kfold_index==fold,gam_pred] +
-            predict.rq(object$models$rqs[[fold]][[paste0("q",100*quantiles[i])]],
-                       newdata=test_cv)
-        }
+      # Remove duplicated linear features
+      colnames(test_cv2) <- gsub(x = colnames(test_cv2),pattern = ")$",replacement = ")_r")
+      test_cv2 <- test_cv2[,which(!colnames(test_cv2) %in% colnames(test_cv)),drop=F]
+      
+      if(ncol(test_cv2)>0){
+        test_cv <- cbind(test_cv,test_cv2)
+      }
+      rm(test_cv2)
+    }
+    test_cv <- data.table(test_cv)
+    
+    
+    for(i in 1:length(quantiles)){
+      ## Fit QR model
+      rq_model <- rq(formula = gam_resid ~ .,
+                     tau = quantiles[i],
+                     data = train,
+                     method = "br")
+      ## Throw away unneeded entries in "rq" as take up a lot of space!!!
+      rq_model <- rq_model[c("coefficients","terms","xlevels","contrasts")]
+      class(rq_model) <- "rq"
+      object$models$rqs[[fold]][[paste0("q",100*quantiles[i])]] <- rq_model
+      
+      ## Make predictions
+      if(is.null(object$call$cv_folds)){
+        predqs[,i] <- object$models$gam_pred[,gam_pred] +
+          predict.rq(object$models$rqs[[fold]][[paste0("q",100*quantiles[i])]],
+                     newdata=test_cv)
+      }else{
+        predqs[object$kfold_index==fold,i] <- object$models$gam_pred[object$kfold_index==fold,gam_pred] +
+          predict.rq(object$models$rqs[[fold]][[paste0("q",100*quantiles[i])]],
+                     newdata=test_cv)
       }
     }
   }
