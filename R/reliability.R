@@ -36,7 +36,7 @@ reliability <- function(qrdata,realisations,kfolds=NULL,subsets=NULL,breaks=4,bo
     if(length(subsets)!=length(realisations)){stop("!is.null(subsets) & nrow(subsets)!=length(realisations)")}
   }
   if(!is.null(kfolds) & !is.null(subsets)){stop("Only one of subsets and kfolds can !=NULL.")}
-  if(breaks<1){stop("breaks must be a positive integer.")}
+  if(length(breaks) ==1 & breaks[1]<1){stop("breaks must be a positive integer.")}
   
   qs <- as.numeric(gsub(colnames(qrdata),pattern = "q",replacement = ""))/100
   
@@ -150,10 +150,10 @@ reliability <- function(qrdata,realisations,kfolds=NULL,subsets=NULL,breaks=4,bo
           if(!is.null(bootstrap)){
             polygon(x = c(tempRel$Nominal,rev(tempRel$Nominal)),
                     y=c(tempRel$upper,rev(tempRel$lower)),
-                    col = rainbow(breaks+1,alpha = 0.3)[i-1],border = NA)
+                    col = rainbow(length(unique(subsets)),alpha = 0.3)[(which(unique(subsets)==i))],border = NA)
           }
           
-          lines(tempRel$Nominal,tempRel$Empirical,type="b",col=rainbow(breaks+1)[i-1],pch=16)
+          lines(tempRel$Nominal,tempRel$Empirical,type="b",col=rainbow(length(unique(subsets)))[(which(unique(subsets)==i))],pch=16)
         }
         
         Rel <- rbind(Rel,tempRel)
@@ -199,10 +199,10 @@ reliability <- function(qrdata,realisations,kfolds=NULL,subsets=NULL,breaks=4,bo
           if(!is.null(bootstrap)){
             polygon(x = c(tempRel$Nominal,rev(tempRel$Nominal)),
                     y=c(tempRel$upper,rev(tempRel$lower)),
-                    col = rainbow(breaks+1,alpha = 0.3)[i-1],border = NA)
+                    col = rainbow(length(break_qs)-1,alpha = 0.3)[i-1],border = NA)
           }
           
-          lines(tempRel$Nominal,tempRel$Empirical,type="b",col=rainbow(breaks+1)[i-1],pch=16)
+          lines(tempRel$Nominal,tempRel$Empirical,type="b",col=rainbow(length(break_qs)-1)[i-1],pch=16)
         }
         
         Rel <- rbind(Rel,tempRel)
@@ -213,18 +213,31 @@ reliability <- function(qrdata,realisations,kfolds=NULL,subsets=NULL,breaks=4,bo
   
   if(plot.it){
     grid()
+    
+    lvls <- na.omit(unique(Rel$subset))
+    
+    
     if(!is.null(subsets)){
-      if(breaks==1){
-        legend("topleft",c("Ideal",paste0("<=",break_qs[2]),paste0(">",break_qs[2])),
-               lty=c(2,rep(1,breaks+1)),
-               col=c(1,rainbow(breaks+1)),
-               pch=c(NA,rep(16,breaks+1)),bty = "n")
-      }else{
-        legend("topleft",c("Ideal",paste0(c("<=",paste0(signif(break_qs[2:breaks],digits=2)," to "),">"),
-                                          signif(break_qs[c(2:(breaks+1),breaks+1)],digits=2))),
-               lty=c(2,rep(1,breaks+1)),
-               col=c(1,rainbow(breaks+1)),
-               pch=c(NA,rep(16,breaks+1)),bty = "n")
+      if(is.factor(subsets) | is.character(subsets)){
+        
+        legend("topleft",lvls,
+               lty=c(rep(1,length(lvls))),
+               col=c(rainbow(length(lvls))),
+               pch=c(rep(16,length(lvls))),bty = "n",cex=.7,ncol = 2)
+        
+      } else{
+        if(length(breaks)==1 & breaks[1]==1){
+          legend("topleft",c(paste0("<=",break_qs[2]),paste0(">",break_qs[2])),
+                 lty=c(rep(1,breaks+1)),
+                 col=c(rainbow(breaks+1)),
+                 pch=c(rep(16,breaks+1)),bty = "n")
+        }else{
+          legend("topleft",c(paste0(c("<=",paste0(signif(break_qs[2:(length(break_qs)-2)],digits=2)," to "),">"),
+                                    signif(break_qs[c(2:((length(break_qs)-2)+1),(length(break_qs)-2)+1)],digits=2))),
+                 lty=c(rep(1,length(break_qs)-1)),
+                 col=c(rainbow(length(break_qs)-1)),
+                 pch=c(rep(16,length(break_qs)-1)),bty = "n")
+        }
       }
     }else{
       

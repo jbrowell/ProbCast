@@ -37,7 +37,7 @@ pinball <- function(qrdata,realisations,kfolds=NULL,plot.it=T,subsets=NULL,break
     if(length(subsets)!=length(realisations)){stop("!is.null(subsets) & nrow(subsets)!=length(realisations)")}
   }
   if(!is.null(kfolds) & !is.null(subsets)){stop("Only one of subsets and kfolds can !=NULL.")}
-  if(breaks<1){stop("breaks must be a positive integer.")}
+  if(length(breaks) ==1 & breaks[1]<1){stop("breaks must be a positive integer.")}
   
   qs <- as.numeric(gsub(colnames(qrdata),pattern = "q",replacement = ""))/100
   
@@ -255,17 +255,17 @@ pinball <- function(qrdata,realisations,kfolds=NULL,plot.it=T,subsets=NULL,break
                pch=c(rep(16,length(lvls))),bty = "n",cex=.7,ncol = 2)
         
       } else{
-        if(breaks==1){
+        if(length(breaks)==1 & breaks[1]==1){
           legend("topleft",c(paste0("<=",break_qs[2]),paste0(">",break_qs[2])),
                  lty=c(rep(1,breaks+1)),
                  col=c(rainbow(breaks+1)),
                  pch=c(rep(16,breaks+1)),bty = "n")
         }else{
-          legend("topleft",c(paste0(c("<=",paste0(signif(break_qs[2:breaks],digits=2)," to "),">"),
-                                    signif(break_qs[c(2:(breaks+1),breaks+1)],digits=2))),
-                 lty=c(rep(1,breaks+1)),
-                 col=c(rainbow(breaks+1)),
-                 pch=c(rep(16,breaks+1)),bty = "n")
+          legend("topleft",c(paste0(c("<=",paste0(signif(break_qs[2:(length(break_qs)-2)],digits=2)," to "),">"),
+                                    signif(break_qs[c(2:((length(break_qs)-2)+1),(length(break_qs)-2)+1)],digits=2))),
+                 lty=c(rep(1,length(break_qs)-1)),
+                 col=c(rainbow(length(break_qs)-1)),
+                 pch=c(rep(16,length(break_qs)-1)),bty = "n")
         }
       }
       
