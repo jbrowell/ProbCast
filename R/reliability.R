@@ -116,45 +116,96 @@ reliability <- function(qrdata,realisations,kfolds=NULL,subsets=NULL,breaks=4,bo
   ## Subsets
   if(!is.null(subsets)){
     
-    break_qs <- quantile(subsets,probs = seq(from = 1/(breaks+1),by=1/(breaks+1),length.out=breaks),na.rm = T)
-    break_qs <- c(-Inf,break_qs,Inf)
-    for(i in 2:length(break_qs)){
-      indexs <- which(subsets>break_qs[i-1] & subsets<=break_qs[i])  
+    if(is.factor(subsets) | is.character(subsets)){
       
-      tempRel <- data.frame(Nominal=qs,
-                            Empirical=as.numeric(rep(NA,length(qs))),
-                            subset=i-1,
-                            kfold=NA,
-                            upper=NA,
-                            lower=NA)
-      for(q in qs){
-        tempRel$Empirical[which(qs==q)] <- mean(qrdata[[paste0("q",100*q)]][indexs]>realisations[indexs],na.rm = T)
+      for(i in unique(subsets)){
         
-        if(!is.null(bootstrap)){
-          bs_data <- rep(NA,bootstrap)
-          for(j in 1:bootstrap){
-            data_length <- length(qrdata[[paste0("q",100*q)]][indexs])
-            i_samp <- sample(1:data_length,size = data_length,replace = T)
-            bs_data[j] <- mean(qrdata[[paste0("q",100*q)]][indexs][i_samp]>realisations[indexs][i_samp],na.rm = T)
+        indexs <- which(subsets==i)  
+        
+        tempRel <- data.frame(Nominal=qs,
+                              Empirical=as.numeric(rep(NA,length(qs))),
+                              subset=i,
+                              kfold=NA,
+                              upper=NA,
+                              lower=NA)
+        for(q in qs){
+          tempRel$Empirical[which(qs==q)] <- mean(qrdata[[paste0("q",100*q)]][indexs]>realisations[indexs],na.rm = T)
+          
+          if(!is.null(bootstrap)){
+            bs_data <- rep(NA,bootstrap)
+            for(j in 1:bootstrap){
+              data_length <- length(qrdata[[paste0("q",100*q)]][indexs])
+              i_samp <- sample(1:data_length,size = data_length,replace = T)
+              bs_data[j] <- mean(qrdata[[paste0("q",100*q)]][indexs][i_samp]>realisations[indexs][i_samp],na.rm = T)
+            }
+            tempRel$upper[which(qs==q)] <- quantile(bs_data,probs = 0.975)
+            tempRel$lower[which(qs==q)] <- quantile(bs_data,probs = 0.025)
           }
-          tempRel$upper[which(qs==q)] <- quantile(bs_data,probs = 0.975)
-          tempRel$lower[which(qs==q)] <- quantile(bs_data,probs = 0.025)
+          
         }
         
-      }
-      
-      if(plot.it){
-        
-        if(!is.null(bootstrap)){
-          polygon(x = c(tempRel$Nominal,rev(tempRel$Nominal)),
-                  y=c(tempRel$upper,rev(tempRel$lower)),
-                  col = rainbow(breaks+1,alpha = 0.3)[i-1],border = NA)
+        if(plot.it){
+          
+          if(!is.null(bootstrap)){
+            polygon(x = c(tempRel$Nominal,rev(tempRel$Nominal)),
+                    y=c(tempRel$upper,rev(tempRel$lower)),
+                    col = rainbow(breaks+1,alpha = 0.3)[i-1],border = NA)
+          }
+          
+          lines(tempRel$Nominal,tempRel$Empirical,type="b",col=rainbow(breaks+1)[i-1],pch=16)
         }
         
-        lines(tempRel$Nominal,tempRel$Empirical,type="b",col=rainbow(breaks+1)[i-1],pch=16)
+        Rel <- rbind(Rel,tempRel)
       }
       
-      Rel <- rbind(Rel,tempRel)
+      
+    } else {
+      
+      if(length(breaks)==1){
+        break_qs <- quantile(subsets,probs = seq(from = 1/(breaks+1),by=1/(breaks+1),length.out=breaks),na.rm = T)
+        break_qs <- c(-Inf,break_qs,Inf)
+      }else{
+        break_qs <- c(-Inf,breaks,Inf)
+      }
+      
+      for(i in 2:length(break_qs)){
+        indexs <- which(subsets>break_qs[i-1] & subsets<=break_qs[i])  
+        
+        tempRel <- data.frame(Nominal=qs,
+                              Empirical=as.numeric(rep(NA,length(qs))),
+                              subset=i-1,
+                              kfold=NA,
+                              upper=NA,
+                              lower=NA)
+        for(q in qs){
+          tempRel$Empirical[which(qs==q)] <- mean(qrdata[[paste0("q",100*q)]][indexs]>realisations[indexs],na.rm = T)
+          
+          if(!is.null(bootstrap)){
+            bs_data <- rep(NA,bootstrap)
+            for(j in 1:bootstrap){
+              data_length <- length(qrdata[[paste0("q",100*q)]][indexs])
+              i_samp <- sample(1:data_length,size = data_length,replace = T)
+              bs_data[j] <- mean(qrdata[[paste0("q",100*q)]][indexs][i_samp]>realisations[indexs][i_samp],na.rm = T)
+            }
+            tempRel$upper[which(qs==q)] <- quantile(bs_data,probs = 0.975)
+            tempRel$lower[which(qs==q)] <- quantile(bs_data,probs = 0.025)
+          }
+          
+        }
+        
+        if(plot.it){
+          
+          if(!is.null(bootstrap)){
+            polygon(x = c(tempRel$Nominal,rev(tempRel$Nominal)),
+                    y=c(tempRel$upper,rev(tempRel$lower)),
+                    col = rainbow(breaks+1,alpha = 0.3)[i-1],border = NA)
+          }
+          
+          lines(tempRel$Nominal,tempRel$Empirical,type="b",col=rainbow(breaks+1)[i-1],pch=16)
+        }
+        
+        Rel <- rbind(Rel,tempRel)
+      }
     }
     
   }
