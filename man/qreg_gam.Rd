@@ -9,7 +9,7 @@ qreg_gam(
   formula,
   formula_qr = NULL,
   model_res2 = F,
-  formula_res2 = formula,
+  formula_res2 = NULL,
   quantiles = c(0.25, 0.5, 0.75),
   cv_folds = NULL,
   use_bam = T,
