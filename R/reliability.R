@@ -14,13 +14,14 @@
 #' to rows of \code{qrdata}. Cannot be used with \code{subsets}.
 #' @param subsets Optional vector of covariates to bin data by.
 #' Breaks between bins are the empirical quantiles of
-#' \code{subsets} by default or all unique factors or charater strings.
+#' \code{subsets} by default or all unique factors or charater strings. Custom
+#' breaks may be specifed, see \code{breaks}.
 #' Cannot be used with \code{kfolds}.
 #' @param breaks Either the number of quantiles to use to bin \code{subsets} by (resulting
 #' in \code{breaks+1} bins, defaults to \code{breaks=4}), or, if \code{length(breaks) > 1}, a vector of spcific break
+#' points. Only used if \code{subsets} provided.
 #' points. \code{subsets} must be provided.
-#' @param bootstrap Calculate this number of boostrap samples
-#' to estimate 95\% confdence interval
+#' @param bootstrap Number of boostrap samples used to generate 95\% confidence intervals.
 #' @param plot.it \code{boolean}. Make a plot?
 #' @param ... Additional arguments passed to \code{plot()}.
 #' @details Missing values in \code{realisations} are handled by \code{na.rm=T} when
