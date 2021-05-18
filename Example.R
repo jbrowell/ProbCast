@@ -96,7 +96,8 @@ lines(test1$data$TARGETVAR[which(test1$data$ISSUEdtm==i_ts)],lwd=3)
 
 reliability(qrdata = test1$gbm_mqr,
             realisations = test1$data$TARGETVAR,
-            kfolds = test1$data$kfold)
+            subsets = test1$data$WS100,
+            breaks = c(4,10),bootstrap = 100)
 
 pinball(qrdata = test1$gbm_mqr,
          realisations = test1$data$TARGETVAR,

@@ -26,13 +26,16 @@ to rows of \code{qrdata}. Cannot be used with \code{subsets}.}
 
 \item{subsets}{Optional vector of covariates to bin data by.
 Breaks between bins are the empirical quantiles of
-\code{subsets}. Cannot be used with \code{kfolds}.}
+\code{subsets} by default or all unique factors or charater strings. Custom
+breaks may be specifed, see \code{breaks}.
+Cannot be used with \code{kfolds}.}
 
-\item{breaks}{Number of quantiles to divide subsets by, results
-in \code{breaks+1} bins.}
+\item{breaks}{Either the number of quantiles to use to bin \code{subsets} by (resulting
+in \code{breaks+1} bins, defaults to \code{breaks=4}), or, if \code{length(breaks) > 1}, a vector of spcific break
+points. Only used if \code{subsets} provided.
+points. \code{subsets} must be provided.}
 
-\item{bootstrap}{Calculate this number of boostrap samples
-to estimate 95\% confdence interval}
+\item{bootstrap}{Number of boostrap samples used to generate 95\% confidence intervals.}
 
 \item{plot.it}{\code{boolean}. Make a plot?}
 

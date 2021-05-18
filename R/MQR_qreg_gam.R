@@ -54,7 +54,7 @@ qreg_gam <- function(data,
                      formula,
                      formula_qr=NULL,
                      model_res2=F,
-                     formula_res2 = formula,
+                     formula_res2 = NULL,
                      quantiles=c(0.25,0.5,0.75),
                      cv_folds=NULL,
                      use_bam=T,
@@ -70,6 +70,9 @@ qreg_gam <- function(data,
   # Check compatible options:
   if(!is.null(formula_qr) & model_res2){
     stop("Additinal GAM effects for modelling squared residuals only available if quantile regression is based on effects of main GAM, i.e. \"formula_qr=NULL\"")}
+  if(model_res2 & is.null(formula_res2)){
+    formula_res2 <- formula
+  }
   if(!model_res2 & !is.null(formula_res2)){
     stop("formula_res2 not required as model_res2==F")
   }
@@ -100,8 +103,6 @@ qreg_gam <- function(data,
   
   class(FINAL_OUTPUT) <- c("qreg_gam",class(FINAL_OUTPUT))
   
-  formula_res2 <- reformulate(attr(terms(formula_res2),"term.labels"),response = "gam_res2")
-  
   for(fold in FINAL_OUTPUT$model_names){
     
     print(paste0("GAM, kfold=",fold))
@@ -113,7 +114,10 @@ qreg_gam <- function(data,
     FINAL_OUTPUT$models$gams[[fold]] <- gam_fit_method(data=data[FINAL_OUTPUT$kfold_index!=fold & FINAL_OUTPUT$kfold_index!="Test" & FINAL_OUTPUT$exclude_index==0,],
                                                        formula = formula,...)
     # GAM for squared residuals
-    if(model_res2){ 
+    if(model_res2){
+      
+      formula_res2 <- reformulate(attr(terms(formula_res2),"term.labels"),response = "gam_res2")
+      
       temp_gam_res2 <- data.table(gam_res2=(FINAL_OUTPUT$models$gam_pred[FINAL_OUTPUT$kfold_index!=fold & FINAL_OUTPUT$kfold_index!="Test" & FINAL_OUTPUT$exclude_index==0,y] - 
                                               predict(FINAL_OUTPUT$models$gams[[fold]],
                                                       newdata = data[FINAL_OUTPUT$kfold_index!=fold & FINAL_OUTPUT$kfold_index!="Test" & FINAL_OUTPUT$exclude_index==0,]))^2)  

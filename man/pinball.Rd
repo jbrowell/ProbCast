@@ -8,10 +8,10 @@ pinball(
   qrdata,
   realisations,
   kfolds = NULL,
-  plot.it = T,
   subsets = NULL,
   breaks = 4,
   bootstrap = NULL,
+  plot.it = T,
   ...
 )
 }
@@ -24,13 +24,19 @@ pinball(
 \item{kfolds}{Optional vector of fold/test labels corresponding to rows of \code{qrdata}.
 Cannot be used with \code{subsets}.}
 
-\item{plot.it}{\code{boolean}. Make a plot?}
+\item{subsets}{Optional vector of covariates to bin data by.
+Breaks between bins are the empirical quantiles of
+\code{subsets} by default or all unique factors or charater strings. Custom
+breaks may be specifed, see \code{breaks}.
+Cannot be used with \code{kfolds}.}
 
-\item{subsets}{Covariate to subset evaluation metric by corresponding to rows of \code{qrdata}.}
-
-\item{breaks}{number of subsets to form.}
+\item{breaks}{Either the number of quantiles to use to bin \code{subsets} by (resulting
+in \code{breaks+1} bins, defaults to \code{breaks=4}), or, if \code{length(breaks) > 1}, a vector of spcific break
+points. Only used if \code{subsets} provided.}
 
 \item{bootstrap}{Number of boostrap samples used to generate 95\% confidence intervals.}
+
+\item{plot.it}{\code{boolean}. Make a plot?}
 
 \item{...}{Additional arguments passed to \code{plot()}.}
 }
@@ -38,9 +44,10 @@ Cannot be used with \code{subsets}.}
 Quantile Score data and, if \code{plot.it=T}, a plot.
 }
 \description{
-This function calculates the pinball score for each quantile in a \code{MultiQR}
-object. Optionally, results are produced by cross-validation fold or covariate,
-95\% confidence intervals are estimated via bootstrap, and results are plotted.
+This function calculates the pinball score for each quantile in a
+\code{MultiQR} object. Optionally, results are produced by cross-validation fold
+or covariate, 95\% confidence intervals are estimated via bootstrap, and results
+are plotted.
 }
 \details{
 Missing values in \code{realisations} are handled by \code{na.rm=T} when
