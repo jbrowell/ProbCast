@@ -11,7 +11,7 @@
 #' @param cv_folds Control for cross-validation with various options, either:
 #' \itemize{
 #'  \item the column name of the fold index supplied in data. Observations and inputs 
-#'   in the index labelled "Test" will serve as test data and held out in model training.
+#'   in the index labelled "Test" will serve as test data and be held out in model training.
 #'  \item an integer giving the number of cross validation folds to generate. Folds are constructed as block chunks. 
 #'  Default behaviour is 5 folds.
 #'  \item vector of length==nrow(data) containing character or numeric fold labels.
@@ -60,12 +60,7 @@ qreg_lightgbm <- function(data,
                      only_mqr = FALSE,
                      exclude_train = NULL,
                      ...){
-  
-  # to-do
-  ## issue/target/fold indexed mqr object?
-  ### docu. difference between cv_folds from probcast and cv.folds from gbm
-  #### suppress warnings for OOB tree estimates?
-  
+
   
   if(is.null(cv_folds) & only_mqr){
       stop("no cross validation via cv_folds and return only_mqr is TRUE")
@@ -89,7 +84,7 @@ qreg_lightgbm <- function(data,
   response <- as.character(formula)[[2]]
   
   if(!all(features %in% names(data))){
-    stop("some of the predictors in formula do not have an associated column in data")
+    stop("some of the predictors in 'formula' do not have an associated column in 'data'")
   }
   
 
@@ -214,6 +209,7 @@ qreg_lightgbm <- function(data,
 #' @param sort sort quantiles using \code{SortQuantiles()}?
 #' @param sort_limits \code{Limits} argument to be passed to \code{SortQuantiles()}. Constrains quantiles to upper and 
 #' lower limits given by \code{list(U=upperlim,L=lowerlim)}.
+#' @param cores the number of available cores. Defaults to one, i.e. no parallelisation
 #' @param ... additional arguments; not currently used.
 #' @details this function returns predictive quantiles for each row in \code{newdata},
 #' the result is returned as a \code{MultiQR} object 
@@ -226,19 +222,18 @@ predict.qreg_lgbm <- function(object,
                              model_name = NULL,
                              sort = T,
                              sort_limits = NULL,
+                             cores=1,
                              ...) {
   
   
-  require(lightgbm)
+  #require(lightgbm)
   if(class(object)!="qreg_lightgbm"){stop("object of wrong class, expecting \"qreg_lightgbm\"")}
   
   
   if(is.null(model_name)){
     model_name <- object$default_model
-  } else{ if(sum(model_name%in%object$model_names)!=1){
-    
+  } else{if(sum(model_name%in%object$model_names)!=1){
     stop(paste0(model_name," not in names(object)"))
-    
   }
   }
   
@@ -255,6 +250,18 @@ predict.qreg_lgbm <- function(object,
     stop("specified quantiles not in model")
   }
     
+  ## predict for each quantile in parallel
+  
+  cl <- parallel::makeCluster(cores)
+  doSNOW::registerDoSNOW(cl)
+  gc()
+  
+  qpred <- foreach::foreach(q = quantiles,.packages ="lightgbm") %dopar% {
+    predict(object=object$models[[model_name]][[q]], data=newdata)
+  }
+  
+  close(pb)
+  parallel::stopCluster(cl)
   
   
   pred <- data.frame(sapply(quantiles,function(q){
