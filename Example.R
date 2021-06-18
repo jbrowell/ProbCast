@@ -54,35 +54,18 @@ test1$gbm_mqr <- qreg_gbm(data = test1$data,
 
 test1$lightgbm_mqr <- qreg_lightgbm(data=test1$data,
                                     formula = TARGETVAR~U100+V100+U10+V10+WS100,
-                                    cv_folds = "kfold",
-                                    max_depth = 6,
-                                    num_leaves = 63,
                                     quantiles = seq(0.05,0.95,by=0.05),
+                                    cv_folds = "kfold",
+                                    num_iterations = 100,
+                                    cores=detectCores(),
                                     sort = T,
                                     sort_limits = list(U=1,L=0),
-                                    cores=detectCores(),
-                                    only_mqr = TRUE)
+                                    save_models_path = NULL,
+                                    keep_models=FALSE,
+                                    only_mqr = TRUE,
+                                    max_depth = 6,
+                                    num_leaves = 63)
 
-# data=test1$data
-# formula = TARGETVAR~U100+V100+U10+V10+WS100
-# cv_folds = "kfold"
-# max_depth = 6
-# num_leaves = 63
-# quantiles = seq(0.05,0.95,by=0.05)
-# sort = T
-# sort_limits = list(U=1,L=0)
-# cores=detectCores()
-# only_mqr = TRUE
-# num_iterations=100
-# save_models_path = NULL
-# exclude_train = NULL
-
-
-## for testing predict.qreg_lgbm function..
-# object = output
-# newdata = as.matrix(data[output$kfold_index==fold,features])
-# quantiles = NULL
-# model_name = fold 
 
 par(mar=c(3,3,0.5,1))  # Trim margin around plot [b,l,t,r]
 par(tcl=0.35)  # Switch tick marks to insides of axes

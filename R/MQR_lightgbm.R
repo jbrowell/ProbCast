@@ -22,8 +22,8 @@
 #' @param sort Sort quantiles using \code{SortQuantiles()}?
 #' @param sort_limits \code{Limits} argument to be passed to \code{SortQuantiles()}. Constrains quantiles to upper and 
 #' lower limits given by \code{list(U=upperlim,L=lowerlim)}.
-#' @param save_models_path Path to save models. Model details and file extension pasted onto this string. 
-#' Defaults to \code{NULL}, i.e. no model save.
+#' @param save_models_path Path to save models. A new folder is created in this directory containing models from this string. 
+#' @param keep_models if \code{TRUE}, saved models are retained after predictions have been made. If \code{FALSE}, folder with models in at save_models_path is then deleted.
 #' @param only_mqr return only the out-of-sample predictions? 
 #' @param exclude_train control for exclusion of rows in data for the model training only, with various options, either:
 #' \itemize{
@@ -56,7 +56,8 @@ qreg_lightgbm <- function(data,
                      cores = 1,
                      sort = TRUE,
                      sort_limits = NULL,
-                     save_models_path = NULL,
+                     save_models_path,
+                     keep_models=FALSE,
                      only_mqr = FALSE,
                      exclude_train = NULL,
                      ...){
@@ -65,7 +66,6 @@ qreg_lightgbm <- function(data,
   if(is.null(cv_folds) & only_mqr){
       stop("no cross validation via cv_folds and return only_mqr is TRUE")
   }
-  
   
   output <- list()
   output$call <- match.call()
@@ -87,6 +87,18 @@ qreg_lightgbm <- function(data,
     stop("some of the predictors in 'formula' do not have an associated column in 'data'")
   }
   
+  if(is.null(save_models_path)){
+    ## create a folder to save models into (otherwise lots of files clog up existing folder)
+    filepath <- dirname(rstudioapi::getActiveDocumentContext()$path)
+    folder_path <- paste0(filepath, "/temp_lgb_models")
+  }else{
+    folder_path <- paste0(save_models_path, "/temp_lgb_models")
+  }
+  
+  ## create uniquely named new folder to save all models into
+  save_models_path_final <- kutils::dir.create.unique(folder_path, usedate=FALSE)
+  output$model_path <- save_models_path_final
+  
 
   # set up parallel workers, defaults to one worker....
   cl <- parallel::makeCluster(cores)
@@ -107,17 +119,13 @@ qreg_lightgbm <- function(data,
       train_data <- data[output$kfold_index!=fold & output$kfold_index!="Test" & output$exclude_index==0 & !is.na(data[[formula[[2]]]]),]
       X <- as.matrix(train_data[, features])
       dataset <- lgb.Dataset(data=X, label=train_data[,response])
-      #lgb_params <- list(..., num_iterations=num_iterations, objective="quantile")
-      lgb_params <- list(objective="quantile", num_iterations=num_iterations)
-      
+      lgb_params <- list(objective="quantile", num_iterations=num_iterations, ...)
       lgb_model = lgb.train(params=lgb_params, data=dataset, alpha=q, num_threads=1)
       
-      if(!is.null(save_models_path)){
-        try(save(lgb_model,file = paste0(save_models_path,"_q",100*q,"_",fold,".rda")))
-      }
-      
+      model_file = paste0(save_models_path_final,fold,"_q",q*100,".txt")
+      lgb.save(lgb_model, model_file)
       temp_lgbm[[fold]] <- lgb_model
-      
+    
       }
       #if('try-error' %in% class(lgb_model)){
       #  return(paste0("problem fitting model to node ",q))
@@ -175,6 +183,11 @@ qreg_lightgbm <- function(data,
     # if no cv delete output$kfold_index...
     output$kfold_index <- NULL
   }
+  
+  ## delete folder of saved models? 
+  if(keep_models==FALSE){
+    unlink(folder_path, recursive=TRUE)
+  }
  
   
   if(only_mqr){
@@ -216,7 +229,7 @@ qreg_lightgbm <- function(data,
 #' @return Quantile forecasts in a \code{MultiQR} object.
 #' @keywords Quantile Regression
 #' @export
-predict.qreg_lgbm <- function(object,
+predict.qreg_lightgbm <- function(object,
                              newdata = NULL,
                              quantiles = NULL,
                              model_name = NULL,
@@ -249,31 +262,18 @@ predict.qreg_lgbm <- function(object,
   if(sum(quantiles%in%names(object$models[[model_name]]))!=length(quantiles)){
     stop("specified quantiles not in model")
   }
+  
+  model_path <- output$model_path
     
-  ## predict for each quantile in parallel
-  
-  cl <- parallel::makeCluster(cores)
-  doSNOW::registerDoSNOW(cl)
-  gc()
-  
-  qpred <- foreach::foreach(q = quantiles,.packages ="lightgbm") %dopar% {
-    predict(object=object$models[[model_name]][[q]], data=newdata)
-  }
-  
-  close(pb)
-  parallel::stopCluster(cl)
-  
-  
+  ## predict for each quantile
   pred <- data.frame(sapply(quantiles,function(q){
     
     ### Save out-of-sample predictions
-    test <- lightgbm::predict.lgb.Booster(object$models[[model_name]][[q]],
-                                          data = newdata)
-    test <- predict(object$models[[model_name]][[q]],
-                                          data = newdata)
- 
-    
+    load_booster <- lightgbm::lgb.load(filename = paste0(model_path, model_name,"_", q,".txt"))
+    lightgbm:::predict.lgb.Booster(load_booster, newdata)
+      
   }))
+  
   
   class(pred) <- c("MultiQR","data.frame")
   
@@ -284,9 +284,7 @@ predict.qreg_lgbm <- function(object,
   
   
   return(pred)
-  
-  
-  
+
 }
 
 
