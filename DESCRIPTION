@@ -15,7 +15,9 @@ Depends: R (>= 3.5.0),
 	evgam (>= 0.1.2),
 	mgcv (>= 1.8),
 	quantreg (>= 5.0)
-Imports: gbm (>= 2.1.0)
+Imports: gbm (>= 2.1.0),
+	lightgbm (>= 3.2.1),
+	kutils (>= 1.70)
 License: file LICENSE
 Encoding: UTF-8
 LazyData: true
