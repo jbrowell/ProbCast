@@ -124,13 +124,13 @@ contCDF <- function(quantiles,kfold=NULL,inverse=F,
       tails$ntailpoints <- 5
     }
     
-
+    
     # function only tested for inputs between zero and 1 at the moment, outwith that need to modify to capture minimum bound of tail
     paraf_l <- function(lower_q,y,min_p){
       if(lower_q<min_p){lower_q <- min_p}
       y*lower_q*exp(y^(-1/(1-lower_q))*log(min_p/lower_q))
     }
-
+    
     # samplebetween 0-1 to get tail shape
     Lquants <- seq(0,1,length.out = tails$ntailpoints)
     # remove 0&1
@@ -139,16 +139,16 @@ contCDF <- function(quantiles,kfold=NULL,inverse=F,
     LnomP <- c(0,paraf_l(min(quantiles),Lquants,min(Probs)))
     # normalize shape between available quantile space
     Lquants <- c(0,Lquants*min(quantiles))
-
+    
     paraf_r <- function(upper_q,y,max_p){
       if(upper_q>max_p){upper_q <- max_p}
       1-y*(1-upper_q)*exp(y^(-1/upper_q)*log((1-max_p)/(1-upper_q)))
     }
-
+    
     # same for Upp. tail
     Rquants <- seq(0,1,length.out = tails$ntailpoints)
     Rquants <- Rquants[2:(length(Rquants)-1)]
-
+    
     RnomP <- c(rev(paraf_r(max(quantiles),Rquants,max(Probs))),1)
     Rquants <- c(rev(((1-Rquants)*(1-max(quantiles)))+max(quantiles)),1)
     
@@ -180,7 +180,7 @@ contCDF <- function(quantiles,kfold=NULL,inverse=F,
     LnomP <- rev(1-pgpd(q=Lquants,location=0,shape = tails$shape_l,scale=tails$scale_l))
     LnomP[1] <- 0
     LnomP <- LnomP*Probs[1]
-    Lquants <- Lquants-max(Lquants)+quantiles[1]
+    Lquants <- quantiles[1]-rev(Lquants)
     
     # plot(c(Lquants,Rquants),c(LnomP,RnomP))
     # points(c(quantiles),c(Probs),col="red")
@@ -210,15 +210,43 @@ contCDF <- function(quantiles,kfold=NULL,inverse=F,
   }else if(method$name=="spline"){
     
     if(!inverse){
-      return(splinefun(x=c(Lquants,quantiles,Rquants),y=c(LnomP,Probs,RnomP),
-                       method=method$splinemethod,...))
+      return(function(x){
+        main_f <- splinefun(x=c(Lquants,quantiles,Rquants),y=c(LnomP,Probs,RnomP),
+                            method=method$splinemethod,...)
+        out <- main_f(x)
+        out[x<min(Lquants)] <- 0
+        out[x>max(Rquants)] <- 1
+        return(out)
+      })
     }else{
-      return(splinefun(x=c(LnomP,Probs,RnomP),y=c(Lquants,quantiles,Rquants),
-                       method=method$splinemethod,...))
+      return(function(x){
+        if(any(x<0) | any(x>1)){warning("Probabilities not in range [0,1]")}
+        main_f <- splinefun(x=c(LnomP,Probs,RnomP),y=c(Lquants,quantiles,Rquants),
+                            method=method$splinemethod,...)
+        out <- main_f(x)
+        out[x<0] <- Lquants[1]
+        out[x>1] <- tail(Rquants,1)
+        return(out)
+      })
     }
     
   }else{stop("Interpolation method not recognised.")}
 }
 
 
+## Test
+# QQ <- data.table(q5=1,q50=2,q95=3)
+# class(QQ) <- c("MultiQR",class(QQ))
+# cdf_func <- contCDF(quantiles = QQ,inverse = F,#method="linear",
+#                     tails =list(method="gpd",
+#                                 scale_r=0.1,shape_r=0,
+#                                 scale_l=0.1,shape_l=0,
+#                                 tail_qs=c(0.01,0.1,0.5)))
+# 
+# xx <- seq(0,4,by=0.01)
+# plot(xx,cdf_func(xx),type="l")
+
+## For inverse...
+# xx <- seq(-.1,1.1,by=0.01)
+# plot(cdf_func(xx),xx,type="l")
 
