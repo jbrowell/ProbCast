@@ -81,7 +81,7 @@ tails_ev <- function(data,
   
   ### Get target variable name from formula and prep formulas for evgam
   target <- paste0(formula[[1]][[2]])
-  if(length(attr(terms(a~1), which = "term.labels"))==0){
+  if(length(attr(terms(formula[[1]]), which = "term.labels"))==0){
     formula[[1]] <- tail_l_resid~1
     formula_r[[1]] <- tail_r_resid~1
   }else{
