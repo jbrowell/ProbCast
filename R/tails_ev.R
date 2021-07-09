@@ -81,9 +81,13 @@ tails_ev <- function(data,
   
   ### Get target variable name from formula and prep formulas for evgam
   target <- paste0(formula[[1]][[2]])
-  formula[[1]] <- reformulate(paste(attr(terms(formula[[1]]), which = "term.labels"),collapse = "+"),response="tail_l_resid")
-  formula_r[[1]] <- reformulate(paste(attr(terms(formula_r[[1]]), which = "term.labels"),collapse = "+"),response="tail_r_resid")
-  
+  if(length(attr(terms(a~1), which = "term.labels"))==0){
+    formula[[1]] <- tail_l_resid~1
+    formula_r[[1]] <- tail_r_resid~1
+  }else{
+    formula[[1]] <- reformulate(paste(attr(terms(formula[[1]]), which = "term.labels"),collapse = "+"),response="tail_l_resid")
+    formula_r[[1]] <- reformulate(paste(attr(terms(formula_r[[1]]), which = "term.labels"),collapse = "+"),response="tail_r_resid")
+  }
   
   ### Get "tail residuals"
   data$tail_l_resid <- -(data[,get(target)] - mqr_data[[paste0("q",tail_starts[1])]])
