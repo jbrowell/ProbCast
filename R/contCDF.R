@@ -26,7 +26,9 @@
 #' 
 #' Linear extrapolation: \code{tails=list(method="extrapolate",L,U)} value set to \code{L} and \code{U}
 #' for probability levels 0 and 1, respectively. If \code{method="extrapolate_dtail1"} then
-#' tails are extrapolated to the 50th quantile plus (minus) \code{U} (\code{L}).
+#' tails are extrapolated to the 50th quantile plus (minus) \code{U} (\code{L}). If \code{method="extrapolate_dtail2"} then
+#' tails are extrapolated to the highest quantile in \code{quantiles} plus \code{U} and the lowest quantile in \code{quantiles} 
+#' plus (\code{L}). Note that for both alternative options, \code{U} should be positive and \code{L} should be negative.
 #' 
 #' Exponential tails: \code{tails=list(method="exponential",thicknessPL,thicknessPR,ntailpoints=5)}
 #' the user will either supply user defined thickness parameters for the tail
