@@ -68,6 +68,11 @@ contCDF <- function(quantiles,kfold=NULL,inverse=F,
     Lquants <- quantiles[which(Probs==0.5)] + tails$L
     RnomP <- 1
     Rquants <- quantiles[which(Probs==0.5)] + tails$U
+  }else if(tails$method=="interpolate_dtail2" | tails$method=="extrapolate_dtail2"){
+    LnomP <- 0
+    Lquants <- quantiles[which(Probs==min(Probs))] + tails$L
+    RnomP <- 1
+    Rquants <- quantiles[which(Probs==max(Probs))] + tails$U
   }else if(tails$method=="exponential"){
     
     if(!is.null(tails$thicknessPL) & !is.null(tails$thicknessPR)){
