@@ -97,7 +97,7 @@ tails_ev <- function(data,
   output$models <- list()
   ### Fit model using CV
   for(fold in unique(data$kfold)){# Loop over CV folds and test data
-    outputs$models[[fold]] <- list()
+    output$models[[fold]] <- list()
     fit_l <- evgam(formula,
                    data = data[tail_l_resid>0 & BadData==F & !(kfold%in%c(fold,"Test")),],
                    family = evgam_family)
@@ -106,8 +106,8 @@ tails_ev <- function(data,
                    data = data[tail_r_resid>0 & BadData==F & !(kfold%in%c(fold,"Test")),],
                    family = evgam_family)
     
-    outputs$models[[fold]][["fit_l"]] <- fit_l
-    outputs$models[[fold]][["fit_r"]] <- fit_r
+    output$models[[fold]][["fit_l"]] <- fit_l
+    output$models[[fold]][["fit_r"]] <- fit_r
     
     if(print_summary){
       print(summary(fit_l))
