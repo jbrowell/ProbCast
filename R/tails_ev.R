@@ -24,8 +24,8 @@
 #' cross-validation fold (using models trained on the remaining folds but not "Test" data).
 #' Predictive quantiles corresponding to "Test" data are produced using models trained on all
 #' non-test data.
-#' @return Returns \code{data} with additional columns containing the predicted
-#' parameters of the specified tail distirbution
+#' @return Returns a list containing a list of tail models, and \code{data} with
+#' additional columns containing the predicted parameters of the specified tail distribution
 #' @keywords Extreme Value Distribution; Tails
 #' @import evgam
 #' @import data.table
@@ -40,6 +40,7 @@ tails_ev <- function(data,
                      evgam_family = "gpd",
                      print_summary=F){
   
+  output <- list()
   
   ## Input Checks
   if(evgam_family!="gpd"){warning("Only tested for evgam_family = \"gpd\"...")}
@@ -93,10 +94,10 @@ tails_ev <- function(data,
   data$tail_l_resid <- -(data[,get(target)] - mqr_data[[paste0("q",tail_starts[1])]])
   data$tail_r_resid <- data[,get(target)] - mqr_data[[paste0("q",tail_starts[2])]]
   
-  
+  output$models <- list()
   ### Fit model using CV
   for(fold in unique(data$kfold)){# Loop over CV folds and test data
-    
+    outputs$models[[fold]] <- list()
     fit_l <- evgam(formula,
                    data = data[tail_l_resid>0 & BadData==F & !(kfold%in%c(fold,"Test")),],
                    family = evgam_family)
@@ -104,6 +105,9 @@ tails_ev <- function(data,
     fit_r <- evgam(formula_r,
                    data = data[tail_r_resid>0 & BadData==F & !(kfold%in%c(fold,"Test")),],
                    family = evgam_family)
+    
+    outputs$models[[fold]][["fit_l"]] <- fit_l
+    outputs$models[[fold]][["fit_r"]] <- fit_r
     
     if(print_summary){
       print(summary(fit_l))
@@ -123,7 +127,9 @@ tails_ev <- function(data,
     
   }
   
-  return(data)
+  output$data <- data
+  
+  return(output)
   
   
 }
