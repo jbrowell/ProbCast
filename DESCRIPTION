@@ -14,7 +14,8 @@ Depends: R (>= 3.5.0),
 	fst (>= 0.9.4),
 	evgam (>= 0.1.2),
 	mgcv (>= 1.8),
-	quantreg (>= 5.0)
+	quantreg (>= 5.0),
+	dplyr
 Imports: gbm (>= 2.1.0)
 License: file LICENSE
 Encoding: UTF-8

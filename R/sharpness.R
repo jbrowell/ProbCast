@@ -56,7 +56,7 @@ sharpness <- function(qrdata,kfolds=NULL,bootstrap=NULL,...){
     
     
     } else{
-      SRP$Width[which(int==(1-q*2))] <- mean((qrdata[[paste0("q",100*(1-q))]]-qrdata[[paste0("q",100*q)]]),
+      SRP$Width[which(dplyr::near(int, (1-q*2)))] <- mean((qrdata[[paste0("q",100*(1-q))]]-qrdata[[paste0("q",100*q)]]),
                                              na.rm = T)
     
     
