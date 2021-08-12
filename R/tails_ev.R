@@ -19,13 +19,14 @@
 #' which should be excluded from parameter estimation.
 #' @param evgam_family specifies distribution, see \code{?evgam}.
 #' @param print_summary If \code{TRUE}, summary is printed for each evgam fit.
+#' @param return_models If \code{TRUE}, the function returns a list including both the data and the fitted data models.
 #' 
 #' @details The returned predictive quantiles are those produced out-of-sample for each
 #' cross-validation fold (using models trained on the remaining folds but not "Test" data).
 #' Predictive quantiles corresponding to "Test" data are produced using models trained on all
 #' non-test data.
-#' @return Returns a list containing a list of tail models, and \code{data} with
-#' additional columns containing the predicted parameters of the specified tail distribution.
+#' @return If `return_models` is \code{TRUE}, then returns a list containing a list of tail models, and \code{data} with
+#' additional columns containing the predicted parameters of the specified tail distribution. Otherwise, just returns \code{data}.
 #' @keywords Extreme Value Distribution; Tails
 #' @import evgam
 #' @import data.table
@@ -38,7 +39,8 @@ tails_ev <- function(data,
                      CVfolds=NULL,
                      BadData_col=NULL,
                      evgam_family = "gpd",
-                     print_summary=F){
+                     print_summary=F,
+                     return_models=F){
   
   output <- list()
   
@@ -129,7 +131,12 @@ tails_ev <- function(data,
   
   output$data <- data
   
-  return(output)
+  if(return_models){
+    return(output)
+  }
+  else{
+    return(data)
+  }
   
   
 }
