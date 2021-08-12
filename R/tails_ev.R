@@ -19,13 +19,14 @@
 #' which should be excluded from parameter estimation.
 #' @param evgam_family specifies distribution, see \code{?evgam}.
 #' @param print_summary If \code{TRUE}, summary is printed for each evgam fit.
+#' @param return_models If \code{TRUE}, the function returns a list including both the data and the fitted data models.
 #' 
 #' @details The returned predictive quantiles are those produced out-of-sample for each
 #' cross-validation fold (using models trained on the remaining folds but not "Test" data).
 #' Predictive quantiles corresponding to "Test" data are produced using models trained on all
 #' non-test data.
-#' @return Returns \code{data} with additional columns containing the predicted
-#' parameters of the specified tail distirbution
+#' @return If `return_models` is \code{TRUE}, then returns a list containing a list of tail models, and \code{data} with
+#' additional columns containing the predicted parameters of the specified tail distribution. Otherwise, just returns \code{data}.
 #' @keywords Extreme Value Distribution; Tails
 #' @import evgam
 #' @import data.table
@@ -38,8 +39,10 @@ tails_ev <- function(data,
                      CVfolds=NULL,
                      BadData_col=NULL,
                      evgam_family = "gpd",
-                     print_summary=F){
+                     print_summary=F,
+                     return_models=F){
   
+  output <- list()
   
   ## Input Checks
   if(evgam_family!="gpd"){warning("Only tested for evgam_family = \"gpd\"...")}
@@ -93,10 +96,10 @@ tails_ev <- function(data,
   data$tail_l_resid <- -(data[,get(target)] - mqr_data[[paste0("q",tail_starts[1])]])
   data$tail_r_resid <- data[,get(target)] - mqr_data[[paste0("q",tail_starts[2])]]
   
-  
+  output$models <- list()
   ### Fit model using CV
   for(fold in unique(data$kfold)){# Loop over CV folds and test data
-    
+    output$models[[fold]] <- list()
     fit_l <- evgam(formula,
                    data = data[tail_l_resid>0 & BadData==F & !(kfold%in%c(fold,"Test")),],
                    family = evgam_family)
@@ -104,6 +107,9 @@ tails_ev <- function(data,
     fit_r <- evgam(formula_r,
                    data = data[tail_r_resid>0 & BadData==F & !(kfold%in%c(fold,"Test")),],
                    family = evgam_family)
+    
+    output$models[[fold]][["fit_l"]] <- fit_l
+    output$models[[fold]][["fit_r"]] <- fit_r
     
     if(print_summary){
       print(summary(fit_l))
@@ -123,7 +129,14 @@ tails_ev <- function(data,
     
   }
   
-  return(data)
+  output$data <- data
+  
+  if(return_models){
+    return(output)
+  }
+  else{
+    return(data)
+  }
   
   
 }
