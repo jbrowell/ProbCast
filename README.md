@@ -30,4 +30,13 @@ Contributors should follow the following guidelines:
 - Include helpful comments throughout code
 - Add yourself as @author to functions that you have "ownership" of
 - Invite others to review pull requests (check for documentation, back compatability, confilcts...)
- 
+
+## Acknowledgements
+
+Development of ProbCast has been supported by the following grants and organisations:
+- EPSRC Innovation Fellowship "System-winde probabilistic energy forecasting" (EP/R023484/1, 2018-2021)
+- EPSRC Wind and Marine Energy Systems CDT (EP/L016680/1)
+- Network Innovation Allowance project "Control REACT" (NIA_NGSO0032)
+- University of Strathclyde
+- University of Glasgow
+- TNEI Services Ltd
