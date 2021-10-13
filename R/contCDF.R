@@ -53,7 +53,8 @@
 #' @export
 contCDF <- function(quantiles,kfold=NULL,inverse=F,
                     method=list(name="spline",splinemethod="monoH.FC"),
-                    tails=list(method="extrapolate",L=0,U=1),...){
+                    tails=list(method="extrapolate",L=0,U=1),
+                    force_inverse=F, ...){
   
   ### Quantiles
   if(nrow(quantiles)!=1){stop("quantiles must be a single-row MultiQR object.")}
