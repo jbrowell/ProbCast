@@ -228,11 +228,24 @@ contCDF <- function(quantiles,kfold=NULL,inverse=F,
     }else{
       return(function(x){
         if(any(x<0) | any(x>1)){warning("Probabilities not in range [0,1]")}
-        main_f <- splinefun(x=c(LnomP,Probs,RnomP),y=c(Lquants,quantiles,Rquants),
+        
+        # New spline - might not match non-inverse!
+        # main_f <- splinefun(x=c(LnomP,Probs,RnomP),y=c(Lquants,quantiles,Rquants),
+        #                     method=method$splinemethod,...)
+        # out <- main_f(x)
+        # out[x<0] <- Lquants[1]
+        # out[x>1] <- tail(Rquants,1)
+        
+        temp_f <- splinefun(x=c(Lquants,quantiles,Rquants),y=c(LnomP,Probs,RnomP),
                             method=method$splinemethod,...)
+        
+        temp_q = seq(Lquants[1], tail(Rquants,1),length.out=1e4)
+        temp_p <- temp_f(temp_q)
+        
+        main_f <- approxfun(x=temp_p,y=temp_q,rule = 2)
+        
         out <- main_f(x)
-        out[x<0] <- Lquants[1]
-        out[x>1] <- tail(Rquants,1)
+        
         return(out)
       })
     }
