@@ -10,7 +10,6 @@
 #' @param kfolds Fold/test label corresponding to \code{quantiles}.
 #' @param method Method of interpolation. See details.
 #' @param tails Definition of tails. See details.
-#' @param force_inverse Force spline interpolated inverse CDF to be consistent with the CDF.
 #' @param ... extra arguments to \code{approxfun} or \code{splinefun}.
 #' @details Interpolation between quantiles may be linear of via smooth splines:
 #' 
@@ -53,8 +52,7 @@
 #' @export
 contCDF <- function(quantiles,kfold=NULL,inverse=F,
                     method=list(name="spline",splinemethod="monoH.FC"),
-                    tails=list(method="extrapolate",L=0,U=1),
-                    force_inverse=F, ...){
+                    tails=list(method="extrapolate",L=0,U=1),...){
   
   ### Quantiles
   if(nrow(quantiles)!=1){stop("quantiles must be a single-row MultiQR object.")}
@@ -230,17 +228,8 @@ contCDF <- function(quantiles,kfold=NULL,inverse=F,
     }else{
       return(function(x){
         if(any(x<0) | any(x>1)){warning("Probabilities not in range [0,1]")}
-        if(!force_inverse){
-          main_f <- splinefun(x=c(LnomP,Probs,RnomP),y=c(Lquants,quantiles,Rquants),
-                              method=method$splinemethod,...)
-        }
-        else{
-          cdf_spline <- spline(x=c(Lquants,quantiles,Rquants),
-                               y=c(LnomP,Probs,RnomP),
-                               method=method$splinemethod,...)
-          main_f <- splinefun(x = cdf_spline$y, y = cdf_spline$x,
-                              method=method$splinemethod,...)
-        }
+        main_f <- splinefun(x=c(LnomP,Probs,RnomP),y=c(Lquants,quantiles,Rquants),
+                            method=method$splinemethod,...)
         out <- main_f(x)
         out[x<0] <- Lquants[1]
         out[x>1] <- tail(Rquants,1)
