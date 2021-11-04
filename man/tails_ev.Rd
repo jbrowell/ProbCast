@@ -13,7 +13,8 @@ tails_ev(
   CVfolds = NULL,
   BadData_col = NULL,
   evgam_family = "gpd",
-  print_summary = F
+  print_summary = F,
+  return_models = F
 )
 }
 \arguments{
@@ -36,14 +37,16 @@ which should be excluded from parameter estimation.}
 
 \item{print_summary}{If \code{TRUE}, summary is printed for each evgam fit.}
 
+\item{return_models}{If \code{TRUE}, the function returns a list including both the data and the fitted data models.}
+
 \item{formala}{A \code{formula} object with the response on the left
 of an ~ operator, and the terms, separated by + operators, on the right. This formula is
 used for both upper and lower tails unless \code{formula_r} is specified in which case
 \code{formula} is used for the lower tail only.}
 }
 \value{
-Returns \code{data} with additional columns containing the predicted
-parameters of the specified tail distirbution
+If `return_models` is \code{TRUE}, then returns a list containing a list of tail models, and \code{data} with
+additional columns containing the predicted parameters of the specified tail distribution. Otherwise, just returns \code{data}.
 }
 \description{
 This function fits semi-parametric models for extreme value distributions
