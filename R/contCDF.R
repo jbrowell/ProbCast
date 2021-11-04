@@ -240,7 +240,7 @@ contCDF <- function(quantiles,kfold=NULL,inverse=F,
                             method=method$splinemethod,...)
         
         temp_q = seq(Lquants[1], tail(Rquants,1),length.out=1e4)
-        temp_p <- temp_f(new_y)
+        temp_p <- temp_f(temp_q)
         
         main_f <- approxfun(x=temp_p,y=temp_q,rule = 2)
         
