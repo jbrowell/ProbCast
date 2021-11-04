@@ -57,7 +57,9 @@ the user will either supply user defined thickness parameters for the tail
 via \code{thicknessPL} and \code{thicknessPR}. The number
 of tail quantiles to be estimated is set by \code{ntailpoints}, which defaults to 5.
 Alternatively \code{tails=list(method="exponential",thickparamFunc)} where \code{thickparamFunc}
-is a function that takes the q50 as an input and returns the thickness parameter.
+is a function that takes the q50 as an input and returns the thickness parameter. If \code{method="extrapolate_dtail2"} then
+tails are extrapolated to the highest quantile in \code{quantiles} plus \code{U} and the lowest quantile in \code{quantiles} 
+plus (\code{L}). Note that for both alternative options, \code{U} should be positive and \code{L} should be negative.
 
 Dynamic exponential tails: \code{tails=list(method="dyn_exponential",ntailpoints=5)}, where the tail shape
 is conditional on the values for the upper and lower quantile of \code{qrdata}. This method 

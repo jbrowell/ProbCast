@@ -104,19 +104,28 @@ pinball(qrdata = test1$gbm_mqr[test1$data$kfold=="Test",],
 
 
 
+
+
 index <- 54
 x <- seq(0,1,by=0.001)
 cdf <- contCDF(quantiles = test1$gbm_mqr[index,],method = "spline")
 plot(x,cdf(x),type="l",xlab="Target Variable",ylab="CDF",axes=F); axis(1); axis(2,las=2); #grid()
 cdf <- contCDF(quantiles = test1$gbm_mqr[index,],method = "linear")
 lines(x,cdf(x),lty=2,col=2)
-cdf <- contCDF(quantiles = test1$gbm_mqr[index,],kfold = NA,method = "spline", tails=list(method="exponential",L=0,U=1,nBins=5,preds=test1$gbm_mqr,targetvar=test1$data$TARGETVAR,ntailpoints=25))
-lines(x,cdf(seq(0,1,by=0.001)),lty=3,col=4)
 cdf <- contCDF(quantiles = test1$gbm_mqr[index,],method = "spline", tails=list(method="dyn_exponential",ntailpoints=25))
 lines(x,cdf(x),lty=4,col=5)
 points(test1$gbm_mqr[index,],as.numeric(gsub("q","",colnames(test1$gbm_mqr[index,])))/100)
 legend(0.01,1,c("Predicted Quantiles","Linear","Spline","Spline with Exponential Tails"),
        pch=c(1,NA,NA,NA),lty=c(NA,2,1,3),col=c(1,2,1,4),bty="n")
+
+## Check inverse matches:
+x <- seq(0,1,by=0.001)
+cdf <- contCDF(quantiles = test1$gbm_mqr[index,],method = "spline")
+plot(x,cdf(x),type="l",xlab="Target Variable",ylab="CDF",axes=F); axis(1); axis(2,las=2); #grid()
+inv_cdf <- contCDF(quantiles = test1$gbm_mqr[index,],method = "spline",inverse = T)
+lines(inv_cdf(x),x,lty=2,col=2)
+
+
 
 # test1$X_gbm <- PIT(test1$gbm_mqr,test1$data$TARGETVAR,method = "spline",tails=list(method="exponential",L=0,U=1,nBins=5,preds=test1$gbm_mqr,targetvar=test1$data$TARGETVAR,ntailpoints=25))
 test1$X_gbm <- PIT(test1$gbm_mqr,test1$data$TARGETVAR,method = "spline",tails=list(method="interpolate",L=0,U=1))
