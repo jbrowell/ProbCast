@@ -34,7 +34,7 @@ Contributors should follow the following guidelines:
 ## Acknowledgements
 
 Development of ProbCast has been supported by the following grants and organisations:
-- EPSRC Innovation Fellowship "System-winde probabilistic energy forecasting" ([EP/R023484/1](https://gtr.ukri.org/projects?ref=EP/R023484/1) and [EP/R023484/2](https://gtr.ukri.org/projects?ref=EP/R023484/2), 2018-2022)
+- EPSRC Innovation Fellowship "System-winde probabilistic energy forecasting" ([EP/R023484/1](https://gtr.ukri.org/projects?ref=EP/R023484/1) and [EP/R023484/2](https://gow.epsrc.ukri.org/NGBOViewGrant.aspx?GrantRef=EP/R023484/2), 2018-2022)
 - EPSRC Wind and Marine Energy Systems CDT ([EP/L016680/1](https://gtr.ukri.org/projects?ref=EP/L016680/1))
 - Network Innovation Allowance project "Control REACT" ([NIA_NGSO0032](https://smarter.energynetworks.org/projects/nia_ngso0032))
 - [University of Strathclyde](https://www.strath.ac.uk/)
