@@ -33,6 +33,8 @@ Contributors should follow the following guidelines:
 
 ## Acknowledgements
 
+Thanks to everyone who has contributed: Jethro Browell, Ciaran Gilbert, Gordon McFadzean, Rosemary Tawn.
+
 Development of ProbCast has been supported by the following grants and organisations:
 - EPSRC Innovation Fellowship "System-winde probabilistic energy forecasting" ([EP/R023484/1](https://gtr.ukri.org/projects?ref=EP/R023484/1) and [EP/R023484/2](https://gow.epsrc.ukri.org/NGBOViewGrant.aspx?GrantRef=EP/R023484/2), 2018-2022)
 - EPSRC Wind and Marine Energy Systems CDT ([EP/L016680/1](https://gtr.ukri.org/projects?ref=EP/L016680/1))
