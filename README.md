@@ -42,3 +42,10 @@ Development of ProbCast has been supported by the following grants and organisat
 - [University of Strathclyde](https://www.strath.ac.uk/)
 - [University of Glasgow](https://www.gla.ac.uk)
 - [TNEI Services Ltd](https://www.tneigroup.com/)
+
+## References
+
+ProbCast was introduced in the following paper, and has sinced been used in multiple academic studies and to facilitate training in probabilistic forecasting for researchers and practitioners.
+- J. Browell and C. Gilbert, (2020), "ProbCast: Open-source production, evaluation and visualisation of probabilistic forecasts", DOI: [10.1109/PMAPS47429.2020.9183441](https://doi.org/10.1109/PMAPS47429.2020.9183441)
+- [Citing articles](https://scholar.google.co.uk/scholar?oi=bibs&hl=en&cites=13378708372874427516)
+- [Archived versions on Zenodo](https://doi.org/10.5281/zenodo.3843332)
