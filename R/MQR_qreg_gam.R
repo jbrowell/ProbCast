@@ -37,7 +37,7 @@
 #' See \code{bam()} documentation for further details.
 #' @param exclude_train A column name in \code{data} indicating if a row should be excluded from model
 #' training, i.e. if it contains bad data (will be coerced to \code{logical}). Alterntively,
-#' an \code{integer} or \cpde{logical} vector with length equal to the number of rows in \code{data} indicating
+#' an \code{integer} or \code{logical} vector with length equal to the number of rows in \code{data} indicating
 #' the same. Rows labeled \code{TRUE} are excluded from model training.
 #' @param sort \code{boolean} Sort quantiles using \code{SortQuantiles()}?
 #' @param sort_limits \code{Limits} argument to be passed to \code{SortQuantiles()}. Constrains quantiles to upper and lower limits given by \code{list(U=upperlim,L=lowerlim)}.
