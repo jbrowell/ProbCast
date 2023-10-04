@@ -21,9 +21,8 @@ qreg_gam(
 }
 \arguments{
 \item{data}{A \code{data.frame} containing target and explanatory
-variables. May optionally contain a collumn called "kfold" with
-numbered/labeled folds and "Test" for test data. If \code{data} contains a column called
-"gam_pred" then gam modelling will be skipped and this will be used in quantile regression.}
+variables. May optionally contain a column called "kfold" with
+numbered/labelled folds and "Test" for test data.}
 
 \item{formula_qr}{Formula for linear quantile regression model for GAM residuals. Term \code{gam_pred}
 is the prediction from the above GAM may be included in this formula. If null, the "terms" of the GAM model
@@ -38,7 +37,7 @@ are used as features in linear quantile regression.}
 \item{cv_folds}{Control for cross-validation with various options, either:
 \itemize{
  \item the column name of the fold index supplied in data. Observations and inputs 
-  in the index labeled "Test" will serve as test data and held out in model training.
+  in the index labelled "Test" will serve as test data and held out in model training.
  \item an integer giving the number of cross validation folds to generate. Folds are constructed as block chunks. 
  Default behaviour is 5 folds.
  \item NULL indicates that no cross validation should be performed and the returned model is trained on all \code{data}.
@@ -52,14 +51,14 @@ See \code{bam()} documentation for further details.}
 
 \item{exclude_train}{A column name in \code{data} indicating if a row should be excluded from model
 training, i.e. if it contains bad data (will be coerced to \code{logical}). Alterntively,
-an \code{integer} or \cpde{logical} vector with length equal to the number of rows in \code{data} indicating
+an \code{integer} or \code{logical} vector with length equal to the number of rows in \code{data} indicating
 the same. Rows labeled \code{TRUE} are excluded from model training.}
 
 \item{sort}{\code{boolean} Sort quantiles using \code{SortQuantiles()}?}
 
 \item{sort_limits}{\code{Limits} argument to be passed to \code{SortQuantiles()}. Constrains quantiles to upper and lower limits given by \code{list(U=upperlim,L=lowerlim)}.}
 
-\item{...}{Additional agruments passter to \code{gam()} (or \code{bam()}).}
+\item{...}{Additional arguments past to \code{gam()} (or \code{bam()}).}
 
 \item{formala}{A \code{formula} object with the response on the left
 of an ~ operator, and the terms, separated by + operators, on the right passed to \code{gam()}
@@ -82,7 +81,7 @@ Predictive quantiles corresponding to "Test" data are produced using models trai
 non-test data.
 }
 \author{
-Jethro Browell, \email{jethro.browell@strath.ac.uk}
+Jethro Browell, \email{jethro.browell@glasgow.ac.uk}
 }
 \keyword{Quantile}
 \keyword{Regression}

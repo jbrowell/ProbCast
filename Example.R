@@ -15,19 +15,42 @@ require(ProbCast)
 
 
 
-setwd(PackagePath)
-### Testing Functionalisty of StrathCast #####
+### Testing Functionality of ProbCast #####
 
 ## Add some features first...
 
 Wind$WS100 <- sqrt(Wind$U100^2+Wind$V100^2)
-Wind$Power <- pmin(Wind$WS100,11)^3
+Wind$Power <- pmin(Wind$WS100,9.5)^3 / 9.5^3
 
 ## Set-up simple kfold CV. NB --- For scenario forecasting make sure the CV folds don't cross issue times
 Wind$kfold <- "Fold 1"
 Wind$kfold[Wind$ISSUEdtm>as.POSIXct("2012-06-30",tz="UTC")] <- "Fold 2"
 Wind$kfold[Wind$ISSUEdtm>as.POSIXct("2012-12-31",tz="UTC")] <- "Fold 3"
 Wind$kfold[Wind$ISSUEdtm>as.POSIXct("2013-06-30",tz="UTC")] <- "Test"
+
+
+
+
+### Multiple linear quantile regression with MQR_rq
+
+model_rq = qreg_mrq(data=Wind,
+                    formula = TARGETVAR~1+Power,
+                    quantiles = 1:19/20,
+                    offset = "Power",
+                    cv_folds = "kfold",
+                    sort_limits = list(U=1,L=0))
+
+plot(model_rq$mqr_pred[1:100,])
+
+reliability(qrdata = model_rq$mqr_pred,
+            realisations = Wind$TARGETVAR,
+            kfolds = Wind$kfold)
+
+plot(Width~Interval,sharpness(qrdata = model_rq$mqr_pred,
+                              realisations = Wind$TARGETVAR),
+     type="b")
+
+
 
 
 ### Multiple Quantile Regression using GBM ####
@@ -68,8 +91,8 @@ reliability(qrdata = test1$gbm_mqr,
             breaks = c(4,10),bootstrap = 100)
 
 pinball(qrdata = test1$gbm_mqr,
-         realisations = test1$data$TARGETVAR,
-         kfolds = test1$data$kfold)
+        realisations = test1$data$TARGETVAR,
+        kfolds = test1$data$kfold)
 
 
 reliability(qrdata = test1$gbm_mqr,
@@ -86,9 +109,9 @@ pinball(qrdata = test1$gbm_mqr,
         bootstrap = 100)
 
 pinball(qrdata = test1$gbm_mqr,
-            realisations = test1$data$TARGETVAR,
-            kfolds = test1$data$kfold,
-            bootstrap = 100,ylim=c(0,.08))
+        realisations = test1$data$TARGETVAR,
+        kfolds = test1$data$kfold,
+        bootstrap = 100,ylim=c(0,.08))
 
 pinball(qrdata = test1$gbm_mqr[test1$data$kfold=="Test",],
         realisations = test1$data$TARGETVAR[test1$data$kfold=="Test"],
@@ -146,8 +169,8 @@ summary(test1$ppd$`Fold 1`)
 plot(test1$ppd$`Fold 1`)
 
 test1$gamlssParams <- PPD_2_MultiQR(data=test1$data,
-                                   models = test1$ppd,
-                                   params = T)
+                                    models = test1$ppd,
+                                    params = T)
 
 
 
@@ -168,8 +191,8 @@ reliability(qrdata = test1$gamlss_mqr,
             kfolds = test1$data$kfold)
 
 pinball(qrdata = test1$gamlss_mqr,
-         realisations = test1$data$TARGETVAR,
-         kfolds = test1$data$kfold)
+        realisations = test1$data$TARGETVAR,
+        kfolds = test1$data$kfold)
 
 
 # test1$data[test1$data$TARGETVAR<0 | test1$data$TARGETVAR>1,]
@@ -237,8 +260,8 @@ lattice::levelplot(cvm_gamlss[["Test"]], xlab="lead time [hours]", ylab="lead ti
 # sample cvm and convert to power domain
 # method for parametric pred dist.
 scen_gamlss <- samps_to_scens(copulatype = "temporal",no_samps = f_nsamp,marginals = list(loc_1 = test1$gamlssParams),sigma_kf = cvm_gamlss,mean_kf = mean_list,
-                           control=list(loc_1 = list(kfold = u_obsind$kfold,issue_ind=u_obsind$i_time,horiz_ind=u_obsind$lead_time,
-                                                     q_fun = gamlss.dist::qBEINF)))
+                              control=list(loc_1 = list(kfold = u_obsind$kfold,issue_ind=u_obsind$i_time,horiz_ind=u_obsind$lead_time,
+                                                        q_fun = gamlss.dist::qBEINF)))
 
 matplot(scen_gamlss$loc_1[which(test1$data$ISSUEdtm==i_ts),],type="l",ylim=c(0,1),lty=1,
         xlab="Lead Time [Hours]",ylab="Power [Capacity Factor]",
@@ -277,7 +300,7 @@ FCs[,horiz:=as.numeric(TARGETdtm - ISSUEdtm)]
 test1$mvscore_gamlss <- FCs[,list(ES=es_sample(y=TARGETVAR,dat=(as.matrix(.SD))),
                                   wVS1=vs_sample(y=TARGETVAR,dat=(as.matrix(.SD)),w=mat(d = .N,horizon = horiz),p=1),
                                   wVS.5=vs_sample(y=TARGETVAR,dat=(as.matrix(.SD)),w=mat(d = .N,horizon = horiz),p=.5))
-                         ,.SDcols=paste0("scen_",1:f_nsamp),by=c("kfold","ISSUEdtm")]
+                            ,.SDcols=paste0("scen_",1:f_nsamp),by=c("kfold","ISSUEdtm")]
 
 
 
@@ -300,11 +323,11 @@ evalplot_block <- function(data_table, block,nboot = 100, na.rm = TRUE,score = "
   
   boot <- NULL
   for(i in 1:nboot) {
-  bootind <- sample(unique(block), replace = TRUE)
-  data <- rbindlist(lapply(bootind,function(x){data_table[block==x]}))
-
-  boot <- rbind(boot, data[,as.list(colMeans(.SD,na.rm = na.rm)),.SDcols = score,by=.(marginal)])
-  rm(data)
+    bootind <- sample(unique(block), replace = TRUE)
+    data <- rbindlist(lapply(bootind,function(x){data_table[block==x]}))
+    
+    boot <- rbind(boot, data[,as.list(colMeans(.SD,na.rm = na.rm)),.SDcols = score,by=.(marginal)])
+    rm(data)
   }
   
   boxplot(data = boot, as.formula(paste0(score,"~ marginal")),ylab = score,xlab = "", ...)
@@ -318,10 +341,6 @@ evalplot_block(mv_dt[kfold=="Test"],block = mv_dt[kfold=="Test",block],axes=F,yl
 axis(2,seq(0.4,.75,0.05),lwd=2, cex=1.2);axis(1, at=1:2,labels = c("gamlss","gbm"),lwd=2, cex=1.2)
 evalplot_block(mv_dt[kfold=="Test"],block = mv_dt[kfold=="Test",block],score="wVS1",axes=F,ylim=c(0.4,0.75))
 axis(2,seq(0.4,.75,0.05),lwd=2, cex=1.2);axis(1, at=1:2,labels = c("gamlss","gbm"),lwd=2, cex=1.2)
-
-
-
-
 
 
 
