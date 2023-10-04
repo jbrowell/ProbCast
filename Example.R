@@ -40,7 +40,7 @@ model_rq = qreg_mrq(data=Wind,
                     cv_folds = "kfold",
                     sort_limits = list(U=1,L=0))
 
-plot(model_rq$mqr_pred[1:100,])
+plot(model_rq$mqr_pred[1:100+sample(1:16000,1),])
 
 reliability(qrdata = model_rq$mqr_pred,
             realisations = Wind$TARGETVAR,
