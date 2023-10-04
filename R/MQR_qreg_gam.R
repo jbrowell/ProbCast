@@ -8,11 +8,10 @@
 #' Quantile regression may be performed using user-specified formula or the design matrix of
 #' the fitted GAM.
 #' 
-#' @author Jethro Browell, \email{jethro.browell@@strath.ac.uk}
+#' @author Jethro Browell, \email{jethro.browell@@glasgow.ac.uk}
 #' @param data A \code{data.frame} containing target and explanatory
 #' variables. May optionally contain a collumn called "kfold" with
-#' numbered/labeled folds and "Test" for test data. If \code{data} contains a column called
-#' "gam_pred" then gam modelling will be skipped and this will be used in quantile regression. 
+#' numbered/labeled folds and "Test" for test data. 
 #' @param formala A \code{formula} object with the response on the left
 #' of an ~ operator, and the terms, separated by + operators, on the right passed to \code{gam()}
 #' or \code{bam()} from \code{mgcv}.
@@ -38,10 +37,10 @@
 #' @param exclude_train A column name in \code{data} indicating if a row should be excluded from model
 #' training, i.e. if it contains bad data (will be coerced to \code{logical}). Alterntively,
 #' an \code{integer} or \cpde{logical} vector with length equal to the number of rows in \code{data} indicating
-#' the same. Rows labeled \code{TRUE} are excluded from model training.
+#' the same. Rows labelled \code{TRUE} are excluded from model training.
 #' @param sort \code{boolean} Sort quantiles using \code{SortQuantiles()}?
 #' @param sort_limits \code{Limits} argument to be passed to \code{SortQuantiles()}. Constrains quantiles to upper and lower limits given by \code{list(U=upperlim,L=lowerlim)}.
-#' @param ... Additional agruments passter to \code{gam()} (or \code{bam()}).
+#' @param ... Additional arguments past to \code{gam()} (or \code{bam()}).
 #' @details The returned predictive quantiles and GAM predictions are those produced out-of-sample for each
 #' cross-validation fold (using models trained on the remaining folds but not "Test" data).
 #' Predictive quantiles corresponding to "Test" data are produced using models trained on all
@@ -158,7 +157,7 @@ qreg_gam <- function(data,
 #' new quantiles than re-estimating the main GAM using \code{qreg_gam()}. This
 #' function is also called within \code{qreg_gam()}.
 #' 
-#' @author Jethro Browell, \email{jethro.browell@@strath.ac.uk}
+#' @author Jethro Browell, \email{jethro.browell@@glasgow.ac.uk}
 #' @param object An \code{qreg_gam} object.
 #' @param data The data used to fit \code{object}
 #' @param quantiles The new quantiles to be added to \code{object}. Models for quantiles already
@@ -314,7 +313,7 @@ qreg_gam.add_quantiles <- function(object, data, quantiles){
 #' This function predicts from multiple conditional linear quantile regression models of the residuals of
 #' a generalised additive model fit using \code{qreg_gam}.
 #' 
-#' @author Jethro Browell, \email{jethro.browell@@strath.ac.uk}
+#' @author Jethro Browell, \email{jethro.browell@@glasgow.ac.uk}
 #' @param object An \code{qreg_gam} object containing the model to predict from.
 #' @param newdata A data frame or data table containing the values of the model
 #' covariates at which predictions are required. 
