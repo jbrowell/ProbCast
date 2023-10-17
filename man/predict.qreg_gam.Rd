@@ -42,5 +42,5 @@ a generalised additive model fit using \code{qreg_gam}.
 Predict method for multiple quantile regression models of the class \code{qreg_gam}.
 }
 \author{
-Jethro Browell, \email{jethro.browell@strath.ac.uk}
+Jethro Browell, \email{jethro.browell@glasgow.ac.uk}
 }

@@ -27,5 +27,5 @@ function is also called within \code{qreg_gam()}.
 Adds new qunatile models to \code{qreg_gam} object.
 }
 \author{
-Jethro Browell, \email{jethro.browell@strath.ac.uk}
+Jethro Browell, \email{jethro.browell@glasgow.ac.uk}
 }

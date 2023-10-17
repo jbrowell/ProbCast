@@ -10,8 +10,8 @@
 #' 
 #' @author Jethro Browell, \email{jethro.browell@@glasgow.ac.uk}
 #' @param data A \code{data.frame} containing target and explanatory
-#' variables. May optionally contain a collumn called "kfold" with
-#' numbered/labeled folds and "Test" for test data. 
+#' variables. May optionally contain a column called "kfold" with
+#' numbered/labelled folds and "Test" for test data. 
 #' @param formala A \code{formula} object with the response on the left
 #' of an ~ operator, and the terms, separated by + operators, on the right passed to \code{gam()}
 #' or \code{bam()} from \code{mgcv}.
@@ -24,7 +24,7 @@
 #' @param cv_folds Control for cross-validation with various options, either:
 #' \itemize{
 #'  \item the column name of the fold index supplied in data. Observations and inputs 
-#'   in the index labeled "Test" will serve as test data and held out in model training.
+#'   in the index labelled "Test" will serve as test data and held out in model training.
 #'  \item an integer giving the number of cross validation folds to generate. Folds are constructed as block chunks. 
 #'  Default behaviour is 5 folds.
 #'  \item NULL indicates that no cross validation should be performed and the returned model is trained on all \code{data}.
@@ -102,12 +102,13 @@ qreg_gam <- function(data,
   
   class(FINAL_OUTPUT) <- c("qreg_gam",class(FINAL_OUTPUT))
   
+  ## Fit gams using either gam() or bam()
+  gam_fit_method <- if(use_bam){bam}else{gam}
+  
   for(fold in FINAL_OUTPUT$model_names){
     
     print(paste0("GAM, kfold=",fold))
     
-    ## Fit gams using either gam() or bam()
-    gam_fit_method <- if(use_bam){bam}else{gam}
     
     # GAM for conditional expectation
     FINAL_OUTPUT$models$gams[[fold]] <- gam_fit_method(data=data[FINAL_OUTPUT$kfold_index!=fold & FINAL_OUTPUT$kfold_index!="Test" & FINAL_OUTPUT$exclude_index==0,],
