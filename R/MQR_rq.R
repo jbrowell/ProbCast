@@ -77,29 +77,27 @@ qreg_mrq <- function(data,
     
     print(paste0("Multiple rq, kfold=",fold))
     
-    for(fold in FINAL_OUTPUT$model_names){
-      print(paste0("MQR, kfold=",fold))
-      for(i in 1:length(quantiles)){
-        
-        rq_model <- rq(formula,
-                       tau = quantiles[i],
-                       data = data[FINAL_OUTPUT$kfold_index!=fold & FINAL_OUTPUT$kfold_index!="Test" & FINAL_OUTPUT$exclude_index==0,],
-                       ...)
-        
-        ## Throw away unneeded entries in "rq" as take up a lot of space!!!
-        rq_model <- rq_model[c("coefficients","terms","xlevels","contrasts")]
-        class(rq_model) <- "rq"
-        
-        FINAL_OUTPUT$models$rqs[[fold]][[paste0("q",100*quantiles[i])]] <- rq_model
-        
-        if(is.null(cv_folds)){
-          FINAL_OUTPUT$mqr_pred[,i] <- predict.rq(FINAL_OUTPUT$models$rqs[[fold]][[paste0("q",100*quantiles[i])]],data)
-        }else{
-          FINAL_OUTPUT$mqr_pred[FINAL_OUTPUT$kfold_index==fold,i] <- predict.rq(FINAL_OUTPUT$models$rqs[[fold]][[paste0("q",100*quantiles[i])]],data[FINAL_OUTPUT$kfold_index==fold,])
-        }
+    for(i in 1:length(quantiles)){
+      
+      rq_model <- rq(formula,
+                     tau = quantiles[i],
+                     data = data[FINAL_OUTPUT$kfold_index!=fold & FINAL_OUTPUT$kfold_index!="Test" & FINAL_OUTPUT$exclude_index==0,],
+                     ...)
+      
+      ## Throw away unneeded entries in "rq" as take up a lot of space!!!
+      rq_model <- rq_model[c("coefficients","terms","xlevels","contrasts")]
+      class(rq_model) <- "rq"
+      
+      FINAL_OUTPUT$models$rqs[[fold]][[paste0("q",100*quantiles[i])]] <- rq_model
+      
+      if(is.null(cv_folds)){
+        FINAL_OUTPUT$mqr_pred[,i] <- predict.rq(FINAL_OUTPUT$models$rqs[[fold]][[paste0("q",100*quantiles[i])]],data)
+      }else{
+        FINAL_OUTPUT$mqr_pred[FINAL_OUTPUT$kfold_index==fold,i] <- predict.rq(FINAL_OUTPUT$models$rqs[[fold]][[paste0("q",100*quantiles[i])]],data[FINAL_OUTPUT$kfold_index==fold,])
       }
     }
   }
+  
   
   ## Order columns
   FINAL_OUTPUT$mqr_pred <- FINAL_OUTPUT$mqr_pred[,order(as.numeric(gsub("q","",colnames(FINAL_OUTPUT$mqr_pred)))),with=F]

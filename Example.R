@@ -20,6 +20,7 @@ require(ProbCast)
 ## Add some features first...
 
 Wind$WS100 <- sqrt(Wind$U100^2+Wind$V100^2)
+Wind$WD100 <- atan2(Wind$V100,Wind$U100)
 Wind$Power <- pmin(Wind$WS100,9.5)^3 / 9.5^3
 
 ## Set-up simple kfold CV. NB --- For scenario forecasting make sure the CV folds don't cross issue times
@@ -32,9 +33,12 @@ Wind$kfold[Wind$ISSUEdtm>as.POSIXct("2013-06-30",tz="UTC")] <- "Test"
 
 
 ### Multiple linear quantile regression with MQR_rq
-
+# require(splines2)
 model_rq = qreg_mrq(data=Wind,
-                    formula = TARGETVAR~1+Power,
+                    formula = TARGETVAR~1+Power+WS100,
+                    # formula = TARGETVAR~1+bSpline(WS100,df=10) +
+                    #   bSpline(WS100,df=10) + 
+                    #   bSpline(WD100,df = 6,periodic = T,Boundary.knots = c(-pi,pi)),
                     quantiles = 1:19/20,
                     offset = "Power",
                     cv_folds = "kfold",
@@ -45,6 +49,11 @@ plot(model_rq$mqr_pred[1:100+sample(1:16000,1),])
 reliability(qrdata = model_rq$mqr_pred,
             realisations = Wind$TARGETVAR,
             kfolds = Wind$kfold)
+
+pinball(qrdata = model_rq$mqr_pred,
+            realisations = Wind$TARGETVAR,
+            kfolds = Wind$kfold)
+
 
 plot(Width~Interval,sharpness(qrdata = model_rq$mqr_pred,
                               realisations = Wind$TARGETVAR),
