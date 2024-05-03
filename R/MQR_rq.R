@@ -79,9 +79,11 @@ qreg_mrq <- function(data,
     
     for(i in 1:length(quantiles)){
       
+      idx <- FINAL_OUTPUT$kfold_index!=fold & FINAL_OUTPUT$kfold_index!="Test" & FINAL_OUTPUT$exclude_index==0
+      
       rq_model <- rq(formula,
                      tau = quantiles[i],
-                     data = data[FINAL_OUTPUT$kfold_index!=fold & FINAL_OUTPUT$kfold_index!="Test" & FINAL_OUTPUT$exclude_index==0,],
+                     data = data[idx,],
                      ...)
       
       ## Throw away unneeded entries in "rq" as take up a lot of space!!!
