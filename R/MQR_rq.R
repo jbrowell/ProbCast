@@ -95,7 +95,8 @@ qreg_mrq <- function(data,
       if(is.null(cv_folds)){
         FINAL_OUTPUT$mqr_pred[,i] <- predict.rq(FINAL_OUTPUT$models$rqs[[fold]][[paste0("q",100*quantiles[i])]],data)
       }else{
-        FINAL_OUTPUT$mqr_pred[FINAL_OUTPUT$kfold_index==fold,i] <- predict.rq(FINAL_OUTPUT$models$rqs[[fold]][[paste0("q",100*quantiles[i])]],data[FINAL_OUTPUT$kfold_index==fold,])
+        idx <- FINAL_OUTPUT$kfold_index==fold
+        FINAL_OUTPUT$mqr_pred[FINAL_OUTPUT$kfold_index==fold,i] <- predict.rq(FINAL_OUTPUT$models$rqs[[fold]][[paste0("q",100*quantiles[i])]],data[idx,])
       }
     }
   }
