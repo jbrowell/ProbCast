@@ -6,7 +6,7 @@
 #' @author Gordon McFadzean, \email{gordon.mcfadzean@@tneigroup.com}; Rosemary Tawn, \email{rosemary.tawn@@tneigroup.com}
 #' @param data A \code{data.frame} containing target and explanatory variables.
 #' @param formula A \code{formula} object with the response on the left
-#' of an ~ operator, and the terms, separated by + operators, on the right
+#' of an ~ operator, and the terms, separated by + operators, on the right. NOTE any manipulation of terms, eg squaring or interactions, within the formula will fail - only individual, linear terms may be specified.
 #' @param categoric_features Either a character vector of feature names, or integer vector of indices, for any categoric terms (NULL if not categoric features included).
 #' @param quantiles The quantiles to fit models for.
 #' @param cv_folds Control for cross-validation with various options, either:
@@ -84,7 +84,7 @@ qreg_lightgbm <- function(data,
   output$model_names <- cv_labs$fold_loop
 
   # exclude points from training? & do checks
-  output$exclude_index <- exclude_fun(data = data,exclude_train = exclude_train)
+  output$exclude_index <- exclude_fun(data = data, exclude_train = exclude_train)
 
   output$default_model <- if("Test"%in%cv_labs$fold_loop){"Test"}else{cv_labs$fold_loop[1]}
   output$sort <- sort
@@ -102,19 +102,19 @@ qreg_lightgbm <- function(data,
   gc()
 
   # fit the models: returns list quantile --> kfold
-  output$models <- foreach::foreach(q = quantiles,.packages=c("lightgbm", pckgs),.options.snow = opts) %dopar% {
+  output$models <- foreach::foreach(q = quantiles, .packages=c("lightgbm", pckgs),.options.snow = opts) %dopar% {
     temp_lgbm <- list()
     for (fold in output$model_names) {
       train_data <- data[output$kfold_index != fold &
                            output$kfold_index != "Test" &
                            output$exclude_index == 0 &
                            !is.na(data[[formula[[2]]]]),]
-      X <- as.matrix(train_data[, .SD, .SDcols = features])
+      X <- as.matrix(train_data %>% select(all_of(features)))
       
       if(is.null(categoric_features)){
-        dataset <- lightgbm::lgb.Dataset(data = X, label = train_data[, get(response)], free_raw_data = FALSE)
+        dataset <- lightgbm::lgb.Dataset(data = X, label = train_data[[response]], free_raw_data = FALSE)
       }else{
-        dataset <- lightgbm::lgb.Dataset(data = X, label = train_data[, get(response)], 
+        dataset <- lightgbm::lgb.Dataset(data = X, label = train_data[[response]], 
                                          categorical_feature=categoric_features, free_raw_data = FALSE)
       }
       
@@ -200,7 +200,7 @@ qreg_lightgbm <- function(data,
 #' Predict method for Multiple Quantile Regression from lightgbm Gradient Boosted Decision Trees.
 #'
 #' This function returns multiple quantile predictions as an object of class \code{MultiQR}
-#' based on a ProbCast gbm fitted model. S3 Method for for \code{qreg_gbm} objects
+#' based on a ProbCast gbm fitted model. S3 Method for for \code{qreg_lightgbm} objects
 #'
 #' @author Gordon McFadzean, \email{gordon.mcfadzean@@tneigroup.com}
 #' @param object fitted model of class \code{qreg_lightgbm} obtained from the function \code{qreg_lightgbm()}.
@@ -258,10 +258,7 @@ predict.qreg_lightgbm <- function(object,
 
     ### Save out-of-sample predictions
       predict(lightgbm::lgb.load(model_str=object$models[[model_name]][[q]]),
-              newdata = as.matrix(newdata[, .SD, .SDcols = object$features]))
-
-
-
+              newdata = as.matrix(newdata %>% select(all_of(object$features))))
   }))
 
   class(pred) <- c("MultiQR","data.frame")
@@ -299,7 +296,7 @@ predict.qreg_lightgbm <- function(object,
 #' @return a named list containing fitted models as a list of \code{qreg_lightgbm} objects.
 #' @keywords Quantile Regression
 #' @export
-qreg_lightgbm.update <- function(object,
+update.qreg_lightgbm <- function(object,
                                  newdata,
                                  model_name=NULL,
                                  pckgs=NULL,
@@ -350,17 +347,33 @@ qreg_lightgbm.update <- function(object,
 }
 
 
+
+
+#' Model retraining: S3 Generic Method
+#'
+#' @author Rosemary Tawn, \email{rosemary.tawn@@tneigroup.com}
+#' @param object A fitted model object. Currently supported: \code{qreg_lightgbm}.
+#' @param ... Additional arguments.
+#' @details This is an S3 method, see specific methods \code{\link{retrain_all.qreg_lightgbm}}
+#' for details on functionality.
+#' @return A fitted model, periodically retrained over the Test set.
+#' @export
+retrain_all <- function(object, ...) {
+  UseMethod("retrain_all", object)
+}
+
+
 #' Method for repeated model retraining throughout the Test set, based on  Multiple 
 #' Quantile Regression from lightgbm Gradient Boosted Decision Trees.
 #'
 #' This function returns updated fitted \code{qreg_lightgbm} models and predictions, which are the 
 #' supplied previously fitted models updated throughout the Test set. S3 Method for \code{qreg_lightgbm} objects
 #'
-#' @author Gordon McFadzean, \email{gordon.mcfadzean@@tneigroup.com}
+#' @author Gordon McFadzean, \email{gordon.mcfadzean@@tneigroup.com}; Rosemary Tawn, \email{rosemary.tawn@@tneigroup.com}
+#' @param object fitted model of class \code{qreg_lightgbm} obtained from the function \code{qreg_lightgbm()}.
 #' @param data data.frame of model inputs and observations, including a column containing fold labels: 
 #' models will be retrained throughout the subset of the data labelled 'Test'.
 #' @param retrain_daily_frequency Frequency, in number of days, which the model will be retrained over the Test set.
-#' @param qreg_object fitted model of class \code{qreg_lightgbm} obtained from the function \code{qreg_lightgbm()}.
 #' @param cv_folds Name of column in data containing the fold labels. Models will 
 #' only be retrained for time points beyond the start of the Test fold.
 #' @param pckgs specify additional packages required for
@@ -373,17 +386,22 @@ qreg_lightgbm.update <- function(object,
 #' @return a named list containing fitted models as a list of \code{qreg_lightgbm} objects.
 #' @keywords Quantile Regression
 #' @export
-qreg_lightgbm.retrain_all <- function(data,
+retrain_all.qreg_lightgbm <- function(object,
+                                      data,
                                       retrain_daily_frequency,
                                       issue_datetime_column,
-                                      qreg_object,
                                       cv_folds,
                                       pckgs=NULL,
                                       cores=1,
-                                    ...){
-
-  # assign("original_qreg_mboost", original_qreg_mboost, envir = .GlobalEnv)
-  # cv_folds <- eval(original_qreg_lightgbm$call$cv_folds,envir = environment())
+                                      ...){
+  
+  if(class(object)!="qreg_lightgbm"){stop("object of wrong class, expecting \"qreg_lightgbm\"")}
+  
+  # force data to data.table (code is written assuming data is data.table)
+  if (!is(data, "data.table")){
+    data <- data.table(data)
+  }
+  
   retrain_limit <- data[get(cv_folds)!='Test', max(get(issue_datetime_column))]
   first_test_issue <- data[get(cv_folds)=='Test', min(get(issue_datetime_column))]
 
@@ -397,19 +415,19 @@ qreg_lightgbm.retrain_all <- function(data,
     }else{
       print("retraining...")
       print(first_test_issue)
-      qreg_object <- qreg_lightgbm.update(object=qreg_object,
+      qreg_object <- update.qreg_lightgbm(object=object,
                                           newdata=newdata,
                                           model_name="Test",
                                           pckgs=pckgs,
                                           cores=cores)
 
-      new_preds <- predict(object=qreg_object,
+      new_preds <- predict(object=object,
                            newdata=data[get(issue_datetime_column) >= retrain_limit],
-                           sort=qreg_object$sort,
-                           sort_limits=qreg_object$sort_limits
+                           sort=object$sort,
+                           sort_limits=object$sort_limits
                            )
       qreg_object$mqr_pred[which(data[[issue_datetime_column]]>= retrain_limit),
-                           names(qreg_object$mqr_pred)] <- new_preds[, names(qreg_object$mqr_pred)]
+                           names(object$mqr_pred)] <- new_preds[, names(object$mqr_pred)]
 
 
     }
