@@ -30,8 +30,6 @@ Wind$kfold[Wind$ISSUEdtm>as.POSIXct("2012-12-31",tz="UTC")] <- "Fold 3"
 Wind$kfold[Wind$ISSUEdtm>as.POSIXct("2013-06-30",tz="UTC")] <- "Test"
 
 
-
-
 ### Multiple linear quantile regression with MQR_rq
 # require(splines2)
 model_rq = qreg_mrq(data=Wind,
@@ -61,11 +59,53 @@ plot(Width~Interval,sharpness(qrdata = model_rq$mqr_pred,
 
 
 
+### Multiple Quantile Regression using lightGBM ####
+lgbm_model <- qreg_lightgbm(data=Wind,
+                            formula=TARGETVAR~U100+V100+U10+V10+WS100,
+                            quantiles = seq(0.05,0.95,by=0.05),
+                            cv_folds = "kfold",
+                            sort = TRUE,
+                            sort_limits = list(L=0, U=1),
+                            cores=detectCores() - 1,
+                            lightgbm_params = list(n_estimators=1000,
+                                                   learning_rate=0.01,
+                                                   min_data_in_leaf=30,
+                                                   bagging_freq=1,
+                                                   bagging_fraction=0.9,
+                                                   min_gain_to_split=0.25,
+                                                   lambda_l1=10,
+                                                   lambda_l2=10,
+                                                   force_col_wise=TRUE))
+
+
+### re-train models over the Test set, every 28 days
+updated_lgbm_model <- retrain_all(lgbm_model,
+                                  data=Wind,
+                                  retrain_daily_frequency=28,
+                                  issue_datetime_column='ISSUEdtm',
+                                  cv_folds='kfold',
+                                  cores=detectCores() - 1)
+
+plot_idx = 1:100+sample(1:16000,1)
+plot(updated_lgbm_model$mqr_pred[plot_idx,])
+lines(1:100, Wind[plot_idx, 'TARGETVAR'])
+
+reliability(qrdata = updated_lgbm_model$mqr_pred,
+            realisations = Wind$TARGETVAR,
+            kfolds = Wind$kfold)
+
+pinball(qrdata = updated_lgbm_model$mqr_pred,
+        realisations = Wind$TARGETVAR,
+        kfolds = Wind$kfold)
+
+
+plot(Width~Interval,sharpness(qrdata = updated_lgbm_model$mqr_pred,
+                              realisations = Wind$TARGETVAR),
+     type="b")
+
 
 ### Multiple Quantile Regression using GBM ####
 test1<-list(data=Wind)
-
-
 test1$gbm_mqr <- qreg_gbm(data = test1$data,
                           formula = TARGETVAR~U100+V100+U10+V10+(sqrt((U100^2+V100^2))),
                           cv_folds = "kfold",
