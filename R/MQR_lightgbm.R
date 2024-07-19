@@ -374,6 +374,7 @@ retrain_all <- function(object, ...) {
 #' @param data data.frame of model inputs and observations, including a column containing fold labels: 
 #' models will be retrained throughout the subset of the data labelled 'Test'.
 #' @param retrain_daily_frequency Frequency, in number of days, which the model will be retrained over the Test set.
+#' @param issue_datetime_column Name of the column in data containing the forecast issue times. Column of issue times must be POSIXct or Date.
 #' @param cv_folds Name of column in data containing the fold labels. Models will 
 #' only be retrained for time points beyond the start of the Test fold.
 #' @param pckgs specify additional packages required for
